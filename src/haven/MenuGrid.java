@@ -778,6 +778,9 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/QuestgiverTriangulation");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/OreAndStoneCounter");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/GridHeightCalculator");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/CustomAlarmManager");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/AutoDropManager");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/FlowerMenuAutoSelectManager");
 
 		// Category: Quick Switch From Belt
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_B12");
@@ -1018,6 +1021,33 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				}
 			} else if (ad[2].equals("GridHeightCalculator")) {
 				AUtils.getGridHeightAvg(gui);
+			} else if (ad[2].equals("CustomAlarmManager")) {
+				if(gui.opts != null) {
+					if(gui.opts.alarmWindow == null) {
+						gui.opts.alarmWindow = gui.opts.parent.parent.add(new AlarmWindow());
+						gui.opts.alarmWindow.show();
+					} else {
+						gui.opts.alarmWindow.show(!gui.opts.alarmWindow.visible);
+						gui.opts.alarmWindow.bottomNote.settext("NOTE: You can add your own alarm sound files in the \"AlarmSounds\" folder. (The file extension must be .wav)");
+						gui.opts.alarmWindow.bottomNote.setcolor(Color.WHITE);
+						gui.opts.alarmWindow.bottomNote.c.x = UI.scale(140);
+					}
+				}
+			} else if (ad[2].equals("AutoDropManager")) {
+				if(!gui.opts.autoDropManagerWindow.attached) {
+					gui.opts.parent.parent.add(gui.opts.autoDropManagerWindow);
+					gui.opts.autoDropManagerWindow.show();
+				} else {
+					gui.opts.autoDropManagerWindow.show(!gui.opts.autoDropManagerWindow.visible);
+				}
+			} else if (ad[2].equals("FlowerMenuAutoSelectManager")) {
+				if(gui.opts.flowerMenuAutoSelectManagerWindow == null) {
+					gui.opts.flowerMenuAutoSelectManagerWindow = gui.opts.parent.parent.add(new FlowerMenuAutoSelectManagerWindow());
+					gui.opts.flowerMenuAutoSelectManagerWindow.show();
+				} else {
+					gui.opts.flowerMenuAutoSelectManagerWindow.show(!gui.opts.flowerMenuAutoSelectManagerWindow.visible);
+					gui.opts.flowerMenuAutoSelectManagerWindow.refresh();
+				}
 			}
 		} else if (ad[1].equals("QuickSwitchFromBelt")) {
 			new Thread(new EquipFromBelt(gui, ad[2]), "EquipFromBelt").start();

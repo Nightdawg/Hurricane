@@ -67,7 +67,6 @@ public class MiniMap extends Widget {
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
 	private String biome;
 	private Tex biometex;
-	private final Tex invalidMapWarningTex = Text.renderstroked("Warning: Map unstable, using workaround!", Color.RED, Color.BLACK).tex(); // ND: Idk if this bug still exists, but I'm adding this fix anyway
 	public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
 	public static boolean highlightMapTiles = Utils.getprefb("highlightMapTiles", false);
@@ -92,7 +91,7 @@ public class MiniMap extends Widget {
     }
 
     public static class Location {
-	public final Segment seg;
+	public Segment seg;
 	public final Coord tc;
 
 	public Location(Segment seg, Coord tc) {
@@ -315,7 +314,7 @@ public class MiniMap extends Widget {
 	}
 
 	public void dispupdate() {
-	    if((this.rc == null) || (sessloc == null) || (dloc == null) /*|| (dloc.seg != sessloc.seg)*/) // ND: Commented this for the bugged segment workaround.
+	    if((this.rc == null) || (sessloc == null) || (dloc == null) || (dloc.seg != sessloc.seg))
 		this.sc = null;
 	    else
 		this.sc = p2c(this.rc);
@@ -696,7 +695,7 @@ public class MiniMap extends Widget {
     }
 
     public void drawicons(GOut g) {
-	if((sessloc == null) /*|| (dloc.seg != sessloc.seg)*/) // ND: Commented this for the bugged segment workaround.
+	if((sessloc == null) || (dloc.seg != sessloc.seg))
 	    return;
 	for(DisplayIcon disp : icons) {
 	    if((disp.sc == null) || filter(disp))
@@ -746,8 +745,10 @@ public class MiniMap extends Widget {
 	    drawicons(g);
 	drawparty(g);
 	drawbiome(g);
-	drawInvalidWarning(g);
 	drawsprites(g);
+	if (dloc.seg != sessloc.seg){ // ND: Attempts to fix the bug where the segments desync, idk why they desync and it's annoying me alot
+		sessloc.seg = dloc.seg;
+	}
     }
 
     public void draw(GOut g) {
@@ -1026,20 +1027,6 @@ public class MiniMap extends Widget {
 		}
 	}
     }
-
-	void drawInvalidWarning(GOut g) {
-		if (dloc.seg != sessloc.seg){
-			if (invalidMapWarningTex != null) {
-				Coord tsz = invalidMapWarningTex.sz();
-				Coord mid = new Coord(g.sz().x / 2, UI.scale(16));
-				g.chcolor(BIOME_BG);
-				g.frect(mid.sub(2 + tsz.x /2, 0), tsz.add(4, 2));
-				g.chcolor();
-				g.aimage(invalidMapWarningTex, mid, 0.5f, 0);
-			}
-
-		}
-	}
 
 	void drawbiome(GOut g) {
 		if(biometex != null) {

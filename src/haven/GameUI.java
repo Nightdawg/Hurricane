@@ -429,17 +429,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	opts.hide();
 	zerg = add(new Zergwnd(), Utils.getprefc("wndc-zerg", UI.scale(new Coord(187, 50))));
 	zerg.hide();
-	quickslots = add(new QuickSlotsWdg(){
-		@Override
-		public void draw(GOut g) {
-			super.draw(g);
-		}
-
-		@Override
-		public boolean mousedown(Coord c, int button) {
-			return super.mousedown(c, button);
-		}
-	}, Utils.getprefc("wndc-quickslots", UI.scale(new Coord(426, 10))));
+	quickslots = add(new QuickSlotsWdg(), Utils.getprefc("wndc-quickslots", UI.scale(new Coord(426, 10))));
 	if (!Utils.getprefb("showQuickSlotsBar", true)) {
 		quickslots.hide();
 	}

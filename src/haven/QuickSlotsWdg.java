@@ -22,36 +22,24 @@ public class QuickSlotsWdg extends Widget implements DTarget {
             g.image(sbg, Coord.z);
             WItem left = e.slots[6];
             if (left != null) {
-                drawitem(g.reclipl(lefthandslotc, g.sz()), left);
+                left.draw(g.reclipl(lefthandslotc, Inventory.invsq.sz()));
             }
             WItem right = e.slots[7];
             if (right != null) {
-                drawitem(g.reclipl(righthandslotc, g.sz()), right);
+                right.draw(g.reclipl(righthandslotc, Inventory.invsq.sz()));
             }
             WItem belt = e.slots[5];
             if (belt != null) {
-                drawitem(g.reclipl(beltslotc, g.sz()), belt);
+                belt.draw(g.reclipl(beltslotc, Inventory.invsq.sz()));
             }
             WItem backpack = e.slots[11];
             if (backpack != null) {
-                drawitem(g.reclipl(backpackslotc, g.sz()), backpack);
+                backpack.draw(g.reclipl(backpackslotc, Inventory.invsq.sz()));
             }
             WItem cape = e.slots[14];
             if (cape != null) {
-                drawitem(g.reclipl(capeslotc, g.sz()), cape);
+                cape.draw(g.reclipl(capeslotc, Inventory.invsq.sz()));
             }
-        }
-    }
-
-    private void drawitem(GOut g, WItem witem) {
-        GItem item = witem.item;
-        GSprite spr = item.spr();
-        if (spr != null) {
-            g.defstate();
-            witem.drawmain(g, spr);
-            g.defstate();
-        } else {
-            g.image(WItem.missing.layer(Resource.imgc).tex(), Coord.z, ssz);
         }
     }
 
@@ -75,11 +63,11 @@ public class QuickSlotsWdg extends Widget implements DTarget {
         Equipory e = ui.gui.getequipory();
         if (e != null) {
             WItem w = null;
-            if (c.x <= UI.scale(44)) w = e.slots[6];
-            if (c.x > UI.scale(44) && c.x <= UI.scale(94) ) w = e.slots[7];
-            if (c.x > UI.scale(94) && c.x <= UI.scale(142) ) w = e.slots[5];
-            if (c.x > UI.scale(142) && c.x <= UI.scale(190) ) w = e.slots[11];
-            if (c.x > UI.scale(190) && c.x <= UI.scale(238) ) w = e.slots[14];
+            if (cc.x <= UI.scale(44)) w = e.slots[6];
+            if (cc.x > UI.scale(44) && cc.x <= UI.scale(94) ) w = e.slots[7];
+            if (cc.x > UI.scale(94) && cc.x <= UI.scale(142) ) w = e.slots[5];
+            if (cc.x > UI.scale(142) && cc.x <= UI.scale(190) ) w = e.slots[11];
+            if (cc.x > UI.scale(190) && cc.x <= UI.scale(238) ) w = e.slots[14];
             if (w != null) {
                 return w.iteminteract(cc, ul);
             }

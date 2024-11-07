@@ -1533,6 +1533,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				case "gfx/terobjs/cupboard":
 				case "gfx/terobjs/chest":
 				case "gfx/terobjs/exquisitechest":
+				case "gfx/terobjs/map/stonekist":
 					if (peekrbuf == 30 || peekrbuf == 29) {
 						if (OptWnd.showContainerFullnessFullCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessFullColorOptionWidget.currentColor);
 						else delattr(GobStateHighlight.class);
