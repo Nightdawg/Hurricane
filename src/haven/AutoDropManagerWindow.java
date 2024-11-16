@@ -5,6 +5,7 @@ import java.util.Objects;
 public class AutoDropManagerWindow extends Window {
 
     public static CheckBox autoDropItemsCheckBox;
+    public static CheckBox autoDropFromInventoryOnlyCheckBox;
     public static CheckBox autoDropStonesCheckbox;
     public static TextEntry autoDropStonesQualityTextEntry;
     public static CheckBox autoDropOresCheckbox;
@@ -26,6 +27,12 @@ public class AutoDropManagerWindow extends Window {
                 Utils.setprefb("autoDropItems", val);
             }
         }, 0, 6);
+        prev = add(autoDropFromInventoryOnlyCheckBox = new CheckBox("Only Drop Player Inventory") {
+            {a = (Utils.getprefb("autoDropFromInventoryOnly", false));}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropFromInventoryOnly", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
         prev = add(new Label("Mining specific items:"), prev.pos("bl").adds(0, 12).x(0));
         prev = add(autoDropStonesCheckbox = new CheckBox("Stones"){
             {a = Utils.getprefb("autoDropStones", false);}
