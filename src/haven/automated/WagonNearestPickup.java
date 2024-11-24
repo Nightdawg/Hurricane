@@ -4,22 +4,18 @@ package haven.automated;
 import haven.*;
 
 import static haven.OCache.posres;
-import static java.lang.Thread.sleep;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Arrays;
 import java.lang.Math;
 
-// TODO:
-//  Check for left storage
-//    Announce if only one storage space is left
-//    Cancel action if storage is full
-
-
 public class WagonNearestPickup implements Runnable {
     private GameUI gui;
 
     private final double max_distance = 12 * 5;
+
+    // Liftables that need to be checked if they are knocked (dead)
+    // You don't want try to lift an alive bear..
     private final HashSet<String> liftables_knocked = new HashSet<String>(Arrays.asList(
         "gfx/kritter/badger/badger",
         "gfx/kritter/cattle/cattle",
@@ -53,12 +49,17 @@ public class WagonNearestPickup implements Runnable {
         "gfx/kritter/wolverine/wolverine",
         "gfx/kritter/woodgrouse/woodgrouse-m"
     ));
+
+    //All logs are handled differently and are already included
     private final HashSet<String> liftables_generic = new HashSet<String>(Arrays.asList(
         "gfx/terobjs/crate",
         "gfx/terobjs/chest",
+        "gfx/terobjs/largechest",
+        "gfx/terobjs/map/stonekist",
+        "gfx/terobjs/map/jotunclam",
         "gfx/terobjs/barrel"  
     ));
-    //gfx/terobjs/trees/alderlog
+    
     private boolean waitPose(Gob gob, String pose, boolean invert, int delay, int timeout) throws InterruptedException{
         int counter = 0;
         while(gob.getPoses().contains(pose) ^ invert){
@@ -111,8 +112,8 @@ public class WagonNearestPickup implements Runnable {
                 return;
 
             Coord3f raw = player.placed.getc();
-            if(raw != null)
-                return;
+            boolean isOnVehicle = (raw == null);
+            
             for (Gob gob : Utils.getAllGobs(gui)) {
                 Resource res = null;
                 try {
@@ -122,10 +123,11 @@ public class WagonNearestPickup implements Runnable {
                 if (res != null) {
                     double distFromPlayer = gob.rc.dist(player.rc);
 
-                    //Is a Wagon, check that, continue after that
                     if (res.name.equals("gfx/terobjs/vehicle/wagon")){
-                        if (distFromPlayer <= 3 && (vehicle == null || distFromPlayer < vehicle.rc.dist(player.rc))) {
-                            isOnWagon = true;
+                        if (distFromPlayer <= max_distance && (vehicle == null || distFromPlayer < vehicle.rc.dist(player.rc))) {
+                            if(isOnVehicle && distFromPlayer <= 3){
+                                isOnWagon = true;
+                            }
                             vehicle = gob;
                         }
                         continue;
@@ -135,8 +137,10 @@ public class WagonNearestPickup implements Runnable {
                         continue;
                     }
 
-                    if( (liftables_knocked.contains(res.name) && gob.getPoses().contains("knock")) ||
-                        (liftables_generic.contains(res.name))){
+                    if((liftables_knocked.contains(res.name) && gob.getPoses().contains("knock")) ||
+                        (liftables_generic.contains(res.name)) ||
+                        (res.name.startsWith("gfx/terobjs/trees/") && res.name.endsWith("log")))
+                    {
                         if((target == null || distFromPlayer < target.rc.dist(player.rc))){
                             target = gob;
                         }  
@@ -145,38 +149,47 @@ public class WagonNearestPickup implements Runnable {
                 }
             }
 
-            if (isOnWagon) {
-                
-                if (target == null){
-                    gui.error("No liftable found.");
-                    return;
-                }
-
-                //Exit Wagon
-                if(TryExitWagonAtAngle(target.rc, 0) && 
-                   TryExitWagonAtAngle(target.rc, 45) && 
-                   TryExitWagonAtAngle(target.rc, -45)){
-                    throw new InterruptedException("Exiting Wagon failed, path is blocked");
-                }
-                
-                //Lift object
-                gui.wdgmsg("act", "carry");
-                gui.map.wdgmsg("click", Coord.z, target.rc.floor(posres), 1, 0, 0, (int) target.id, target.rc.floor(posres), 0, -1);
-                if(waitPose(player, "banzai", true, 30, 3000)){
-                    throw new InterruptedException("Lifting object took to long");
-                }
-
-                //Store in wagon
-                gui.map.wdgmsg("click", Coord.z, vehicle.rc.floor(posres), 3, 0, 0, (int) vehicle.id, vehicle.rc.floor(posres), 0, -1);
-                if(waitPose(player, "banzai", false, 30, 5000)){
-                    throw new InterruptedException("Storing in wagon took to long");
-                }
-
-                //Enter Wagon
-                FlowerMenu.setNextSelection("Ride");
-                gui.map.wdgmsg("click", Coord.z, vehicle.rc.floor(posres), 3, 0, 0, (int) vehicle.id, vehicle.rc.floor(posres), 0, -1);
+            if(isOnVehicle && !isOnWagon){
                 return;
             }
+
+            if(vehicle == null){
+                throw new InterruptedException("No valid vehicle found.");
+            }
+            
+            if (target == null){
+                throw new InterruptedException("No liftable found.");
+            }
+
+            //Exit Wagon if on any
+            if(isOnWagon &&
+                TryExitWagonAtAngle(target.rc, 0) && 
+                TryExitWagonAtAngle(target.rc, 45) && 
+                TryExitWagonAtAngle(target.rc, -45))
+            {
+                throw new InterruptedException("Exiting Wagon failed, path is blocked");
+            }
+            
+            //Lift the object
+            gui.wdgmsg("act", "carry");
+            gui.map.wdgmsg("click", Coord.z, target.rc.floor(posres), 1, 0, 0, (int) target.id, target.rc.floor(posres), 0, -1);
+            if(waitPose(player, "banzai", true, 30, 3000)){
+                throw new InterruptedException("Lifting object took to long");
+            }
+
+            //Store in vehicle
+            gui.map.wdgmsg("click", Coord.z, vehicle.rc.floor(posres), 3, 0, 0, (int) vehicle.id, vehicle.rc.floor(posres), 0, -1);
+            if(waitPose(player, "banzai", false, 30, 6000)){
+                throw new InterruptedException("Storing in wagon took to long");
+            }
+
+            //Enter Wagon if you started on the wagon
+            if(isOnWagon){
+                FlowerMenu.setNextSelection("Ride");
+                gui.map.wdgmsg("click", Coord.z, vehicle.rc.floor(posres), 3, 0, 0, (int) vehicle.id, vehicle.rc.floor(posres), 0, -1);
+            }
+
+            return;
         
         } catch (InterruptedException e) {
             gui.error(e.getMessage());
