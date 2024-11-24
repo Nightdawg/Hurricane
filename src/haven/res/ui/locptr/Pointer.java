@@ -1,4 +1,6 @@
 /* Preprocessed source code */
+package haven.res.ui.locptr;
+
 import haven.*;
 import haven.automated.PointerTriangulation;
 import haven.render.*;
@@ -6,7 +8,7 @@ import java.awt.Color;
 import static java.lang.Math.*;
 
 /* >wdg: Pointer */
-@haven.FromResource(name = "ui/locptr", version = 20)
+@haven.FromResource(name = "ui/locptr", version = 21)
 public class Pointer extends Widget {
     public static final BaseColor col = new BaseColor(new Color(241, 227, 157, 255));
     public Indir<Resource> icon;
@@ -28,7 +30,7 @@ public class Pointer extends Widget {
 	Indir<Resource> icon = (iconid < 0) ? null : ui.sess.getres(iconid);
 	return(new Pointer(icon));
     }
-	
+
     public void presize() {
 	resize(parent.sz);
     }
