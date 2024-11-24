@@ -121,4 +121,10 @@ public class TarKilnCleanerBot extends Window implements Runnable {
         }
         this.destroy();
     }
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-tarKilnCleanerBotWindow", this.c);
+        super.reqdestroy();
+    }
 }

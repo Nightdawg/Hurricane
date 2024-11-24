@@ -392,4 +392,10 @@ public class MiningSafetyAssistant extends Window implements Runnable {
         }
         return true;
     }
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-miningSafetyAssistantWindow", this.c);
+        super.reqdestroy();
+    }
 }

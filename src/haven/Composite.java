@@ -121,12 +121,10 @@ public class Composite extends Drawable implements EquipTarget {
 	    try {
 		Composited.Poses np = comp.new Poses(loadposes(nposes, comp.skel, nposesold));
 		np.set(nposesold?0:ipollen);
-
 		poses.clear();
 		for (ResData pose : nposes) {
 			poses.add(pose.res.get().basename());
 		}
-		gob.updPose(poses);
 		if (nmod != null && nequ != null) {
 			if (!nmod.isEmpty() && !nequ.isEmpty()) {
 				List<Composited.MD> mod = new LinkedList<Composited.MD>(nmod);
@@ -134,9 +132,9 @@ public class Composite extends Drawable implements EquipTarget {
 				gob.isItLoftar(mod, equ);
 			}
 		}
-
 		nposes = null;
 		updequ();
+		gob.updPose(poses);
 	    } catch(Loading e) {}
 	} else if(tposes != null) {
 	    try {

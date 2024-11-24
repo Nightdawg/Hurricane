@@ -144,4 +144,10 @@ public class PointerTriangulation extends Window {
             "OBVIOUSLY, you need to be in the same map segment when you do this. If you travel to some road and you don't have your map connected, it won't work.\n" +
             "\n" +
             "Note: You can do multiple lines, not just two.\n", 300);
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-pointerTriangulationWindow", this.c);
+        super.reqdestroy();
+    }
 }

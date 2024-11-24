@@ -670,4 +670,10 @@ public class TurnipBot extends Window implements Runnable, AreaSelectCallback {
             }
         }
     }
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-turnipBotWindow", this.c);
+        super.reqdestroy();
+    }
 }

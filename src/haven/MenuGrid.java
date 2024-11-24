@@ -759,6 +759,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Toggles/AutoDrinking");
 		makeLocal("customclient/menugrid/Toggles/TileCentering");
 		makeLocal("customclient/menugrid/Toggles/QueuedMovementWindow");
+		makeLocal("customclient/menugrid/Toggles/AutoDrop");
 
 		// Category: Bots
 		makeLocal("customclient/menugrid/Bots/OceanScoutBot");
@@ -852,12 +853,14 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				OptWnd.tileCenteringCheckBox.set(!OptWnd.tileCenteringCheckBox.a);
 			} else if (ad[2].equals("QueuedMovementWindow")) {
 				OptWnd.enableQueuedMovementCheckBox.set(!OptWnd.enableQueuedMovementCheckBox.a);
+			} else if (ad[2].equals("AutoDrop")) {
+				AutoDropManagerWindow.autoDropItemsCheckBox.set(!AutoDropManagerWindow.autoDropItemsCheckBox.a);
 			}
 		} else if (ad[1].equals("Bots")) { // Category: Toggles
 			if (ad[2].equals("OceanScoutBot")) {
 				if (gui.OceanScoutBot == null && gui.oceanScoutBotThread == null) {
 					gui.OceanScoutBot = new OceanScoutBot(gui);
-					gui.add(gui.OceanScoutBot, new Coord(gui.sz.x / 2 - gui.OceanScoutBot.sz.x / 2, gui.sz.y / 2 - gui.OceanScoutBot.sz.y / 2 - 200));
+					gui.add(gui.OceanScoutBot, Utils.getprefc("wndc-oceanScoutBotWindow", new Coord(gui.sz.x / 2 - gui.OceanScoutBot.sz.x / 2, gui.sz.y / 2 - gui.OceanScoutBot.sz.y / 2 - 200)));
 					gui.oceanScoutBotThread = new Thread(gui.OceanScoutBot, "OceanScoutBot");
 					gui.oceanScoutBotThread.start();
 				} else {
@@ -872,7 +875,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("TarKilnEmptierBot")) {
 				if (gui.tarKilnCleanerBot == null && gui.tarKilnCleanerThread == null) {
 					gui.tarKilnCleanerBot = new TarKilnCleanerBot(gui);
-					gui.add(gui.tarKilnCleanerBot, new Coord(gui.sz.x/2 - gui.tarKilnCleanerBot.sz.x/2, gui.sz.y/2 - gui.tarKilnCleanerBot.sz.y/2 - 200));
+					gui.add(gui.tarKilnCleanerBot, Utils.getprefc("wndc-tarKilnCleanerBotWindow", new Coord(gui.sz.x/2 - gui.tarKilnCleanerBot.sz.x/2, gui.sz.y/2 - gui.tarKilnCleanerBot.sz.y/2 - 200)));
 					gui.tarKilnCleanerThread = new Thread(gui.tarKilnCleanerBot, "TarKilnEmptierBot");
 					gui.tarKilnCleanerThread.start();
 				} else {
@@ -886,7 +889,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("TurnipBot")) {
 				if (gui.turnipBot == null && gui.turnipThread == null) {
 					gui.turnipBot = new TurnipBot(gui);
-					gui.add(gui.turnipBot, new Coord(gui.sz.x/2 - gui.turnipBot.sz.x/2, gui.sz.y/2 - gui.turnipBot.sz.y/2 - 200));
+					gui.add(gui.turnipBot, Utils.getprefc("wndc-turnipBotWindow", new Coord(gui.sz.x/2 - gui.turnipBot.sz.x/2, gui.sz.y/2 - gui.turnipBot.sz.y/2 - 200)));
 					gui.turnipThread = new Thread(gui.turnipBot, "TurnipBot");
 					gui.turnipThread.start();
 				} else {
@@ -900,7 +903,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("CleanupBot")) {
 				if (gui.cleanupBot == null && gui.cleanupThread == null) {
 					gui.cleanupBot = new CleanupBot(gui);
-					gui.add(gui.cleanupBot, new Coord(gui.sz.x/2 - gui.cleanupBot.sz.x/2, gui.sz.y/2 - gui.cleanupBot.sz.y/2 - 200));
+					gui.add(gui.cleanupBot, Utils.getprefc("wndc-cleanupBotWindow", new Coord(gui.sz.x/2 - gui.cleanupBot.sz.x/2, gui.sz.y/2 - gui.cleanupBot.sz.y/2 - 200)));
 					gui.cleanupThread = new Thread(gui.cleanupBot, "CleanupBot");
 					gui.cleanupThread.start();
 				} else {
@@ -960,7 +963,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("CombatDistanceTool")) {
 				if (gui.combatDistanceTool == null && gui.combatDistanceToolThread == null) {
 					gui.combatDistanceTool = new CombatDistanceTool(gui);
-					gui.add(gui.combatDistanceTool, new Coord(gui.sz.x/2 - gui.combatDistanceTool.sz.x/2, gui.sz.y/2 - gui.combatDistanceTool.sz.y/2 - 200));
+					gui.add(gui.combatDistanceTool, Utils.getprefc("wndc-combatDistanceToolWindow", new Coord(gui.sz.x/2 - gui.combatDistanceTool.sz.x/2, gui.sz.y/2 - gui.combatDistanceTool.sz.y/2 - 200)));
 					gui.combatDistanceToolThread = new Thread(gui.combatDistanceTool, "CombatDistanceTool");
 					gui.combatDistanceToolThread.start();
 				} else {
@@ -996,7 +999,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("MiningSafetyAssistant")) {
 				if (gui.miningSafetyAssistantWindow == null && gui.miningSafetyAssistantThread == null) {
 					gui.miningSafetyAssistantWindow = new MiningSafetyAssistant(gui);
-					gui.miningSafetyAssistantWindow = gui.add(gui.miningSafetyAssistantWindow, new Coord(gui.sz.x/2 - ui.gui.miningSafetyAssistantWindow.sz.x/2, gui.sz.y/2 - gui.miningSafetyAssistantWindow.sz.y/2 - 200));
+					gui.miningSafetyAssistantWindow = gui.add(gui.miningSafetyAssistantWindow, Utils.getprefc("wndc-miningSafetyAssistantWindow", new Coord(gui.sz.x/2 - ui.gui.miningSafetyAssistantWindow.sz.x/2, gui.sz.y/2 - gui.miningSafetyAssistantWindow.sz.y/2 - 200)));
 					gui.miningSafetyAssistantThread = new Thread(gui.miningSafetyAssistantWindow, "miningSafetyAssistantThread");
 					gui.miningSafetyAssistantThread.start();
 				} else if (gui.miningSafetyAssistantWindow != null) {
@@ -1011,12 +1014,12 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 					gui.pointerTriangulation = null;
 				} else {
 					gui.pointerTriangulation = new PointerTriangulation(gui);
-					gui.add(gui.pointerTriangulation, new Coord(gui.sz.x/2 - gui.pointerTriangulation.sz.x/2, gui.sz.y/2 - gui.pointerTriangulation.sz.y/2 - 300));
+					gui.add(gui.pointerTriangulation, Utils.getprefc("wndc-pointerTriangulationWindow", new Coord(gui.sz.x/2 - gui.pointerTriangulation.sz.x/2, gui.sz.y/2 - gui.pointerTriangulation.sz.y/2 - 300)));
 				}
 			} else if (ad[2].equals("OreAndStoneCounter")) {
 				if (gui.oreAndStoneCounter == null && gui.oreAndStoneCounterThread == null) {
 					gui.oreAndStoneCounter = new OreAndStoneCounter(gui);
-					gui.add(gui.oreAndStoneCounter, new Coord(gui.sz.x/2 - gui.oreAndStoneCounter.sz.x/2, gui.sz.y/2 - gui.oreAndStoneCounter.sz.y/2 - 200));
+					gui.add(gui.oreAndStoneCounter, Utils.getprefc("wndc-oreAndStoneCounterWindow", new Coord(gui.sz.x/2 - gui.oreAndStoneCounter.sz.x/2, gui.sz.y/2 - gui.oreAndStoneCounter.sz.y/2 - 200)));
 					gui.oreAndStoneCounterThread = new Thread(gui.oreAndStoneCounter, "OreAndStoneCounter");
 					gui.oreAndStoneCounterThread.start();
 				} else {

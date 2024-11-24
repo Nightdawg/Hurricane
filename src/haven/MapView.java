@@ -280,7 +280,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
     public class FreeCam extends Camera {
 	private float dist = 400.0f, tdist = dist; // ND: This is the camera distance.
-	private float elev = (float)Math.PI / 4.0f, telev = elev;
+	public float elev = (float)Math.PI / 4.0f, telev = elev;
 	private float angl = (float) (3 * Math.PI / 2), tangl = angl; // ND: This is the angle. Changed it to look north by default.
 	private Coord dragorig = null;
 	private float elevorig, anglorig;
@@ -322,6 +322,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
 	public void drag(Coord c) {
 	    telev = elevorig - (OptWnd.reverseFreeCamYAxisCheckBox.a ? -1 : 1) * ((float)(c.y - dragorig.y) * 0.00001f * OptWnd.freeCamRotationSensitivitySlider.val);
+		if (OptWnd.lockVerticalAngleAt45DegreesCheckBox.a)
+			telev = (float)Math.PI / 4.0f;
 		if (OptWnd.allowLowerFreeCamTiltCheckBox.a){
 			if(telev < -0.5f) telev = -0.5f;
 		}

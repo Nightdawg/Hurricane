@@ -2512,6 +2512,7 @@ public class OptWnd extends Window {
 	public static CheckBox reverseOrthoCameraAxesCheckBox;
 	public static CheckBox reverseFreeCamXAxisCheckBox;
 	public static CheckBox reverseFreeCamYAxisCheckBox;
+	public static CheckBox lockVerticalAngleAt45DegreesCheckBox;
 	public static CheckBox allowLowerFreeCamTiltCheckBox;
 
 	public class CameraSettingsPanel extends Panel {
@@ -2603,6 +2604,15 @@ public class OptWnd extends Window {
 					Utils.setprefb("reverseFreeCamYAxis", val);
 				}
 			}, FreePrev.pos("ul").adds(110, 0));
+			FreePrev = add(lockVerticalAngleAt45DegreesCheckBox = new CheckBox("Lock Vertical Angle at 45°"){
+				{a = (Utils.getprefb("lockVerticalAngleAt45Degrees", false));}
+				public void changed(boolean val) {
+					Utils.setprefb("lockVerticalAngleAt45Degrees", val);
+					if (ui.gui.map != null)
+						if (ui.gui.map.camera instanceof MapView.FreeCam)
+							((MapView.FreeCam)ui.gui.map.camera).telev = (float)Math.PI / 4.0f;
+				}
+			}, FreePrev.pos("bl").adds(0, 2));
 			FreePrev = add(allowLowerFreeCamTiltCheckBox = new CheckBox("Enable Lower Tilting Angle", Color.RED){
 				{a = (Utils.getprefb("allowLowerTiltBool", false));}
 				public void changed(boolean val) {
@@ -2680,6 +2690,7 @@ public class OptWnd extends Window {
 			freeCamHeightLabel.visible = bool;
 			freeCamHeightSlider.visible = bool;
 			freeCamHeightResetButton.visible = bool;
+			lockVerticalAngleAt45DegreesCheckBox.visible = bool;
 			allowLowerFreeCamTiltCheckBox.visible = bool;
 			reverseFreeCamXAxisCheckBox.visible = bool;
 			reverseFreeCamYAxisCheckBox.visible = bool;
@@ -2776,7 +2787,7 @@ public class OptWnd extends Window {
 					if (ui.sess != null)
 						ui.sess.glob.map.invalidateAll();
 					if (ui != null && ui.gui != null) {
-						ui.gui.optionInfoMsg("Flavor Objects are now now " + (val ? "HIDDEN" : "SHOWN") + "!", (val ? msgGray : msgGreen), Audio.resclip(val ? Toggle.sfxoff : Toggle.sfxon));
+						ui.gui.optionInfoMsg("Flavor Objects are now " + (val ? "HIDDEN" : "SHOWN") + "!", (val ? msgGray : msgGreen), Audio.resclip(val ? Toggle.sfxoff : Toggle.sfxon));
 					}
 				}
 			}, prev.pos("bl").adds(0, 2));
@@ -4387,6 +4398,12 @@ public class OptWnd extends Window {
 	private final Object resetButtonTooltip = RichText.render("Reset to default", UI.scale(300));
 	private final Object genericHasKeybindTooltip = RichText.render("$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
 
-
-
+	@Override
+	protected void attached() {
+		super.attached();
+		if (ui.gui != null) {
+			ui.gui.add(autoDropManagerWindow); // ND: this.parent.parent is root widget in login screen or gui in game.
+			autoDropManagerWindow.hide();
+		}
+	}
 }

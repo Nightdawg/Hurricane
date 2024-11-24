@@ -658,6 +658,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 	} catch (Loading ignored) {}
+	// ND: Update these here as well, just to make sure they don't bug out with the collision box overlay when initialised (idfk why it breaks)
+	updateContainerFullnessHighlight();
+	updateWorkstationProgressHighlight();
     }
     public void addol(Overlay ol) {
 	addol(ol, true);

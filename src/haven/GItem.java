@@ -598,6 +598,10 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 
 	private void checkAutoDropItem() {
 		if (!checkedAutodrop) {
+			if (AutoDropManagerWindow.onlyDropWhenPickaxeCursorIsActiveCheckBox.a && !ui.checkCursorImage("gfx/hud/curs/mine")){
+				checkedAutodrop = true;
+				return;
+			}
 			if (this.parent instanceof Equipory || // ND: Don't drop from the equipment window
 					this.parent instanceof StudyInventory || // ND: Don't drop from the study report window
 					this.parent instanceof GameUI) { // ND: Don't drop from the cursor
@@ -627,6 +631,8 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 				}
 				if (quality > 0.1 && contentswnd == null) {
 					if (AutoDropManagerWindow.autoDropStonesCheckbox.a && Config.stoneItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropCoalsCheckbox.a && Config.coalItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropCoalsQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);
 					} else if (AutoDropManagerWindow.autoDropOresCheckbox.a && Config.oreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropOresQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);

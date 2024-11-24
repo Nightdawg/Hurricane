@@ -36,6 +36,7 @@ public class QuestHelper extends Window {
             questList.resetLocation();
             hide();
             disable();
+            Utils.setprefc("wndc-questHelperWindow", this.c);
         } else
             super.wdgmsg(sender, msg, args);
     }

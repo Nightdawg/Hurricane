@@ -433,7 +433,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	zerg.hide();
 	questhelper = new QuestHelper();
 	questhelper.hide();
-	add(questhelper, UI.scale(new Coord(187, 50)));
+	add(questhelper, Utils.getprefc("wndc-autoDropManagerWindow", UI.unscale(new Coord(187, 50))));
 	quickslots = add(new QuickSlotsWdg(), Utils.getprefc("wndc-quickslots", UI.scale(new Coord(426, 10))));
 	if (!Utils.getprefb("showQuickSlotsBar", true)) {
 		quickslots.hide();

@@ -175,4 +175,11 @@ public class OreAndStoneCounter extends Window implements Runnable {
             add(countLbl, UI.scale(120, 4));
         }
     }
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-oreAndStoneCounterWindow", this.c);
+        super.reqdestroy();
+    }
+
 }

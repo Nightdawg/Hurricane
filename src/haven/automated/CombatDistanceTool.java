@@ -226,4 +226,10 @@ public class CombatDistanceTool extends Window implements Runnable {
         }
         this.destroy();
     }
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-combatDistanceToolWindow", this.c);
+        super.reqdestroy();
+    }
 }

@@ -45,7 +45,7 @@ public class GobHealth extends GAttrib implements Gob.SetupMod {
 						   new Color(0, 0, 0, 255),
 						   Coord3f.of((rnd.nextFloat() * 2) - 1, (rnd.nextFloat() * 2) - 1, (rnd.nextFloat() * 2) - 1).norm(),
 						   rnd.nextFloat() * (float)Math.PI * 2),
-				      new MixColor(255, 0, 0, 64 - (Math.round(hp * 64))));
+				      new ColorMask(new Color(255, 0, 0, 64 - (Math.round(hp * 64)))));
 	} else {
 	    this.fx = null;
 	}
