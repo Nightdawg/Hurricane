@@ -12,11 +12,12 @@ import java.lang.Math;
 public class WagonNearestLiftable implements Runnable {
     private GameUI gui;
 
-    private final double max_distance = 12 * 5;
+    // Maximum distance to search for a gob
+    private final double MAX_DISTANCE = 12 * 5;
 
     // Liftables that need to be checked if they are knocked (dead)
     // You don't want try to lift an alive bear..
-    private final HashSet<String> liftables_knocked = new HashSet<String>(Arrays.asList(
+    private final HashSet<String> LIFTABLES_KNOCKED = new HashSet<String>(Arrays.asList(
         "gfx/kritter/badger/badger",
         "gfx/kritter/cattle/cattle",
         "gfx/kritter/badger/badger",
@@ -50,8 +51,9 @@ public class WagonNearestLiftable implements Runnable {
         "gfx/kritter/woodgrouse/woodgrouse-m"
     ));
 
-    //Logs are handled differently and are already included
-    private final HashSet<String> liftables_generic = new HashSet<String>(Arrays.asList(
+    // Liftables that dont need any additional checks
+    // Logs are handled differently and are already included
+    private final HashSet<String> LIFTABLES_GENERIC = new HashSet<String>(Arrays.asList(
         "gfx/terobjs/crate",
         "gfx/terobjs/chest",
         "gfx/terobjs/largechest",
@@ -59,10 +61,20 @@ public class WagonNearestLiftable implements Runnable {
         "gfx/terobjs/map/jotunclam",
         "gfx/terobjs/barrel"  
     ));
-    
-    private boolean waitPose(Gob gob, String pose, boolean invert, int delay, int timeout) throws InterruptedException{
+
+    /**
+    * Wait for a pose change on the gob.
+    *
+    * @param  gob         gob to inspect
+    * @param  pose        pose string to compare
+    * @param  changedTo   false = pose changed from, true = pose changed to
+    * @param  delay       the amount the value should be incremented by
+    * @param  timeout     timeout when no change was detected
+    * @return             true when the pose hasn't changed
+    */
+    private boolean waitPose(Gob gob, String pose, boolean changedTo, int delay, int timeout) throws InterruptedException{
         int counter = 0;
-        while(gob.getPoses().contains(pose) ^ invert){
+        while(gob.getPoses().contains(pose) ^ changedTo){
             if(counter >= timeout){
                 return true;
             }
@@ -72,11 +84,22 @@ public class WagonNearestLiftable implements Runnable {
         return false;
     }
 
+    /**
+    * Tries to exit a wagon at an angle to get around a blocked exit point
+    * Should be followed up by an other move command
+    *
+    * @param  target      target location to exit to
+    * @param  degree      new exit angle in degree
+    * @return             true when exit failed
+    */
     private boolean TryExitWagonAtAngle(Coord2d target, double degree) throws InterruptedException{
         Gob player = gui.map.player();
 
         Set<String> poses = player.getPoses();
         String startPose = null;
+
+        // Determine which passenger slot is occuppied by the player
+        // To wait for the specifc pose later
         if(poses.contains("wagondrivan")){
             startPose = "wagondrivan";
         }else if(poses.contains("wagonsittan")){
@@ -100,6 +123,12 @@ public class WagonNearestLiftable implements Runnable {
         UNKNOWN
     }
 
+    /**
+    * Converts a res into a VehicleType
+    *
+    * @param  res      Resource trying to convert
+    * @return          The vehicleType of the res, every unsupported vehicle is unknown.
+    */
     private VehicleType ResToVehicleType(Resource res){
         switch (res.name) {
             case "gfx/terobjs/vehicle/wagon":
@@ -146,7 +175,7 @@ public class WagonNearestLiftable implements Runnable {
                     if (vehicleType == VehicleType.WAGON ||
                         vehicleType == VehicleType.CART)
                     {
-                        if (distFromPlayer <= max_distance && 
+                        if (distFromPlayer <= MAX_DISTANCE && 
                             (vehicle == null || distFromPlayer < vehicle.rc.dist(player.rc))) 
                         {
                             if(vehicleType == VehicleType.WAGON && isOnVehicle && distFromPlayer <= 3){
@@ -157,12 +186,12 @@ public class WagonNearestLiftable implements Runnable {
                         continue;
                     }
 
-                    if(distFromPlayer > max_distance){
+                    if(distFromPlayer > MAX_DISTANCE){
                         continue;
                     }
 
-                    if((doLiftAnimal && liftables_knocked.contains(res.name) && gob.getPoses().contains("knock")) ||
-                        (doLiftContainer && liftables_generic.contains(res.name)) ||
+                    if((doLiftAnimal && LIFTABLES_KNOCKED.contains(res.name) && gob.getPoses().contains("knock")) ||
+                        (doLiftContainer && LIFTABLES_GENERIC.contains(res.name)) ||
                         (doLiftLog && res.name.startsWith("gfx/terobjs/trees/") && res.name.endsWith("log")))
                     {
                         if((target == null || distFromPlayer < target.rc.dist(player.rc))){
