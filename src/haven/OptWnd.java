@@ -2081,10 +2081,18 @@ public class OptWnd extends Window {
 				"\n\n$col[185,185,185]{If the closest vehicle to you is full, or unmountable (like a rowboat on land), it will keep looking for the next closest mountable vehicle.}" +
 				"\n\n$col[218,163,0]{Works with:} Knarr, Snekkja, Rowboat, Dugout, Kicksled, Coracle, Wagon, Wilderness Skis, Tamed Horse" +
 				"\n\n$col[218,163,0]{Range:} $col[185,185,185]{36 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_enterNearestVehicle, y);
-		y = addbtnImproved(cont, "Get nearest liftable from Wagon", "When this button is pressed, your character will exit a wagon if on one and run towards the nearest liftable, pick it up and place it in the wagon, and enters the wagon again." +
-				//"\n\n$col[185,185,185]{If the closest vehicle to you is full, or unmountable (like a rowboat on land), it will keep looking for the next closest mountable vehicle.}" +
-				//"\n\n$col[218,163,0]{Works with:} Knarr, Snekkja, Rowboat, Dugout, Kicksled, Coracle, Wagon, Wilderness Skis, Tamed Horse" +
-				"\n\n$col[218,163,0]{Range:} $col[185,185,185]{36 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_wagonNearestPickup, y);
+		y+=UI.scale(20);
+		y = addbtnImproved(cont, "Lift nearest Object into Wagon/Cart", "When pressed the nearest supported liftable object will be stored in the nearest Wagon/Cart" +
+				"\n\n$col[185,185,185]{If you are riding a Wagon it will try to exit the wagon, store the object and enter the wagon again.}", new Color(255, 191, 0,255), GameUI.kb_wagonNearestLiftable, y);
+		Widget objectsLiftActionLeft, objectsLiftActionRight;
+		y = cont.adda(objectsLiftActionLeft = new Label("Objects to lift:"), UI.scale(20), y + UI.scale(2), 0, 0.0).pos("bl").adds(0, 5).y;
+		objectsLiftActionLeft = cont.add(new CheckBox("Animal carcass"){{a = Utils.getprefb("wagonNearestLiftable_animalcarcass", true);}
+			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_animalcarcass", val);}}, objectsLiftActionLeft.pos("ur").adds(30, 0)).settip("Lift the nearest animal carcass into Wagon/Cart.");
+		objectsLiftActionRight = cont.add(new CheckBox("Storage Container / Generic"){{a = Utils.getprefb("wagonNearestLiftable_container", true);}
+			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_container", val);}}, objectsLiftActionLeft.pos("ur").adds(26, 0)).settip("Lift the nearest storage container into Wagon/Cart.");
+		objectsLiftActionLeft = cont.add(new CheckBox("Tree log"){{a = Utils.getprefb("wagonNearestLiftable_log", true);}
+			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_log", val);}}, objectsLiftActionLeft.pos("bl").adds(0, 4)).settip("Lift nearest log into Wagon/Cart.");
+				
 		y+=UI.scale(20);
 		y = addbtn(cont, "Toggle Collision Boxes", GameUI.kb_toggleCollisionBoxes, y);
 		y = addbtn(cont, "Toggle Object Hiding", GameUI.kb_toggleHidingBoxes, y);

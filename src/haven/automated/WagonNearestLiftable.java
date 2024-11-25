@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.Arrays;
 import java.lang.Math;
 
-public class WagonNearestPickup implements Runnable {
+public class WagonNearestLiftable implements Runnable {
     private GameUI gui;
 
     private final double max_distance = 12 * 5;
@@ -50,7 +50,7 @@ public class WagonNearestPickup implements Runnable {
         "gfx/kritter/woodgrouse/woodgrouse-m"
     ));
 
-    //All logs are handled differently and are already included
+    //Logs are handled differently and are already included
     private final HashSet<String> liftables_generic = new HashSet<String>(Arrays.asList(
         "gfx/terobjs/crate",
         "gfx/terobjs/chest",
@@ -91,17 +91,32 @@ public class WagonNearestPickup implements Runnable {
         Coord2d exitCoords = player.rc.add(Math.cos(angle) * distFromPlayer, Math.sin(angle) * distFromPlayer);
         gui.map.wdgmsg ( "click", Coord.z, exitCoords.floor ( posres ), 1, UI.MOD_CTRL, 0);
 
-        return waitPose(player, startPose, false, 25, 150);
+        return waitPose(player, startPose, false, 25, Math.max(150, GameUI.getPingValue()+10));
     }
 
-    public WagonNearestPickup(GameUI gui) {
+    private enum VehicleType {
+        WAGON,
+        CART,
+        UNKNOWN
+    }
+
+    private VehicleType ResToVehicleType(Resource res){
+        switch (res.name) {
+            case "gfx/terobjs/vehicle/wagon":
+                return VehicleType.WAGON;
+            case "gfx/terobjs/vehicle/cart":
+                return VehicleType.CART;
+            default:
+                return VehicleType.UNKNOWN;
+        }
+    }
+
+    public WagonNearestLiftable(GameUI gui) {
         this.gui = gui;
-        Integer ping = GameUI.getPingValue();
     }
 
     @Override
     public void run() {
-        
         try {
             Gob vehicle = null;
             Gob target = null;
@@ -114,6 +129,10 @@ public class WagonNearestPickup implements Runnable {
             Coord3f raw = player.placed.getc();
             boolean isOnVehicle = (raw == null);
             
+            boolean doLiftAnimal = Utils.getprefb("wagonNearestLiftable_animalcarcass", true);
+            boolean doLiftContainer = Utils.getprefb("wagonNearestLiftable_container", true);
+            boolean doLiftLog = Utils.getprefb("wagonNearestLiftable_log", true);
+
             for (Gob gob : Utils.getAllGobs(gui)) {
                 Resource res = null;
                 try {
@@ -122,10 +141,15 @@ public class WagonNearestPickup implements Runnable {
                 }
                 if (res != null) {
                     double distFromPlayer = gob.rc.dist(player.rc);
-
-                    if (res.name.equals("gfx/terobjs/vehicle/wagon")){
-                        if (distFromPlayer <= max_distance && (vehicle == null || distFromPlayer < vehicle.rc.dist(player.rc))) {
-                            if(isOnVehicle && distFromPlayer <= 3){
+                    VehicleType vehicleType = ResToVehicleType(res);
+                    
+                    if (vehicleType == VehicleType.WAGON ||
+                        vehicleType == VehicleType.CART)
+                    {
+                        if (distFromPlayer <= max_distance && 
+                            (vehicle == null || distFromPlayer < vehicle.rc.dist(player.rc))) 
+                        {
+                            if(vehicleType == VehicleType.WAGON && isOnVehicle && distFromPlayer <= 3){
                                 isOnWagon = true;
                             }
                             vehicle = gob;
@@ -137,9 +161,9 @@ public class WagonNearestPickup implements Runnable {
                         continue;
                     }
 
-                    if((liftables_knocked.contains(res.name) && gob.getPoses().contains("knock")) ||
-                        (liftables_generic.contains(res.name)) ||
-                        (res.name.startsWith("gfx/terobjs/trees/") && res.name.endsWith("log")))
+                    if((doLiftAnimal && liftables_knocked.contains(res.name) && gob.getPoses().contains("knock")) ||
+                        (doLiftContainer && liftables_generic.contains(res.name)) ||
+                        (doLiftLog && res.name.startsWith("gfx/terobjs/trees/") && res.name.endsWith("log")))
                     {
                         if((target == null || distFromPlayer < target.rc.dist(player.rc))){
                             target = gob;
@@ -167,7 +191,7 @@ public class WagonNearestPickup implements Runnable {
                 TryExitWagonAtAngle(target.rc, 45) && 
                 TryExitWagonAtAngle(target.rc, -45))
             {
-                throw new InterruptedException("Exiting Wagon failed, path is blocked");
+                throw new InterruptedException("Exiting Wagon failed, path is blocked or movement cursor is active.");
             }
             
             //Lift the object
@@ -180,7 +204,7 @@ public class WagonNearestPickup implements Runnable {
             //Store in vehicle
             gui.map.wdgmsg("click", Coord.z, vehicle.rc.floor(posres), 3, 0, 0, (int) vehicle.id, vehicle.rc.floor(posres), 0, -1);
             if(waitPose(player, "banzai", false, 30, 6000)){
-                throw new InterruptedException("Storing in wagon took to long");
+                throw new InterruptedException("Storing in vehicle took to long");
             }
 
             //Enter Wagon if you started on the wagon
@@ -195,9 +219,9 @@ public class WagonNearestPickup implements Runnable {
             gui.error(e.getMessage());
         }
 
-        if (gui.wagonNearestPickupThread != null) {
-            gui.wagonNearestPickupThread.interrupt();
-            gui.wagonNearestPickupThread = null;
+        if (gui.wagonNearestLiftableThread != null) {
+            gui.wagonNearestLiftableThread.interrupt();
+            gui.wagonNearestLiftableThread = null;
         }
     }
 }

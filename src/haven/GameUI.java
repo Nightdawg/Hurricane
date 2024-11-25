@@ -117,7 +117,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread autoRepeatFlowerMenuScriptThread;
 	public Thread interactWithNearestObjectThread;
 	public Thread enterNearestVehicleThread;
-	public Thread wagonNearestPickupThread;
+	public Thread wagonNearestLiftableThread;
 	public Thread cloverScriptThread;
 	public Thread coracleScriptThread;
 	public Thread skisScriptThread;
@@ -1741,7 +1741,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_clickNearestObject  = KeyBinding.get("clickNearestObjectKB",  KeyMatch.forchar('Q', 0));
 	public static KeyBinding kb_clickNearestCursorObject  = KeyBinding.get("clickNearestCursorObjectKB",  KeyMatch.nil);
 	public static KeyBinding kb_enterNearestVehicle  = KeyBinding.get("enderNearestVehicle",  KeyMatch.forchar('Q', KeyMatch.C));
-	public static KeyBinding kb_wagonNearestPickup  = KeyBinding.get("wagonNearestPickup",  KeyMatch.nil);
+	public static KeyBinding kb_wagonNearestLiftable  = KeyBinding.get("wagonNearestLiftable",  KeyMatch.nil);
 	public static KeyBinding kb_toggleHidingBoxes  = KeyBinding.get("toggleHidingBoxesKB",  KeyMatch.forchar('H', KeyMatch.C));
 	public static KeyBinding kb_toggleCollisionBoxes  = KeyBinding.get("toggleCollisionBoxesKB",  KeyMatch.forchar('B', KeyMatch.S));
 	public static KeyBinding kb_toggleGrowthInfo  = KeyBinding.get("toggleGrowthInfoKB",  KeyMatch.forchar('I',  KeyMatch.C | KeyMatch.S));
@@ -1859,15 +1859,15 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			enterNearestVehicleThread.start();
 		}
 		return (true);
-	} else if (kb_wagonNearestPickup.key().match(ev)) {
-		if (wagonNearestPickupThread == null) {
-			wagonNearestPickupThread = new Thread(new WagonNearestPickup(this), "WagonNearestPickup");
-			wagonNearestPickupThread.start();
+	} else if (kb_wagonNearestLiftable.key().match(ev)) {
+		if (wagonNearestLiftableThread == null) {
+			wagonNearestLiftableThread = new Thread(new WagonNearestLiftable(this), "WagonNearestLiftable");
+			wagonNearestLiftableThread.start();
 		} else {
-			wagonNearestPickupThread.interrupt();
-			wagonNearestPickupThread = null;
-			wagonNearestPickupThread = new Thread(new WagonNearestPickup(this), "WagonNearestPickup");
-			wagonNearestPickupThread.start();
+			wagonNearestLiftableThread.interrupt();
+			wagonNearestLiftableThread = null;
+			wagonNearestLiftableThread = new Thread(new WagonNearestLiftable(this), "WagonNearestLiftable");
+			wagonNearestLiftableThread.start();
 		}
 		return (true);
 	} else if(kb_toggleHidingBoxes.key().match(ev)) {
