@@ -103,10 +103,23 @@ public class WoundWnd extends Widget {
 		List<ItemInfo> info = ItemInfo.buildinfo(this, rawinfo);
 		Resource.Pagina pag = res.get().layer(Resource.pagina);
 		if(pag != null)
-		    info.add(new WoundPagina(this, pag.text));
+		    info.add(new WoundPagina(this, pag.text + curesString()));
 		this.info = info;
 	    }
 	    return(info);
+	}
+
+	public String curesString() {
+		StringBuilder buf = new StringBuilder();
+		Resource res = this.res.get();
+		if (Config.cures.containsKey(res.name)) {
+			buf.append("\n\nTreated with:\n\n");
+			for (String c : Config.cures.get(res.name)) {
+				buf.append("$img[" + c + "]");
+				buf.append(Resource.remote().load(c).get().layer(Resource.tooltip).t + "\n");
+			}
+		}
+		return(buf.toString());
 	}
 
 	public BufferedImage icon() {
