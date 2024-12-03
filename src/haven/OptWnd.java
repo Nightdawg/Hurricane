@@ -557,6 +557,7 @@ public class OptWnd extends Window {
 	public static CheckBox alwaysShowCombatUIStaminaBarCheckBox;
 	public static CheckBox alwaysShowCombatUIHealthBarCheckBox;
 	public static HSlider mapZoomSpeedSlider;
+	public static HSlider msgDisplayAmountSlider;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 
     public class InterfaceSettingsPanel extends Panel {
@@ -767,6 +768,24 @@ public class OptWnd extends Window {
 			mapZoomSpeedSlider.val = 15;
 			Utils.setprefi("mapZoomSpeed", 15);
 		}), rightColumn.pos("ur").adds(6, -4));
+
+		rightColumn = add(new Label("Message Display Amount:"), rightColumn.pos("bl").adds(0, 10).x(UI.scale(230)));
+		Label msgAmount = new Label("");
+		addhlp(rightColumn.pos("bl").adds(0, 4), UI.scale(5),
+				rightColumn = msgDisplayAmountSlider = new HSlider(UI.scale(110), 1, 30, Utils.getprefi("msgDisplayAmount", 5)) {
+			       protected void added() {
+					msgAmount();
+			       }
+			       void msgAmount() {
+					msgAmount.settext(String.format("%s", this.val));
+			       }
+			       public void changed() {
+				   Utils.setprefd("msgDisplayAmount", this.val);
+				   msgAmount();
+			       }
+			   },
+		       msgAmount);
+
 
 		Widget backButton;
 		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));

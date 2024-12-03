@@ -59,8 +59,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 //    public MiniMap mmap;
     public Fightview fv;
     private List<Widget> meters = new LinkedList<Widget>();
-    private Text lastmsg;
-    private double msgtime;
     private Window invwnd, equwnd, /*makewnd,*/ srchwnd, iconwnd;
 	public CraftWindow makewnd;
     public Inventory maininv;
@@ -1309,6 +1307,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	}
     }
 
+	private class MessageFrameDeque{
+		public Text text;
+		public double time;
+		public MessageFrameDeque(Text text, double time){
+			this.text = text;
+			this.time = time;
+		}
+	}
+	Deque<MessageFrameDeque> msgDeque = new ArrayDeque<>();
+
     public void draw(GOut g) {
 //	beltwdg.c = new Coord(chat.c.x, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
 	super.draw(g);
@@ -1319,15 +1327,21 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 //	    by = Math.min(by, beltwdg.c.y);
 	if(cmdline != null) {
 	    drawcmd(g, new Coord(UI.scale(200), by -= UI.scale(40)));
-	} else if(lastmsg != null) {
-	    if((Utils.rtime() - msgtime) > 3.0) {
-		lastmsg = null;
-	    } else {
-		g.chcolor(0, 0, 0, 192);
-		g.frect(new Coord(UI.scale(18), by - UI.scale(22)), lastmsg.sz().add(UI.scale(4), UI.scale(4)));
-		g.chcolor();
-		g.image(lastmsg.tex(), new Coord(UI.scale(20), by -= UI.scale(20)));
-	    }
+	} else if(msgDeque.size() > 0) {
+		Iterator<MessageFrameDeque> iter = msgDeque.descendingIterator();
+		int cur_limit = 0;
+		while(iter.hasNext()) {
+			MessageFrameDeque msg = iter.next();
+			if((Utils.rtime() - msg.time) > 3.0 || ++cur_limit > OptWnd.msgDisplayAmountSlider.val){
+				iter.remove();
+			}else{
+				g.chcolor(0, 0, 0, 192);
+				g.frect(new Coord(UI.scale(18), by - UI.scale(22)), msg.text.sz().add(UI.scale(4), UI.scale(4)));
+				g.chcolor();
+				g.image(msg.text.tex(), new Coord(UI.scale(20), by -= UI.scale(20)));
+				by -= UI.scale(4);
+			}
+		}
 	}
 	if(!chat.visible()) {
 	    chat.drawsmall(g, new Coord(UI.scale(10), by), UI.scale(100));
@@ -2034,8 +2048,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	else
 	    logged = new ChatUI.Channel.SimpleMessage(msg.message(), color);
 	if ((!noMsgTho && partyPermsOnLoginToggleSet && itemStackingOnLoginToggleSet) || msg.message().contains("siege")){
-		msgtime = Utils.rtime();
-		lastmsg = RootWidget.msgfoundry.render(msg.message(), color);
+		msgDeque.offerLast( new MessageFrameDeque(RootWidget.msgfoundry.render(msg.message(), color), Utils.rtime()) );
 		syslog.append(logged);
 		if (!msg.message().contains("There are no claims under siege"))
 			ui.sfxrl(msg.sfx());
@@ -2063,8 +2076,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	}
 
 	public void optionInfoMsg(String msg, Color color, Audio.Clip sfx) {
-		msgtime = Utils.rtime();
-		lastmsg = RootWidget.msgfoundry.render(msg, color);
+		msgDeque.offerLast( new MessageFrameDeque(RootWidget.msgfoundry.render(msg, color), Utils.rtime()) );
 		syslog.append(msg, color);
 		double now = Utils.rtime();
 		if(now - lastmsgsfx > 0.1) {
