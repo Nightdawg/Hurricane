@@ -780,7 +780,7 @@ public class OptWnd extends Window {
 					msgAmount.settext(String.format("%s", this.val));
 			       }
 			       public void changed() {
-				   Utils.setprefd("msgDisplayAmount", this.val);
+				   Utils.setprefi("msgDisplayAmount", this.val);
 				   msgAmount();
 			       }
 			   },
