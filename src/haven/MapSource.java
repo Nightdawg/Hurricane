@@ -56,6 +56,7 @@ public interface MapSource {
 	BufferedImage[] texes = new BufferedImage[256];
 	BufferedImage buf = TexI.mkbuf(sz);
 	Coord c = new Coord();
+	// tiles drawing
 	for(c.y = 0; c.y < sz.y; c.y++) {
 	    for(c.x = 0; c.x < sz.x; c.x++) {
 		int t = m.gettile(a.ul.add(c));
@@ -71,6 +72,7 @@ public interface MapSource {
 		buf.setRGB(c.x, c.y, rgb);
 	    }
 	}
+	// ridges drawing
 	for(c.y = 1; c.y < sz.y - 1; c.y++) {
 	    for(c.x = 1; c.x < sz.x - 1; c.x++) {
 		int t = m.gettile(a.ul.add(c));
@@ -95,16 +97,16 @@ public interface MapSource {
 		}
 	    }
 	}
-	for(c.y = 0; c.y < sz.y; c.y++) {
-	    for(c.x = 0; c.x < sz.x; c.x++) {
-		int t = m.gettile(a.ul.add(c));
-		if((m.gettile(a.ul.add(c).add(-1, 0)) > t) ||
-		   (m.gettile(a.ul.add(c).add( 1, 0)) > t) ||
-		   (m.gettile(a.ul.add(c).add(0, -1)) > t) ||
-		   (m.gettile(a.ul.add(c).add(0,  1)) > t))
-		    buf.setRGB(c.x, c.y, Color.BLACK.getRGB());
-	    }
-	}
+	// for(c.y = 0; c.y < sz.y; c.y++) {
+	//     for(c.x = 0; c.x < sz.x; c.x++) {
+	// 	int t = m.gettile(a.ul.add(c));
+	// 	if((m.gettile(a.ul.add(c).add(-1, 0)) > t) ||
+	// 	   (m.gettile(a.ul.add(c).add( 1, 0)) > t) ||
+	// 	   (m.gettile(a.ul.add(c).add(0, -1)) > t) ||
+	// 	   (m.gettile(a.ul.add(c).add(0,  1)) > t))
+	// 	    buf.setRGB(c.x, c.y, Color.BLACK.getRGB());
+	//     }
+	// }
 	return(buf);
     }
 }
