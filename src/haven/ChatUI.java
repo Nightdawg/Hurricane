@@ -1252,7 +1252,9 @@ public class ChatUI extends Widget {
 	    chan.resize(sz.x - marg.x - chan.c.x, sz.y - chan.c.y);
 	    super.add(w);
 	    chansel.add(chan);
-	    select(chan, false);
+		boolean autoSelect = OptWnd.autoSelectNewChatCheckBox.a;
+		if(autoSelect) select(chan, false);
+		if(!autoSelect) chan.hide();
 	    return(w);
 	} else {
 	    return(super.add(w));
@@ -1613,7 +1615,26 @@ public class ChatUI extends Widget {
 	    synchronized(notifs) {
 		notifs.addFirst(new Notification(chan, msg));
 	    }
-	    ui.sfx(notifsfx);
+
+		boolean playSound = OptWnd.chatAlertSoundsCheckBox.a;
+
+		if (chan instanceof PrivChat && playSound) {
+			playSound = OptWnd.privateChatAlertSoundsCheckBox.a;
+		}
+		else if (chan instanceof MultiChat && playSound) {
+			if (chan.name().equals("Area Chat")) {
+				playSound = OptWnd.areaChatAlertSoundsCheckBox.a;
+			}
+			else if (chan.name().equals("Party")) {
+				playSound = OptWnd.partyChatAlertSoundsCheckBox.a;
+			}
+			else if (chan.name().equals(OptWnd.villageNameTextEntry.text())) {
+				playSound = OptWnd.villageChatAlertSoundsCheckBox.a;
+			}
+		}
+
+		if(playSound) ui.sfx(notifsfx);
+
 	}
     }
 
