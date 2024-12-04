@@ -132,7 +132,10 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	}
 
 	private void chstatus(int status) {
-	    online = status;
+		online = status;
+		if (!OptWnd.showKinStatusChangeMessages.a) {
+			return;
+		}
 	    GameUI gui = getparent(GameUI.class);
 	    if(gui != null) {
 		ui.gui.msg(name + (online > 0 ? " is now ONLINE" : " has gone Offline"), BuddyWnd.gc[group]);
