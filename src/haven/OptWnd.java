@@ -1167,7 +1167,88 @@ public class OptWnd extends Window {
 		}
 	}
 
-			public static CheckBox toggleGobCollisionBoxesCheckBox;
+	public static CheckBox chatAlertSoundsCheckBox;
+	public static CheckBox areaChatAlertSoundsCheckBox;
+	public static CheckBox partyChatAlertSoundsCheckBox;
+	public static CheckBox privateChatAlertSoundsCheckBox;
+
+	public static TextEntry villageNameTextEntry;
+	public static CheckBox villageChatAlertSoundsCheckBox;
+	public static CheckBox autoSelectNewChatCheckBox;
+	public static CheckBox showKinStatusChangeMessages;
+
+	public class ChatSettingsPanel extends Panel {
+		public ChatSettingsPanel(Panel back) {
+			Widget prev;
+
+			prev = add(chatAlertSoundsCheckBox = new CheckBox("Enable chat alert sounds"){
+				{a = (Utils.getprefb("chatAlertSounds", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("chatAlertSounds", val);
+				}
+			}, 0, 0);
+
+			prev = add(areaChatAlertSoundsCheckBox = new CheckBox("Enable area chat alert sounds"){
+				{a = (Utils.getprefb("areaChatAlertSounds", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("areaChatAlertSounds", val);
+				}
+			}, prev.pos("bl").adds(20, 4));
+
+			prev = add(privateChatAlertSoundsCheckBox = new CheckBox("Enable private chat alert sounds"){
+				{a = (Utils.getprefb("privateChatAlertSounds", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("privateChatAlertSounds", val);
+				}
+			}, prev.pos("bl").adds(0, 4));
+
+			prev = add(partyChatAlertSoundsCheckBox = new CheckBox("Enable party chat alert sounds"){
+				{a = (Utils.getprefb("partyChatAlertSounds", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("partyChatAlertSounds", val);
+				}
+			}, prev.pos("bl").adds(0, 4));
+
+			prev = add(villageChatAlertSoundsCheckBox = new CheckBox("Enable village chat alert sounds"){
+				{
+					a = (Utils.getprefb("villageChatAlertSounds", true));
+					tooltip = RichText.render("You must set a village name below in order to configure the alerts properly.\n\nWithout setting a name, village alerts will default to the overall 'Enable chat alert sounds' setting.", UI.scale(300));
+				}
+				public void changed(boolean val) {
+					Utils.setprefb("villageChatAlertSounds", val);
+				}
+			}, prev.pos("bl").adds(0, 4));
+
+			prev = add(new Label("Village name for alerts:"), prev.pos("bl").adds(20, 4));
+			add(villageNameTextEntry = new TextEntry(UI.scale(100), Utils.getpref("villageNameForChatAlerts", "")){
+				protected void changed() {
+					Utils.setpref("villageNameForChatAlerts", this.buf.line());
+					super.changed();
+				}}, prev.pos("ur").adds(6, 0));
+
+			prev = add(autoSelectNewChatCheckBox = new CheckBox("Auto-select new chats"){
+				{a = (Utils.getprefb("autoSelectNewChat", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("autoSelectNewChat", val);
+				}
+			}, prev.pos("bl").adds(0, 4).x(0));
+
+			prev = add(showKinStatusChangeMessages = new CheckBox("Show kin status change messages"){
+				{a = (Utils.getprefb("showKinStatusChangeMessages", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("showKinStatusChangeMessages", val);
+				}
+			}, prev.pos("bl").adds(0, 4));
+
+			Widget backButton;
+			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
+			pack();
+			centerBackButton(backButton, this);
+		}
+	}
+
+
+	public static CheckBox toggleGobCollisionBoxesCheckBox;
 	public static ColorOptionWidget collisionBoxColorOptionWidget;
 	public static String[] collisionBoxColorSetting = Utils.getprefsa("collisionBox" + "_colorSetting", new String[]{"255", "255", "255", "210"});
 	public static CheckBox displayObjectHealthPercentageCheckBox;
@@ -2216,7 +2297,7 @@ public class OptWnd extends Window {
 			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_container", val);}}, objectsLiftActionLeft.pos("ur").adds(4, 0)).settip("Lift the nearest storage container into Wagon/Cart.");
 		objectsLiftActionLeft = cont.add(new CheckBox("Tree Logs"){{a = Utils.getprefb("wagonNearestLiftable_log", true);}
 			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_log", val);}}, objectsLiftActionLeft.pos("bl").adds(0, 4)).settip("Lift nearest log into Wagon/Cart.");
-				
+
 		y+=UI.scale(40);
 		y = addbtn(cont, "Toggle Collision Boxes", GameUI.kb_toggleCollisionBoxes, y);
 		y = addbtn(cont, "Toggle Object Hiding", GameUI.kb_toggleHidingBoxes, y);
@@ -4217,6 +4298,7 @@ public class OptWnd extends Window {
 	// ND: Add the sub-panel buttons for the advanced settings here
 		Panel interfacesettings = add(new InterfaceSettingsPanel(advancedSettings));
 		Panel actionbarssettings =  add(new ActionBarsSettingsPanel(advancedSettings));
+		Panel chatsettings =  add(new ChatSettingsPanel(advancedSettings));
 		Panel displaysettings = add(new DisplaySettingsPanel(advancedSettings));
 		Panel qualitydisplaysettings = add(new QualityDisplaySettingsPanel(advancedSettings));
 		Panel gameplayautomationsettings = add(new GameplayAutomationSettingsPanel(advancedSettings));
@@ -4234,6 +4316,8 @@ public class OptWnd extends Window {
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Action Bars Settings", -1, actionbarssettings, "Action Bars Settings"), 0, leftY).pos("bl").adds(0, 5).y;
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Combat UI Settings", -1, combatuipanel, "Combat UI Settings"), 0, leftY).pos("bl").adds(0, 5).y;
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Quality Display Settings", -1, qualitydisplaysettings, "Quality Display Settings"), 0, leftY).pos("bl").adds(0, 5).y;
+		leftY = advancedSettings.add(new PButton(UI.scale(200), "Chat Settings", -1, chatsettings, "Chat Settings"), 0, leftY).pos("bl").adds(0, 5).y;
+
 		leftY += UI.scale(20);
 
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Altered Gameplay Settings", -1, alteredgameplaysettings, "Altered Gameplay Settings"), 0, leftY).pos("bl").adds(0, 5).y;
@@ -4245,7 +4329,8 @@ public class OptWnd extends Window {
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Camera Settings", -1, camsettings, "Camera Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "World Graphics Settings", -1, worldgraphicssettings, "World Graphics Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Hiding Settings", -1, hidingsettings, "Hiding Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
-		rightY += UI.scale(20);
+
+		rightY += UI.scale(50);
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Gameplay Automation Settings", -1, gameplayautomationsettings, "Gameplay Automation Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Aggro Exclusion Settings", -1, combataggrosettings, "Aggro Exclusion Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 
