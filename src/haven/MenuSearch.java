@@ -49,10 +49,12 @@ public class MenuSearch extends Window {
 
 		    @Override public boolean mousedown(MouseDownEvent ev) {
 				super.mousedown(ev);
-
-				drag_start = ui.mc;
-				drag_mode = false;
-				grab = ui.grabmouse(this);
+				
+				if(ev.b == 1){
+					drag_start = ui.mc;
+					drag_mode = false;
+					grab = ui.grabmouse(this);
+				}
 
 				return(true);
 		    }
