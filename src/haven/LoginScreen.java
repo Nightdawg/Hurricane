@@ -27,19 +27,16 @@
 package haven;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.List;
 import java.net.URI;
+
+import static haven.Audio.fromres;
 
 public class LoginScreen extends Widget {
     public static final Config.Variable<String> authmech = Config.Variable.prop("haven.authmech", "native");
@@ -57,10 +54,10 @@ public class LoginScreen extends Widget {
 	private String lastUser = "";
 	private String lastPass = "";
 	public static HSlider themeSongVolumeSlider;
-	static private final File mainTheme = new File("res/customclient/sfx/maintheme.wav");
+	static public final Resource mainTheme = Resource.local().loadwait("customclient/sfx/maintheme");
 	static private Audio.CS mainThemeClip = null;
 	static private boolean mainThemeStopped = false;
-	static public final File charSelectTheme = new File("res/customclient/sfx/charselecttheme.wav");
+	static public final Resource charSelectTheme = Resource.local().loadwait("customclient/sfx/charselecttheme");
 	static public Audio.CS charSelectThemeClip = null;
 	static public boolean charSelectThemeStopped = false;
 	private Window firstTimeUseWindow = null;
@@ -553,18 +550,9 @@ public class LoginScreen extends Widget {
 
 	private void playMainTheme() {
 		if (!mainThemeStopped &&(mainThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(mainThemeClip))) {
-			try {
-				AudioInputStream in = AudioSystem.getAudioInputStream(mainTheme);
-				AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
-				AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
-				Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
+				Audio.CS klippi = fromres(mainTheme);
 				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
 				Audio.play(mainThemeClip);
-			} catch (UnsupportedAudioFileException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 

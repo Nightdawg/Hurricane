@@ -34,6 +34,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.util.*;
 
+import static haven.Audio.fromres;
 import static haven.LoginScreen.charSelectThemeClip;
 import static haven.LoginScreen.charSelectThemeStopped;
 import static haven.LoginScreen.charSelectTheme;
@@ -306,18 +307,9 @@ public class Charlist extends Widget {
 
 	public static void playCharSelectTheme() {
 		if (!charSelectThemeStopped &&(charSelectThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(charSelectThemeClip))) {
-			try {
-				AudioInputStream in = AudioSystem.getAudioInputStream(charSelectTheme);
-				AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
-				AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
-				Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-				charSelectThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
-				Audio.play(charSelectThemeClip);
-			} catch (UnsupportedAudioFileException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			Audio.CS klippi = fromres(charSelectTheme);
+			charSelectThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			Audio.play(charSelectThemeClip);
 		}
 	}
 
