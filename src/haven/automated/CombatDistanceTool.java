@@ -124,12 +124,12 @@ public class CombatDistanceTool extends Window implements Runnable {
             Gob player = ui.gui.map.player();
             if (player.occupiedGobID != null) {
                 Gob vehicle = ui.sess.glob.oc.getgob(player.occupiedGobID);
-                if (vehicle.getres() != null) {
+                if (vehicle != null && vehicle.getres() != null) {
                     addedValue = vehicleDistance.getOrDefault(vehicle.getres().name, 0.0);
                 }
             }
             Gob enemy = getEnemy();
-            if(enemy.getres() != null){
+            if(enemy != null && enemy.getres() != null){
                 value = animalDistances.get(enemy.getres().name);
             }
             if(value != null && value > 0){
