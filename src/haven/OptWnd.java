@@ -901,6 +901,7 @@ public class OptWnd extends Window {
 	}
 
 	public static CheckBox showCombatHotkeysUICheckBox;
+	public static CheckBox showDamagePredictUICheckBox;
 	public static CheckBox singleRowCombatMovesCheckBox;
 	public static CheckBox includeHHPTextHealthBarCheckBox;
 	public static CheckBox showEstimatedAgilityTextCheckBox;
@@ -949,6 +950,12 @@ public class OptWnd extends Window {
 				{a = Utils.getprefb("showCombatHotkeysUI", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("showCombatHotkeysUI", val);
+				}
+			}, prev.pos("bl").adds(0, 10));
+			prev = add(showDamagePredictUICheckBox = new CheckBox("Show Attack's Damage Prediction (Bottom Panel)"){
+				{a = Utils.getprefb("showDamagePredictUI", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("showDamagePredictUI", val);
 				}
 			}, prev.pos("bl").adds(0, 10));
 			prev = add(singleRowCombatMovesCheckBox = new CheckBox("Single row for Combat Moves (Bottom Panel)"){
