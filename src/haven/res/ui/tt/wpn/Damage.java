@@ -1,6 +1,7 @@
+package haven.res.ui.tt.wpn;
 /* Preprocessed source code */
 /* $use: ui/tt/wpn/info */
-import haven.*;
+//import haven.*;
 import haven.res.ui.tt.wpn.info.*;
 
 /* >tt: Damage */

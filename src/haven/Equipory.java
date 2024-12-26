@@ -100,6 +100,7 @@ public class Equipory extends Widget implements DTarget {
 	public static CheckBox autoEquipBunnySlippersPlateBootsCheckBox;
 	boolean checkForLeeches = false;
 	boolean checkForTicks = false;
+	GItem lweap,rweap;
 
     @RName("epry")
     public static class $_ implements Factory {
@@ -198,6 +199,19 @@ public class Equipory extends Widget implements DTarget {
 	    ArrayList<WItem> v = new ArrayList<>();
 	    for(int i = 0; i < args.length; i++) {
 		int ep = Utils.iv(args[i]);
+		switch(ep)
+		{
+			case 6:
+
+			lweap = g;
+
+			break;
+			case 7:
+
+			rweap = g;
+			
+			break;
+		}
 		if(ep < ecoords.length)
 			 v.add(slots[ep] = add(new WItem(g), ecoords[ep].add(1, 1)));
 	    }
@@ -402,6 +416,17 @@ public class Equipory extends Widget implements DTarget {
 				checkForTicks = false;
 			}
 		}
+		
 	}
+	public GItem getWeapon() {
+
+        if (lweap != null && ItemInfo.hasInfo(lweap.info,"Damage")) {
+            return lweap;
+        } else if (rweap != null && ItemInfo.hasInfo(rweap.info,"Damage")) {
+            return rweap;
+        } else {
+            return null;
+        }
+    }
 
 }

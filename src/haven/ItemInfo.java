@@ -622,6 +622,21 @@ public abstract class ItemInfo {
 		}
 		return null;
 	}
+	public static int getDamage(List<ItemInfo> infos) {
+		infos = findall("Damage", infos);
+		for (ItemInfo info : infos) {
+			if (Reflect.hasField(info, "dmg")) {
+				return Reflect.getFieldValueInt(info, "dmg");
+			}
+		}
+		return 0;
+	}
+	public static boolean hasInfo(List<ItemInfo> infos, String info) {
+		infos = findall(info, infos);
+		if(infos.size()>0)
+		return true;
+		return false;
+	}
 
 	public static <T> List<T> findall(Class<T> cl, List<ItemInfo> il) {
 		List<T> ret = new LinkedList<>();
