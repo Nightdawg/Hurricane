@@ -26,8 +26,10 @@
 
 package haven;
 
+import haven.res.ui.stackinv.ItemStack;
+
 import java.util.*;
-import java.awt.image.WritableRaster;
+import java.util.stream.Collectors;
 
 public class Inventory extends Widget implements DTarget {
     public static final Coord sqsz = UI.scale(new Coord(32, 32)).add(1, 1);
@@ -36,6 +38,7 @@ public class Inventory extends Widget implements DTarget {
     public Coord isz;
     public boolean[] sqmask = null;
     public Map<GItem, WItem> wmap = new HashMap<GItem, WItem>();
+	public static Set<String> PLAYER_INVENTORY_NAMES = new HashSet<>(Arrays.asList("Inventory", "Belt", "Equipment", "Character Sheet", "Study"));
 
 	public static final Comparator<WItem> ITEM_COMPARATOR_ASC = new Comparator<WItem>() {
 		@Override
@@ -226,15 +229,64 @@ public class Inventory extends Widget implements DTarget {
 	@Override
 	public void wdgmsg(Widget sender, String msg, Object... args) {
 		if(msg.equals("transfer-ordered")){
-			process(getSame((GItem) args[0], (Boolean)args[1]), "transfer");
+			processTransfer(getSame((GItem) args[0], (Boolean) args[1]));
 		} else {
 			super.wdgmsg(sender, msg, args);
 		}
 	}
 
-	private void process(List<WItem> items, String action) {
+	private static boolean isInPlayerInventory(WItem item) {
+		Window window = item.getparent(Window.class);
+		return window != null && Objects.equals("Inventory", window.cap);
+	}
+
+	private static List<Integer> getExternalInventoryIds(UI ui) {
+		List<Inventory> inventories = ui.gui.getAllWindows()
+				.stream()
+				.flatMap(w -> w.children().stream())
+				.filter(child -> child instanceof Inventory)
+				.map(i -> (Inventory) i)
+				.toList();
+
+		List<Integer> externalInventoryIds = inventories
+				.stream()
+				.filter(i -> {
+					Window window = i.getparent(Window.class);
+					return window != null && !PLAYER_INVENTORY_NAMES.contains(window.cap);
+				}).map(i -> i.wdgid())
+				.collect(Collectors.toList());
+
+		List<Integer> stockpileIds = ui.gui.getAllWindows()
+				.stream()
+				.map(i -> i.getchild(ISBox.class))
+				.filter(Objects::nonNull)
+				.map(Widget::wdgid)
+				.toList();
+
+		externalInventoryIds.addAll(stockpileIds);
+		return externalInventoryIds;
+	}
+
+	private static void attemptTransferSplittingStack(List<Integer> externalInventoryIds, ItemStack stack) {
+		for (Integer externalInventoryId : externalInventoryIds) {
+			Object[] invxf2Args = new Object[3];
+			invxf2Args[0] = 0;
+			invxf2Args[1] = stack.order.size();
+			invxf2Args[2] = externalInventoryId;
+
+			stack.order.get(0).wdgmsg("invxf2", invxf2Args);
+		}
+	}
+
+	private void processTransfer(List<WItem> items) {
+		List<Integer> externalInventoryIds = getExternalInventoryIds(ui);
 		for (WItem item : items){
-			item.item.wdgmsg(action, Coord.z);
+			item.item.wdgmsg("transfer", Coord.z);
+
+			Widget contents = item.item.contents;
+			if (contents instanceof ItemStack && isInPlayerInventory(item)) {
+				attemptTransferSplittingStack(externalInventoryIds, (ItemStack) contents);
+			}
 		}
 	}
 
