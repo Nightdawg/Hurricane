@@ -130,14 +130,14 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 			    h = Integer.parseInt(args[2]);
 			p.setSize(w, h);
 			pack();
-			Utils.setprefc("wndsz", new Coord(w, h));
+			RegistryStore.setprefc("wndsz", new Coord(w, h));
 		    } else if(args.length == 2) {
 			if(args[1].equals("dyn")) {
 			    setResizable(true);
-			    Utils.setprefb("wndlock", false);
+			    RegistryStore.setprefb("wndlock", false);
 			} else if(args[1].equals("lock")) {
 			    setResizable(false);
-			    Utils.setprefb("wndlock", true);
+			    RegistryStore.setprefb("wndlock", true);
 			}
 		    }
 		}
@@ -146,13 +146,13 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 		public void run(Console cons, String[] args) throws Exception {
 		    if((args.length < 2) || args[1].equals("none")) {
 			fsmode = null;
-			Utils.setprefc("fsmode", Coord.z);
+			RegistryStore.setprefc("fsmode", Coord.z);
 		    } else if(args.length == 3) {
 			DisplayMode mode = findmode(Integer.parseInt(args[1]), Integer.parseInt(args[2]));
 			if(mode == null)
 			    throw(new Exception("No such mode is available"));
 			fsmode = mode;
-			Utils.setprefc("fsmode", new Coord(mode.getWidth(), mode.getHeight()));
+			RegistryStore.setprefc("fsmode", new Coord(mode.getWidth(), mode.getHeight()));
 		    }
 		}
 	    });
@@ -205,7 +205,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 	super("Haven & Hearth");
 	Coord sz;
 	if(isz == null) {
-		sz = Utils.getprefc("wndsz", new Coord(1067, 600)); // ND: This affects the game window size on startup
+		sz = RegistryStore.getprefc("wndsz", new Coord(1067, 600)); // ND: This affects the game window size on startup
 	    if(sz.x < 1067) sz.x = 1067;
 	    if(sz.y < 600) sz.y = 600;
 	} else {
@@ -214,14 +214,14 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 	this.g = new ThreadGroup(HackThread.tg(), "Haven client");
 	Component pp = (Component)(this.p = renderer());
 	if(fsmode == null) {
-	    Coord pfm = Utils.getprefc("fsmode", null);
+	    Coord pfm = RegistryStore.getprefc("fsmode", null);
 	    if((pfm != null) && !pfm.equals(Coord.z))
 		fsmode = findmode(pfm.x, pfm.y);
 	}
 	add(pp);
 	pp.setSize(sz.x, sz.y);
 	pack();
-	setResizable(!Utils.getprefb("wndlock", false));
+	setResizable(!RegistryStore.getprefb("wndlock", false));
 	pp.requestFocus();
 	seticon();
 	setVisible(true);
@@ -238,7 +238,7 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 		    p.background(true);
 		}
 	    });
-	if((isz == null) && Utils.getprefb("wndmax", false))
+	if((isz == null) && RegistryStore.getprefb("wndmax", false))
 	    setExtendedState(getExtendedState() | MAXIMIZED_BOTH);
 
 	this.getToolkit().addAWTEventListener(this, AWTEvent.KEY_EVENT_MASK); // ND: Do this to prevent F10 or ALT from defocusing the game window when released
@@ -265,9 +265,9 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 		 * ought to correspond to the inner size at all
 		 * times. */{
 		Dimension dim = p.getSize();
-		Utils.setprefc("wndsz", new Coord(dim.width, dim.height));
+		RegistryStore.setprefc("wndsz", new Coord(dim.width, dim.height));
 	    }
-	    Utils.setprefb("wndmax", (getExtendedState() & MAXIMIZED_BOTH) != 0);
+	    RegistryStore.setprefb("wndmax", (getExtendedState() & MAXIMIZED_BOTH) != 0);
 	}
     }
 
@@ -287,10 +287,10 @@ public class MainFrame extends java.awt.Frame implements Console.Directory, AWTE
 	    if(Bootstrap.authuser.get() != null) {
 		username = Bootstrap.authuser.get();
 	    } else {
-		if((username = Utils.getpref("tokenname@" + Bootstrap.defserv.get(), null)) == null)
+		if((username = RegistryStore.getpref("tokenname@" + Bootstrap.defserv.get(), null)) == null)
 		    throw(new ConnectionError("no explicit or saved username for host: " + Bootstrap.defserv.get()));
 	    }
-	    String token = Utils.getpref("savedtoken-" + username + "@" + Bootstrap.defserv.get(), null);
+	    String token = RegistryStore.getpref("savedtoken-" + username + "@" + Bootstrap.defserv.get(), null);
 	    if(token == null)
 		throw(new ConnectionError("no saved token for user: " + username));
 	    try {

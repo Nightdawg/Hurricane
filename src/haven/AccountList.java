@@ -13,7 +13,7 @@ public class AccountList extends Widget {
 
     static void loadAccounts() {
         accountmap.clear();
-        String[] savedAccounts = Utils.getprefsa("savedAccounts", null);
+        String[] savedAccounts = RegistryStore.getprefsa("savedAccounts", null);
         try {
             if (savedAccounts != null) {
                 for (String s : savedAccounts) {
@@ -51,7 +51,7 @@ public class AccountList extends Widget {
                     savedAccounts[i] = e.getKey() + ";" + e.getValue();
                     i++;
                 }
-                Utils.setprefsa("savedAccounts", savedAccounts);
+                RegistryStore.setprefsa("savedAccounts", savedAccounts);
             } catch(Exception e) {
                 e.printStackTrace();
             }

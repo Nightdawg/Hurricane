@@ -136,12 +136,12 @@ public class AuthClient implements Closeable {
 
 	public static TokenInfo forhost() {
 	    TokenInfo ret = new TokenInfo();
-	    if((ret.id = Utils.getprefb("token-id", ret.id)).length == 0) {
+	    if((ret.id = RegistryStore.getprefb("token-id", ret.id)).length == 0) {
 		ret.id = new byte[16];
 		new SecureRandom().nextBytes(ret.id);
-		Utils.setprefb("token-id", ret.id);
+		RegistryStore.setprefb("token-id", ret.id);
 	    }
-	    if((ret.desc = Utils.getpref("token-desc", null)) == null) {
+	    if((ret.desc = RegistryStore.getpref("token-desc", null)) == null) {
 		try {
 		    ret.desc = InetAddress.getLocalHost().getHostName();
 		} catch(UnknownHostException e) {
