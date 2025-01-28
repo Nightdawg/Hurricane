@@ -69,7 +69,7 @@ public class Dbg {
             String time = new SimpleDateFormat("MMdd_HHmmss").format(Calendar.getInstance().getTime());
             try {
                 new File("pf").mkdirs();
-                ImageIO.write(img, "png", new File("pf/pf-" + time + "-map"));
+                ImageIO.write(img, "png", new File("pf/pf-" + time + "-map.png"));
             } catch (Exception e) {
             }
         }
@@ -80,7 +80,7 @@ public class Dbg {
             String time = new SimpleDateFormat("MMdd_HHmmss").format(Calendar.getInstance().getTime());
             try {
                 new File("pf").mkdirs();
-                ImageIO.write(img, "png", new File("pf/pf-" + time));
+                ImageIO.write(img, "png", new File("pf/pf-" + time + ".png"));
             } catch (Exception e) {
             }
         }

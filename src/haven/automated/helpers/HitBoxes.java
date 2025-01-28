@@ -10,6 +10,8 @@ import java.util.*;
 public class HitBoxes {
     private static final String DATABASE = "jdbc:sqlite:static_data.db";
     public static Map<String, CollisionBox[]> collisionBoxMap = new HashMap<>();
+    private static CollisionBox[] PASSABLE_HITBOX = new CollisionBox[]{new CollisionBox(false)};
+    private static CollisionBox[] NO_HITBOX_FOUND = new CollisionBox[0];
 
     private static Set<String> passableGobs = new HashSet<>(Arrays.asList(
             "gfx/terobjs/herbs", "gfx/terobjs/items", "gfx/terobjs/plants", "gfx/terobjs/clue", "gfx/terobjs/boostspeed",
@@ -46,23 +48,29 @@ public class HitBoxes {
                 new Coord(-4, -2), new Coord(5, 2), new Coord(5, -2), new Coord(-4, 2))});
         collisionBoxMap.put("gfx/kritter/sheep/sheep", new CollisionBox[]{new CollisionBox(
                 new Coord(-4, -2), new Coord(5, 2), new Coord(5, -2), new Coord(-4, 2))});
+        try {
+            createDatabaseIfNotExist();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-
-
-    public static void addHitBox(Gob gob){
+    public static CollisionBox[] getCollisionBoxes(Gob gob) {
         Resource res = gob.getres();
-        if(collisionBoxMap.get(res.name) == null){
+        if (collisionBoxMap.get(res.name) == null) {
             for (String gobResName : passableGobs) {
                 if (res.name.contains(gobResName) && !res.name.contains("trellis")) {
-                    collisionBoxMap.put(res.name, new CollisionBox[]{new CollisionBox(false)});
-                    return;
+                    collisionBoxMap.put(res.name, PASSABLE_HITBOX);
+                    return PASSABLE_HITBOX;
                 }
             }
             try {
-                extractCollisionBoxesFromResource(gob);
-            } catch (Loading ignored){}
+                return extractCollisionBoxesFromResource(gob);
+            } catch (Loading ignored) {
+            }
         }
+
+        return collisionBoxMap.getOrDefault(res.name, NO_HITBOX_FOUND);
     }
 
     private static CollisionBox[] extractCollisionBoxesFromResource(Gob gob) {

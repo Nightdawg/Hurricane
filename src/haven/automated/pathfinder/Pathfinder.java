@@ -84,27 +84,24 @@ public class Pathfinder implements Runnable {
                 if (this.gob != null && this.gob.id == gob.id) {
                     continue;
                 }
-                if (gob.getres() != null && isInsideBoundBox(gob.rc.floor(), gob.a, gob.getres().name, player.rc.floor())) {
-                    if (HitBoxes.collisionBoxMap.get(gob.getres().name) != null) {
-                        HitBoxes.CollisionBox[] collisionBoxes = HitBoxes.collisionBoxMap.get(gob.getres().name);
-                        for (HitBoxes.CollisionBox collisionBox : collisionBoxes) {
-                            if (collisionBox.hitAble) {
-                                if (collisionBox.coords.length > 2) {
-                                    double minX = Double.MAX_VALUE;
-                                    double minY = Double.MAX_VALUE;
-                                    double maxX = Double.MIN_VALUE;
-                                    double maxY = Double.MIN_VALUE;
+                if (gob.getres() != null && isInsideBoundBox(gob, player.rc.floor())) {
+                    for (HitBoxes.CollisionBox collisionBox : HitBoxes.getCollisionBoxes(gob)) {
+                        if (collisionBox.hitAble) {
+                            if (collisionBox.coords.length > 2) {
+                                double minX = Double.MAX_VALUE;
+                                double minY = Double.MAX_VALUE;
+                                double maxX = Double.MIN_VALUE;
+                                double maxY = Double.MIN_VALUE;
 
-                                    for (Coord2d coord : collisionBox.coords) {
-                                        minX = Math.min(minX, coord.x);
-                                        minY = Math.min(minY, coord.y);
-                                        maxX = Math.max(maxX, coord.x);
-                                        maxY = Math.max(maxY, coord.y);
-                                    }
-                                    Coord2d topLeft = new Coord2d(minX, minY);
-                                    Coord2d bottomRight = new Coord2d(maxX, maxY);
-                                    m.excludeGob(topLeft.floor(), bottomRight.floor(), gob);
+                                for (Coord2d coord : collisionBox.coords) {
+                                    minX = Math.min(minX, coord.x);
+                                    minY = Math.min(minY, coord.y);
+                                    maxX = Math.max(maxX, coord.x);
+                                    maxY = Math.max(maxY, coord.y);
                                 }
+                                Coord2d topLeft = new Coord2d(minX, minY);
+                                Coord2d bottomRight = new Coord2d(maxX, maxY);
+                                m.excludeGob(topLeft.floor(), bottomRight.floor(), gob);
                             }
                         }
                     }
@@ -141,30 +138,28 @@ public class Pathfinder implements Runnable {
         }
 
         // exclude any bounding boxes overlapping the destination gob
-        if (this.gob != null)
-            if (HitBoxes.collisionBoxMap.get(this.gob.getres().name) != null) {
-                HitBoxes.CollisionBox[] collisionBoxes = HitBoxes.collisionBoxMap.get(this.gob.getres().name);
-                for (HitBoxes.CollisionBox collisionBox : collisionBoxes) {
-                    if (collisionBox.hitAble) {
-                        if (collisionBox.coords.length > 2) {
-                            double minX = Double.MAX_VALUE;
-                            double minY = Double.MAX_VALUE;
-                            double maxX = Double.MIN_VALUE;
-                            double maxY = Double.MIN_VALUE;
+        if (this.gob != null) {
+            for (HitBoxes.CollisionBox collisionBox : HitBoxes.getCollisionBoxes(gob)) {
+                if (collisionBox.hitAble) {
+                    if (collisionBox.coords.length > 2) {
+                        double minX = Double.MAX_VALUE;
+                        double minY = Double.MAX_VALUE;
+                        double maxX = Double.MIN_VALUE;
+                        double maxY = Double.MIN_VALUE;
 
-                            for (Coord2d coord : collisionBox.coords) {
-                                minX = Math.min(minX, coord.x);
-                                minY = Math.min(minY, coord.y);
-                                maxX = Math.max(maxX, coord.x);
-                                maxY = Math.max(maxY, coord.y);
-                            }
-                            Coord2d topLeft = new Coord2d(minX, minY);
-                            Coord2d bottomRight = new Coord2d(maxX, maxY);
-                            m.excludeGob(topLeft.floor(), bottomRight.floor(), this.gob);
+                        for (Coord2d coord : collisionBox.coords) {
+                            minX = Math.min(minX, coord.x);
+                            minY = Math.min(minY, coord.y);
+                            maxX = Math.max(maxX, coord.x);
+                            maxY = Math.max(maxY, coord.y);
                         }
+                        Coord2d topLeft = new Coord2d(minX, minY);
+                        Coord2d bottomRight = new Coord2d(maxX, maxY);
+                        m.excludeGob(topLeft.floor(), bottomRight.floor(), this.gob);
                     }
                 }
             }
+        }
 
         if (Map.DEBUG_TIMINGS)
             System.out.println("      Gobs Processing: " + (double) (System.nanoTime() - start) / 1000000.0 + " ms.");
@@ -243,60 +238,59 @@ public class Pathfinder implements Runnable {
     }
 
 
-    public static boolean isInsideBoundBox(Coord gobRc, double gobA, String resName, Coord point) {
-        if (HitBoxes.collisionBoxMap.get(resName) != null) {
-            HitBoxes.CollisionBox[] collisionBoxes = HitBoxes.collisionBoxMap.get(resName);
-            for (HitBoxes.CollisionBox collisionBox : collisionBoxes) {
-                if (collisionBox.hitAble) {
-                    if (collisionBox.coords.length > 3) {
-                        double minX = Double.MAX_VALUE;
-                        double minY = Double.MAX_VALUE;
-                        double maxX = Double.MIN_VALUE;
-                        double maxY = Double.MIN_VALUE;
+    public static boolean isInsideBoundBox(Gob gob, Coord point) {
+        double gobA = gob.a;
+        Coord rc = gob.rc.floor();
+        for (HitBoxes.CollisionBox collisionBox : HitBoxes.getCollisionBoxes(gob)) {
+            if (collisionBox.hitAble) {
+                if (collisionBox.coords.length > 3) {
+                    double minX = Double.MAX_VALUE;
+                    double minY = Double.MAX_VALUE;
+                    double maxX = Double.MIN_VALUE;
+                    double maxY = Double.MIN_VALUE;
 
-                        for (Coord2d coord : collisionBox.coords) {
-                            minX = Math.min(minX, coord.x);
-                            minY = Math.min(minY, coord.y);
-                            maxX = Math.max(maxX, coord.x);
-                            maxY = Math.max(maxY, coord.y);
-                        }
-                        Coord2d topLeft = new Coord2d(minX, minY);
-                        Coord2d bottomRight = new Coord2d(maxX, maxY);
-
-                        final Coordf relative = new Coordf(point.sub(gobRc)).rotate(-gobA);
-                        if (relative.x >= topLeft.x && relative.x <= bottomRight.x &&
-                                relative.y >= topLeft.y && relative.y <= bottomRight.y) {
-                            return true;
-                        }
-
+                    for (Coord2d coord : collisionBox.coords) {
+                        minX = Math.min(minX, coord.x);
+                        minY = Math.min(minY, coord.y);
+                        maxX = Math.max(maxX, coord.x);
+                        maxY = Math.max(maxY, coord.y);
                     }
-                    if (collisionBox.coords.length == 3) {
-                        double minX = Double.MAX_VALUE;
-                        double minY = Double.MAX_VALUE;
-                        double maxX = Double.MIN_VALUE;
-                        double maxY = Double.MIN_VALUE;
+                    Coord2d topLeft = new Coord2d(minX, minY);
+                    Coord2d bottomRight = new Coord2d(maxX, maxY);
 
-                        for (Coord2d coord : collisionBox.coords) {
-                            if (coord.x < minX) {
-                                minX = coord.x;
-                            }
-                            if (coord.y < minY) {
-                                minY = coord.y;
-                            }
-                            if (coord.x > maxX) {
-                                maxX = coord.x;
-                            }
-                            if (coord.y > maxY) {
-                                maxY = coord.y;
-                            }
+                    final Coordf relative = new Coordf(point.sub(rc)).rotate(-gobA);
+                    if (relative.x >= topLeft.x && relative.x <= bottomRight.x &&
+                            relative.y >= topLeft.y && relative.y <= bottomRight.y) {
+                        return true;
+                    }
+
+                }
+                if (collisionBox.coords.length == 3) {
+                    double minX = Double.MAX_VALUE;
+                    double minY = Double.MAX_VALUE;
+                    double maxX = Double.MIN_VALUE;
+                    double maxY = Double.MIN_VALUE;
+
+                    for (Coord2d coord : collisionBox.coords) {
+                        if (coord.x < minX) {
+                            minX = coord.x;
                         }
-                        Coord2d topLeft = new Coord2d(minX, minY);
-                        Coord2d bottomRight = new Coord2d(maxX, maxY);
-                        final Coordf relative = new Coordf(point.sub(gobRc)).rotate(-gobA);
-                        if (relative.x >= topLeft.x && relative.x <= bottomRight.x &&
-                                relative.y >= topLeft.y && relative.y <= bottomRight.y) {
-                            return true;
+                        if (coord.y < minY) {
+                            minY = coord.y;
                         }
+                        if (coord.x > maxX) {
+                            maxX = coord.x;
+                        }
+                        if (coord.y > maxY) {
+                            maxY = coord.y;
+                        }
+                    }
+                    Coord2d topLeft = new Coord2d(minX, minY);
+                    Coord2d bottomRight = new Coord2d(maxX, maxY);
+                    final Coordf relative = new Coordf(point.sub(rc)).rotate(-gobA);
+                    if (relative.x >= topLeft.x && relative.x <= bottomRight.x &&
+                            relative.y >= topLeft.y && relative.y <= bottomRight.y) {
+                        return true;
                     }
                 }
             }
