@@ -241,11 +241,12 @@ public class AUtils {
         int time = 0;
         boolean moved = false;
         Thread.sleep(300);
-        while (gui.map.pfthread.isAlive()) {
+        while (gui.map.pfthread.isAlive() || gui.map.player().getv() > 0) {
             time += 70;
             Thread.sleep(70);
             if (gui.map.player().getv() > 0) {
                 time = 0;
+                moved = true;
             }
             if (time > 2000 && moved == false) {
                 System.out.println("TRYING UNSTUCK");
