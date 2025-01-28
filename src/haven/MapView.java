@@ -2981,21 +2981,6 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	@Override
 	public void wdgmsg(String msg, Object... args) {
 		GameUI gui = ui.gui;
-		if (gui != null && gui.refillWaterContainersThread != null && gui.refillWaterContainersThread.isAlive()){
-			if (msg.equals("drop")){
-				gui.refillWaterContainersThread.interrupt();
-				gui.refillWaterContainersThread = null;
-				gui.ui.msg("Water Refill was manually stopped (One container was also dropped).");
-			} else if (msg.equals("click")){
-				if (args.length == 4) {
-					if (args[2].toString().equals("1")) {
-						gui.refillWaterContainersThread.interrupt();
-						gui.refillWaterContainersThread = null;
-						gui.ui.msg("Water Refill was manually stopped.");
-					}
-				}
-			}
-		}
 		boolean safe = true;
 		if(gui != null && gui.miningSafetyAssistantWindow != null && MiningSafetyAssistant.preventUnsafeMiningCheckBox != null && MiningSafetyAssistant.preventUnsafeMiningCheckBox.a){
 			if (ui.root.cursor != null) {

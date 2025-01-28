@@ -5,6 +5,7 @@ import haven.Composite;
 
 import java.awt.*;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static haven.MCache.cmaps;
 import static haven.MCache.tilesz;
@@ -427,4 +428,19 @@ public class AUtils {
         } catch (Loading ignored) {}
     }
 
+    public static boolean waitUntil(Supplier<Boolean> condition, int timeoutMs) throws InterruptedException {
+        long start = System.currentTimeMillis();
+        while (!condition.get()) {
+            if (System.currentTimeMillis() - start >= timeoutMs) {
+                return false;
+            }
+            try {
+                Thread.sleep(5L);
+            }
+            catch (InterruptedException ie) {
+                throw ie;
+            }
+        }
+        return true;
+    }
 }
