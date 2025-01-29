@@ -246,7 +246,7 @@ public class Inventory extends Widget implements DTarget {
 				.flatMap(w -> w.children().stream())
 				.filter(child -> child instanceof Inventory)
 				.map(i -> (Inventory) i)
-				.toList();
+				.collect(Collectors.toList());
 
 		List<Integer> externalInventoryIds = inventories
 				.stream()
@@ -261,7 +261,7 @@ public class Inventory extends Widget implements DTarget {
 				.map(i -> i.getchild(ISBox.class))
 				.filter(Objects::nonNull)
 				.map(Widget::wdgid)
-				.toList();
+				.collect(Collectors.toList());
 
 		externalInventoryIds.addAll(stockpileIds);
 		return externalInventoryIds;
