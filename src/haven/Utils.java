@@ -38,6 +38,7 @@ import java.lang.reflect.*;
 import java.text.SimpleDateFormat;
 import java.util.prefs.*;
 import java.security.*;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.function.*;
 import java.awt.Graphics;
@@ -51,6 +52,7 @@ public class Utils {
     public static final java.nio.charset.Charset ascii = java.nio.charset.Charset.forName("US-ASCII");
     public static final java.awt.image.ColorModel rgbm = java.awt.image.ColorModel.getRGBdefault();
     private static Preferences prefs = null;
+	private static SettingsStore settingsStore;
 
     static Coord imgsz(BufferedImage img) {
 	return(new Coord(img.getWidth(), img.getHeight()));
@@ -291,9 +293,82 @@ public class Utils {
 	return(prefs);
     }
 
+	public static Path getStorageDirectory() {
+		try {
+			local_storage: {
+				//Set Storage to any folder on the system with a console parameter
+				// e.g. -Dhaven_local_storage=./storage/
+				String localStoragePath = System.getProperty("haven_local_storage");
+				if (localStoragePath == null || localStoragePath.isEmpty())
+						break local_storage;
+				Path base = Utils.path(localStoragePath);
+				if(!Files.exists(base)) {
+					try {
+						Files.createDirectories(base);
+					} catch(IOException e) {
+						break local_storage;
+					}
+				}
+				return(base);
+			}
+			windows: {
+			String path = System.getenv("APPDATA");
+			if(path == null)
+				break windows;
+			Path appdata = Utils.path(path);
+			if(!Files.exists(appdata) || !Files.isDirectory(appdata) || !Files.isReadable(appdata) || !Files.isWritable(appdata))
+				break windows;
+			Path base = pj(appdata, "Haven and Hearth");
+			if(!Files.exists(base)) {
+				try {
+				Files.createDirectories(base);
+				} catch(IOException e) {
+				break windows;
+				}
+			}
+			return(base);
+			}
+			fallback: {
+			String path = System.getProperty("user.home", null);
+			if(path == null)
+				break fallback;
+			Path home = Utils.path(path);
+			if(!Files.exists(home) || !Files.isDirectory(home) || !Files.isReadable(home) || !Files.isWritable(home))
+				break fallback;
+			Path base = pj(home, ".haven");
+			if(!Files.exists(base)) {
+				try {
+				Files.createDirectories(base);
+				} catch(IOException e) {
+				break fallback;
+				}
+			}
+			return(base);
+			}
+		} catch(SecurityException e) {
+		}
+		throw(new UnsupportedOperationException("Found no reasonable place to store local files"));
+	}
+
+	public static SettingsStore settingsStore(){
+		if(settingsStore == null) {
+			synchronized(Utils.class) {
+			if(settingsStore == null) {
+				try {
+					Path path = pj(getStorageDirectory(), "settings.db");
+					settingsStore = new SettingsStore(path.toString());
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			}
+		}
+		return(settingsStore);
+	}
+
     public static String getpref(String prefname, String def) {
 	try {
-	    return(prefs().get(prefname, def));
+	    return(settingsStore().getString(prefname, def));
 	} catch(SecurityException e) {
 	    return(def);
 	}
@@ -301,10 +376,7 @@ public class Utils {
 
     public static void setpref(String prefname, String val) {
 	try {
-	    if(val == null)
-		prefs().remove(prefname);
-	    else
-		prefs().put(prefname, val);
+		settingsStore().setString(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
@@ -343,7 +415,7 @@ public class Utils {
 
     public static int getprefi(String prefname, int def) {
 	try {
-	    return(prefs().getInt(prefname, def));
+	    return(settingsStore().getInt(prefname, def));
 	} catch(SecurityException e) {
 	    return(def);
 	}
@@ -351,14 +423,14 @@ public class Utils {
 
     public static void setprefi(String prefname, int val) {
 	try {
-	    prefs().putInt(prefname, val);
+	    settingsStore().setInt(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
 
     public static double getprefd(String prefname, double def) {
 	try {
-	    return(prefs().getDouble(prefname, def));
+	    return(settingsStore().getDouble(prefname, def));
 	} catch(SecurityException e) {
 	    return(def);
 	}
@@ -366,14 +438,14 @@ public class Utils {
 
     public static void setprefd(String prefname, double val) {
 	try {
-	    prefs().putDouble(prefname, val);
+	    settingsStore().setDouble(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
 
     public static boolean getprefb(String prefname, boolean def) {
 	try {
-	    return(prefs().getBoolean(prefname, def));
+	    return(settingsStore().getBoolean(prefname, def));
 	} catch(SecurityException e) {
 	    return(def);
 	}
@@ -381,14 +453,14 @@ public class Utils {
 
     public static void setprefb(String prefname, boolean val) {
 	try {
-	    prefs().putBoolean(prefname, val);
+	    settingsStore().setBoolean(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
 
     public static Coord getprefc(String prefname, Coord def) {
 	try {
-	    String val = prefs().get(prefname, null);
+	    String val = settingsStore().getString(prefname, null);
 	    if(val == null)
 		return(def);
 	    int x = val.indexOf('x');
@@ -403,14 +475,14 @@ public class Utils {
     public static void setprefc(String prefname, Coord val) {
 	try {
 	    String enc = (val == null) ? "" : val.x + "x" + val.y;
-	    prefs().put(prefname, enc);
+	    settingsStore().setString(prefname, enc);
 	} catch(SecurityException e) {
 	}
     }
 
     public static byte[] getprefb(String prefname, byte[] def) {
 	try {
-	    return(prefs().getByteArray(prefname, def));
+	    return(settingsStore().getByteArray(prefname, def));
 	} catch(SecurityException e) {
 	    return(def);
 	}
@@ -418,7 +490,7 @@ public class Utils {
 
     public static void setprefb(String prefname, byte[] val) {
 	try {
-	    prefs().putByteArray(prefname, val);
+	    settingsStore().setByteArray(prefname, val);
 	} catch(SecurityException e) {
 	}
     }
