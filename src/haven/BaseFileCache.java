@@ -37,46 +37,17 @@ public class BaseFileCache implements ResCache {
     public final URI id;
     private final Path base;
 
-    public static Path findroot() {
-	try {
-	    windows: {
-		String path = System.getenv("APPDATA");
-		if(path == null)
-		    break windows;
-		Path appdata = Utils.path(path);
-		if(!Files.exists(appdata) || !Files.isDirectory(appdata) || !Files.isReadable(appdata) || !Files.isWritable(appdata))
-		    break windows;
-		Path base = pj(appdata, "Haven and Hearth", "cache");
-		if(!Files.exists(base)) {
-		    try {
-			Files.createDirectories(base);
-		    } catch(IOException e) {
-			break windows;
-		    }
-		}
-		return(base);
-	    }
-	    fallback: {
-		String path = System.getProperty("user.home", null);
-		if(path == null)
-		    break fallback;
-		Path home = Utils.path(path);
-		if(!Files.exists(home) || !Files.isDirectory(home) || !Files.isReadable(home) || !Files.isWritable(home))
-		    break fallback;
-		Path base = pj(home, ".haven", "cache");
-		if(!Files.exists(base)) {
-		    try {
-			Files.createDirectories(base);
-		    } catch(IOException e) {
-			break fallback;
-		    }
-		}
-		return(base);
-	    }
-	} catch(SecurityException e) {
+	public static Path findroot() {
+        Path base = pj(Utils.getStorageDirectory(), "cache");
+        if(!Files.exists(base)) {
+            try {
+                Files.createDirectories(base);
+            } catch(IOException e) {
+                throw(new UnsupportedOperationException("Found no reasonable place to store local files"));
+            }
+        }
+        return(base);
 	}
-	throw(new UnsupportedOperationException("Found no reasonable place to store local files"));
-    }
 
     public static Path findbase(URI id) throws IOException {
 	String idstr = id.toString();
