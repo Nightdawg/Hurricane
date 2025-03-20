@@ -88,15 +88,15 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
     }
 
     private String getpref(String name, String def) {
-	return(Utils.getpref(name + "@" + hostname, def));
+	return(RegistryStore.getpref(name + "@" + hostname, def));
     }
 
     private void setpref(String name, String val) {
-	Utils.setpref(name + "@" + hostname, val);
+		RegistryStore.setpref(name + "@" + hostname, val);
     }
 
     private static byte[] getprefb(String name, String hostname, byte[] def, boolean zerovalid) {
-	String sv = Utils.getpref(name + "@" + hostname, null);
+	String sv = RegistryStore.getpref(name + "@" + hostname, null);
 	if(sv == null)
 	    return(def);
 	byte[] ret = Utils.hex2byte(sv);
@@ -118,18 +118,18 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
     }
 
     public static void rottokens(String user, String hostname, boolean creat, boolean rm) {
-	List<String> names = new ArrayList<>(Utils.getprefsl("saved-tokens@" + hostname, new String[] {}));
+	List<String> names = new ArrayList<>(RegistryStore.getprefsl("saved-tokens@" + hostname, new String[] {}));
 	creat = creat || (!rm && names.contains(user));
 	if(rm || creat)
 	    names.remove(user);
 	if(creat)
 	    names.add(0, user);
-	Utils.setprefsl("saved-tokens@" + hostname, names);
+		RegistryStore.setprefsl("saved-tokens@" + hostname, names);
     }
 
     public static void settoken(String user, String hostname, byte[] token) {
 	String prefnm = user;
-	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + hostname, (token == null) ? "" : Utils.byte2hex(token));
+	RegistryStore.setpref("savedtoken-" + mangleuser(user) + "@" + hostname, (token == null) ? "" : Utils.byte2hex(token));
 	rottokens(user, hostname, token != null, true);
     }
 
