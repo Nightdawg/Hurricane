@@ -17,7 +17,7 @@ public class AccountList extends Widget {
         try {
             if (savedAccounts != null) {
                 for (String s : savedAccounts) {
-                    String[] split = s.split("(;)");
+                    String[] split = s.split("\\(ಠ‿ಠ\\)");
                     if (!accountmap.containsKey(split[0])) {
                         accountmap.put(split[0], split[1]);
                     }
@@ -48,7 +48,7 @@ public class AccountList extends Widget {
                 String[] savedAccounts = new String[accountmap.size()];
                 int i = 0;
                 for(Map.Entry<String, String> e : accountmap.entrySet()) {
-                    savedAccounts[i] = e.getKey() + ";" + e.getValue();
+                    savedAccounts[i] = e.getKey() + "(ಠ‿ಠ)" + e.getValue();
                     i++;
                 }
                 Utils.setprefsa("savedAccounts", savedAccounts);
