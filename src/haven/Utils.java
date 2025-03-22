@@ -329,17 +329,40 @@ public class Utils {
 
 	static void setprefsa(String prefname, String[] val) { // ND: Set prefs array
 		try {
-			String jsonarr = "";
-			for (String s : val)
-				jsonarr += "\"" + s + "\",";
-			if (jsonarr.length() > 0)
-				jsonarr = jsonarr.substring(0, jsonarr.length() - 1);
-			Utils.setpref(prefname, "[" + jsonarr + "]");
+			StringBuilder jsonarr = new StringBuilder();
+			for (String s : val) {
+				// Escape necessary characters in the string
+				s = escapeJsonString(s);
+				jsonarr.append("\"").append(s).append("\",");
+			}
+			if (jsonarr.length() > 0) {
+				jsonarr.deleteCharAt(jsonarr.length() - 1); // Remove last comma
+			}
+			Utils.setpref(prefname, "[" + jsonarr.toString() + "]");
 		} catch (SecurityException e) {
+			// Handle security exception
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 	}
+
+	// Helper method to escape necessary characters in the string
+	private static String escapeJsonString(String input) {
+		if (input == null) return null;
+
+		// Replace escape sequences
+		input = input.replace("\\", "\\\\");  // Escape backslashes
+		input = input.replace("\"", "\\\"");  // Escape double quotes
+		input = input.replace("\b", "\\b");   // Escape backspace
+		input = input.replace("\f", "\\f");   // Escape form feed
+		input = input.replace("\n", "\\n");   // Escape newlines
+		input = input.replace("\r", "\\r");   // Escape carriage returns
+		input = input.replace("\t", "\\t");   // Escape tabs
+		input = input.replace("/", "\\/");   // Escape forward slashes (optional)
+
+		return input;
+	}
+
 
     public static int getprefi(String prefname, int def) {
 	try {
