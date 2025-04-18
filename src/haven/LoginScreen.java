@@ -71,7 +71,7 @@ public class LoginScreen extends Widget {
 	private boolean githubVersionChecked = false;
 
     private String getpref(String name, String def) {
-	return(Utils.getpref(name + "@" + hostname, def));
+	return(RegistryStore.getpref(name + "@" + hostname, def));
     }
 
     public LoginScreen(String hostname) {
@@ -184,7 +184,7 @@ public class LoginScreen extends Widget {
 
 	    private UserEntry(int w) {
 		super(w, "");
-//		history.addAll(Utils.getprefsl("saved-tokens@" + hostname, new String[] {}));
+//		history.addAll(RegistryStore.getprefsl("saved-tokens@" + hostname, new String[] {}));
 	    }
 
 	    protected void changed() {
