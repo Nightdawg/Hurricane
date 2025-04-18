@@ -41,8 +41,8 @@ public class Map {
     private Vertex vxend;
 
     private final Dbg dbg;
-    private final static boolean DEBUG = false;
-    public final static boolean DEBUG_TIMINGS = false;
+    private final static boolean DEBUG = true;
+    public final static boolean DEBUG_TIMINGS = true;
 
     public Map(Coord plc, Coord endc, MCache mcache) {
         this.plc = plc;
@@ -140,50 +140,47 @@ public class Map {
             return;
         }
 
-        if (HitBoxes.collisionBoxMap.get(gob.getres().name) != null) {
-            HitBoxes.CollisionBox[] collisionBoxes = HitBoxes.collisionBoxMap.get(gob.getres().name);
-            if (gob.getres().name.contains("/pow")) {
-                Resource res = gob.getres();
-                ResDrawable rd = gob.getattr(ResDrawable.class);
-                if (rd != null) {
-                    if (res.name.endsWith("/pow") && (rd.sdt.checkrbuf(0) != 33 && rd.sdt.checkrbuf(0) != 17)) {
-                        addGobToList(new Coord(-4, -4), new Coord(4, 4), gob);
-                    }
+        if (gob.getres().name.contains("/pow")) {
+            Resource res = gob.getres();
+            ResDrawable rd = gob.getattr(ResDrawable.class);
+            if (rd != null) {
+                if (res.name.endsWith("/pow") && (rd.sdt.checkrbuf(0) != 33 && rd.sdt.checkrbuf(0) != 17)) {
+                    addGobToList(new Coord(-4, -4), new Coord(4, 4), gob);
                 }
-            } else if (gob.getres().name.contains("gate")){
-                Resource res = gob.getres();
-                ResDrawable rd = gob.getattr(ResDrawable.class);
-                if (rd != null){
-                    if (res.name.contains("gate") && (rd.sdt.checkrbuf(0) != 1)){
-                        if(gob.getres().name.contains("big")){
-                            addGobToList(new Coord(-5, -16), new Coord(5, 16), gob);
-                        } else {
-                            addGobToList(new Coord(-5, -11), new Coord(5, 11), gob);
-                        }
-                    }
-                }
-            } else {
-                for (HitBoxes.CollisionBox collisionBox : collisionBoxes) {
-                    if (!collisionBox.hitAble) {
-                        return;
+            }
+        } else if (gob.getres().name.contains("gate")){
+            Resource res = gob.getres();
+            ResDrawable rd = gob.getattr(ResDrawable.class);
+            if (rd != null){
+                if (res.name.contains("gate") && (rd.sdt.checkrbuf(0) != 1)){
+                    if(gob.getres().name.contains("big")){
+                        addGobToList(new Coord(-5, -16), new Coord(5, 16), gob);
                     } else {
-                        if (collisionBox.coords == null || collisionBox.coords.length < 3) {
-                            return;
-                        }
-
-                        double minX = Double.MAX_VALUE;
-                        double minY = Double.MAX_VALUE;
-                        double maxX = Double.MIN_VALUE;
-                        double maxY = Double.MIN_VALUE;
-
-                        for (Coord2d coord : collisionBox.coords) {
-                            minX = Math.min(minX, coord.x);
-                            minY = Math.min(minY, coord.y);
-                            maxX = Math.max(maxX, coord.x);
-                            maxY = Math.max(maxY, coord.y);
-                        }
-                        addGobToList(new Coord2d(minX, minY).floor(), new Coord2d(maxX, maxY).floor(), gob);
+                        addGobToList(new Coord(-5, -11), new Coord(5, 11), gob);
                     }
+                }
+            }
+        } else {
+            for (HitBoxes.CollisionBox collisionBox : HitBoxes.getCollisionBoxes(gob)) {
+                if (!collisionBox.hitAble) {
+                    return;
+                } else {
+                    if (collisionBox.coords == null || collisionBox.coords.length < 3) {
+                        return;
+                    }
+
+                    double minX = Double.MAX_VALUE;
+                    double minY = Double.MAX_VALUE;
+                    double maxX = Double.MIN_VALUE;
+                    double maxY = Double.MIN_VALUE;
+
+                    for (Coord2d coord : collisionBox.coords) {
+                        minX = Math.min(minX, coord.x);
+                        minY = Math.min(minY, coord.y);
+                        maxX = Math.max(maxX, coord.x);
+                        maxY = Math.max(maxY, coord.y);
+                    }
+                    addGobToList(new Coord2d(minX, minY).floor(), new Coord2d(maxX, maxY).floor(), gob);
                 }
             }
         }
