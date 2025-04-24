@@ -28,6 +28,7 @@ package haven;
 
 import haven.res.ui.music.MusicWnd;
 import haven.sprites.PingSprite;
+import haven.res.ui.rchan.RealmChannel;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -1365,7 +1366,10 @@ public class ChatUI extends Widget {
 
 	private void add(Channel chan) {
 	    synchronized(chls) {
-		chls.add(new DarkChannel(chan));
+			if (chan instanceof RealmChannel && OptWnd.removeRealmChatCheckBox.a) {
+				return;
+			}
+			chls.add(new DarkChannel(chan));
 	    }
 	}
 

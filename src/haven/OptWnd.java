@@ -1305,6 +1305,7 @@ public class OptWnd extends Window {
 	public static TextEntry villageNameTextEntry;
 	public static CheckBox villageChatAlertSoundsCheckBox;
 	public static CheckBox autoSelectNewChatCheckBox;
+	public static CheckBox removeRealmChatCheckBox;
 	public static CheckBox showKinStatusChangeMessages;
 
 	public static HSlider systemMessagesListSizeSlider;
@@ -1367,6 +1368,13 @@ public class OptWnd extends Window {
 					Utils.setprefb("autoSelectNewChat", val);
 				}
 			}, prev.pos("bl").adds(0, 4).x(0));
+
+			prev = add(removeRealmChatCheckBox = new CheckBox("Remove realm chat (requires restart)"){
+				{a = (Utils.getprefb("removeRealmChat", false));}
+				public void changed(boolean val) {
+					Utils.setprefb("removeRealmChat", val);
+				}
+			}, prev.pos("bl").adds(0, 4));
 
 			prev = add(showKinStatusChangeMessages = new CheckBox("Show kin status system messages"){
 				{a = (Utils.getprefb("showKinStatusChangeMessages", true));}
