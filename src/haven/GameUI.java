@@ -167,6 +167,26 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread turnipThread;
 	public CleanupBot cleanupBot;
 	public Thread cleanupThread;
+	public GetTheBestSeeds getTheBestSeeds;
+	public Thread getTheBestSeedsThread;
+	public MixSeedsByQuality mixSeedsByQuality;
+	public Thread mixSeedsByQualityThread;
+	public FillBarrelWithSeeds fillBarrelWithSeeds;
+	public Thread fillBarrelWithSeedsThread;
+	public FillInventoryWithSeeds fillInventoryWithSeeds;
+	public Thread fillInventoryWithSeedsThread;
+	public Autoprepare autoprepare;
+	public Thread autoprepareThread;
+	public Autoshoot autoshoot;
+	public Thread autoshootThread;
+	public Autoshoot autoleash;
+	public Thread autoleashThread;
+	public FillTrays filltrays;
+	public Thread fillTraysThread;
+	public BuilderTools builderTools;
+	public Thread builderToolsThread;
+	public Farmer farmerTools;
+	public Thread farmerToolsThread;
 
 
     public static abstract class BeltSlot {
