@@ -769,6 +769,16 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Bots/TarKilnEmptierBot");
 		makeLocal("customclient/menugrid/Bots/TurnipBot");
 		makeLocal("customclient/menugrid/Bots/CleanupBot");
+		makeLocal("customclient/menugrid/Bots/GetTheBestSeeds");
+		makeLocal("customclient/menugrid/Bots/MixSeedsByQuality");
+		makeLocal("customclient/menugrid/Bots/FillBarrelWithSeeds");
+		makeLocal("customclient/menugrid/Bots/FillInventoryWithSeeds");
+		makeLocal("customclient/menugrid/Bots/Autoprepare");
+		makeLocal("customclient/menugrid/Bots/Autoshoot");
+		makeLocal("customclient/menugrid/Bots/Autoleash");
+		makeLocal("customclient/menugrid/Bots/FillTrays");
+		makeLocal("customclient/menugrid/Bots/BuilderTools");
+		makeLocal("customclient/menugrid/Bots/Farmer");
 
 		// Category: Other Scripts & Tools
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add9CoalScript");
@@ -923,6 +933,55 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 						gui.cleanupThread = null;
 					}
 				}
+			} else if (ad[2].equals("GetTheBestSeeds")) {
+				gui.getTheBestSeedsThread = new Thread(new GetTheBestSeeds(gui), "GetTheBestSeeds");
+				gui.runActionThread(gui.getTheBestSeedsThread);
+			} else if (ad[2].equals("MixSeedsByQuality")) {
+				gui.mixSeedsByQualityThread = new Thread(new MixSeedsByQuality(gui), "MixSeedsByQuality");
+				gui.runActionThread(gui.mixSeedsByQualityThread);
+			} else if (ad[2].equals("FillBarrelWithSeeds")) {
+				gui.fillBarrelWithSeedsThread = new Thread(new FillBarrelWithSeeds(gui), "FillBarrelWithSeeds");
+				gui.runActionThread(gui.fillBarrelWithSeedsThread);
+			} else if (ad[2].equals("FillInventoryWithSeeds")) {
+				gui.fillInventoryWithSeedsThread = new Thread(new FillInventoryWithSeeds(gui), "FillInventoryWithSeeds");
+				gui.runActionThread(gui.fillInventoryWithSeedsThread);
+			} else if (ad[2].equals("Autoprepare")) {
+				gui.autoprepareThread = new Thread(new Autoprepare(gui), "Autoprepare");
+				gui.runActionThread(gui.autoprepareThread);
+			} else if (ad[2].equals("BuilderTools")) {
+				if (gui.builderTools == null && gui.builderToolsThread == null) {
+					gui.builderTools = new BuilderTools(gui);
+					gui.add(gui.builderTools, Utils.getprefc("wndc-builderToolsWindow", new Coord(gui.sz.x/2 - gui.builderTools.sz.x/2, gui.sz.y/2 - gui.builderTools.sz.y/2 - 200)));
+					gui.builderToolsThread = new Thread(gui.builderTools, "BuilderTools");
+					gui.builderToolsThread.start();
+				} else {
+					if (gui.builderTools != null) {
+						gui.builderTools.stop();
+						gui.builderTools.reqdestroy();
+						gui.builderTools = null;
+						gui.builderToolsThread = null;
+					}
+				}
+			} else if (ad[2].equals("Farmer")) {
+				if (gui.farmerTools == null && gui.farmerToolsThread == null) {
+					gui.farmerTools = new Farmer(gui);
+					gui.add(gui.farmerTools, Utils.getprefc("wndc-farmerWindow", new Coord(gui.sz.x/2 - gui.farmerTools.sz.x/2, gui.sz.y/2 - gui.farmerTools.sz.y/2 - 200)));
+					gui.farmerToolsThread = new Thread(gui.farmerTools, "FarmerTools");
+					gui.farmerToolsThread.start();
+				} else {
+					if (gui.farmerTools != null) {
+						gui.farmerTools.stop();
+						gui.farmerTools.reqdestroy();
+						gui.farmerTools = null;
+						gui.farmerToolsThread = null;
+					}
+				}
+			} else if (ad[2].equals("Autoshoot")) {
+				gui.runActionThread(new Thread(new Autoshoot(gui), "Autoshoot"));
+			} else if (ad[2].equals("Autoleash")) {
+				gui.runActionThread(new Thread(new Autoleash(gui), "Autoleash"));
+			} else if (ad[2].equals("FillTrays")) {
+				gui.runActionThread(new Thread(new FillTrays(gui), "FillTrays"));
 			}
 		} else if (ad[1].equals("OtherScriptsAndTools")) {
 			if (ad[2].equals("Add9CoalScript")) {
