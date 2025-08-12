@@ -1203,12 +1203,7 @@ public class MiniMap extends Widget {
 		}
 
 		if (!cover.isEmpty()) {
-			g.chcolor(new java.awt.Color(0, 0, 0, 190));
-			for (java.awt.Rectangle r : cover) {
-				if (r.width > 0 && r.height > 0)
-					g.frect(new Coord(r.x, r.y), new Coord(r.width, r.height));
-			}
-			g.chcolor(new java.awt.Color(248, 248, 248, 64));
+			g.chcolor(new java.awt.Color(0, 0, 0, 100));
 			for (java.awt.Rectangle r : cover) {
 				if (r.width > 0 && r.height > 0)
 					g.frect(new Coord(r.x, r.y), new Coord(r.width, r.height));
