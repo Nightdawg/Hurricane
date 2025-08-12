@@ -240,6 +240,7 @@ public class LoginScreen extends Widget {
 	GameUI.verifiedAccount = false;
 	GameUI.subscribedAccount = false;
 	GameUI.stopAllThemes();
+	haven.automated.helpers.FogOfWar.reset();
 	add(new IButton("customclient/discord", "", "-d", "-h") {
 		{settip("Hurricane Client Discord");}
 		public void click() {

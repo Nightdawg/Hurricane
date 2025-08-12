@@ -27,6 +27,7 @@
 package haven;
 
 import haven.automated.pathfinder.Pathfinder;
+import haven.automated.helpers.FogOfWar;
 import haven.render.*;
 
 import java.awt.image.BufferedImage;
@@ -777,7 +778,9 @@ public class MiniMap extends Widget {
 	drawmap(g);
 	drawmarkers(g);
 	drawmovequeue(g);
+    FogOfWar.snapshot(ui.gui.map.player());
 	if(showMapViewRange) {drawview(g);}
+    drawFogOfWar(g);
 	if(showMapGridLines && dlvl <= 6) {drawgridlines(g);}
 	if(dlvl <= 3)
 	    drawicons(g);
@@ -1162,6 +1165,53 @@ public class MiniMap extends Widget {
 			if (zoomlevel >= 0.4 && follow) {
 				g.chcolor(VIEW_BORDER_COLOR);
 				g.rect(rc, viewsz);
+			}
+			g.chcolor();
+		}
+	}
+
+	void drawFogOfWar(GOut g) {
+		java.util.ArrayList<java.awt.Rectangle> cover = new java.util.ArrayList<>();
+		java.awt.Rectangle viewport = new java.awt.Rectangle(0, 0, this.sz.x, this.sz.y);
+		cover.add(viewport);
+
+		haven.Coord2d sgsz = new haven.Coord2d(MiniMap.sgridsz);
+
+		for (int i = 0; i < FogOfWar.seen.size(); i++) {
+			long[] tl = FogOfWar.seen.get(i);
+
+			double wx = tl[0] * sgsz.x;
+			double wy = tl[1] * sgsz.y;
+			Coord rc = p2c(new Coord2d(wx, wy));
+			Coord viewsz = MiniMap.VIEW_SZ.div(zoomlevel);
+			java.awt.Rectangle hole = new java.awt.Rectangle(rc.x, rc.y, viewsz.x, viewsz.y);
+			hole = hole.intersection(viewport);
+			if (hole.width <= 0 || hole.height <= 0) continue;
+
+			java.util.ArrayList<java.awt.Rectangle> next = new java.util.ArrayList<>();
+			for (java.awt.Rectangle r : cover) {
+				java.awt.Rectangle inter = r.intersection(hole);
+				if (inter.width <= 0 || inter.height <= 0) {
+					next.add(r);
+					continue;
+				}
+
+				if (r.y < inter.y) next.add(new java.awt.Rectangle(r.x, r.y, r.width, inter.y - r.y));
+				int interB = inter.y + inter.height, rB = r.y + r.height;
+				if (interB < rB) next.add(new java.awt.Rectangle(r.x, interB, r.width, rB - interB));
+				if (r.x < inter.x) next.add(new java.awt.Rectangle(r.x, inter.y, inter.x - r.x, inter.height));
+				int interR = inter.x + inter.width, rR = r.x + r.width;
+				if (interR < rR) next.add(new java.awt.Rectangle(interR, inter.y, rR - interR, inter.height));
+			}
+			cover = next;
+			if (cover.isEmpty()) break;
+		}
+
+		if (!cover.isEmpty()) {
+			g.chcolor(new java.awt.Color(0, 0, 0, 100));
+			for (java.awt.Rectangle r : cover) {
+				if (r.width > 0 && r.height > 0)
+					g.frect(new Coord(r.x, r.y), new Coord(r.width, r.height));
 			}
 			g.chcolor();
 		}

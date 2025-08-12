@@ -68,6 +68,7 @@ public class Charlist extends Widget {
 	Gob.batWingCapeEquipped = false;
 	Gob.nightQueenDefeated = false;
 	Gob.alarmPlayed.clear();
+	haven.automated.helpers.FogOfWar.reset();
 	GameUI.stopAllThemes();
     }
 
