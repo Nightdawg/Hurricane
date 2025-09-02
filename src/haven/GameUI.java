@@ -176,7 +176,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread cellarDiggingThread;
 	public RoastingSpitBot roastingSpitBot;
 	public Thread roastingSpitThread;
-
+	public FishingBot fishingBot;
+	public Thread fishingThread;
 
     public static abstract class BeltSlot {
 	public final int idx;
