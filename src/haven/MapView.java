@@ -78,6 +78,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	public boolean areaSelect = false;
 	public Coord currentCursorLocation;
 	public Coord3f gobPathLastClick;
+	public boolean moveWithPf = false;
 
     public interface Delayed {
 	public void run(GOut g);
@@ -2238,7 +2239,11 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		if(checkpointManager != null && checkpointManagerThread != null && clickb == 1){
 			checkpointManager.pauseIt();
 		}
-	    wdgmsg("click", args);
+		if (moveWithPf && clickb == 1 && ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper) {
+			pfLeftClick(mc.floor(), null);
+		} else {
+			wdgmsg("click", args);
+		}
 	}
 
 	public void clickedGob(Coord pc, Coord2d mc, ClickData inf){

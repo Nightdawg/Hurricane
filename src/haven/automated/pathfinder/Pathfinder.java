@@ -25,6 +25,7 @@ public class Pathfinder implements Runnable {
     private int modflags;
     private int interruptedRetries = 5;
     private static final int RESPONSE_TIMEOUT = 800;
+    private long avgOverrun = 0;
 
     public Pathfinder(MapView mv, Coord dest, String action) {
         this.dest = dest;
@@ -78,33 +79,26 @@ public class Pathfinder implements Runnable {
         long start = System.nanoTime();
         synchronized (oc) {
             for (Gob gob : oc) {
-                if (gob.isPlgob(this.mv.ui.gui)) {
+                if (gob.isPlgob(this.mv.ui.gui))
                     continue;
-                }
-                if (this.gob != null && this.gob.id == gob.id) {
+                if (this.gob != null && this.gob.id == gob.id)
                     continue;
-                }
                 if (gob.getres() != null && isInsideBoundBox(gob.rc.floor(), gob.a, gob.getres().name, player.rc.floor())) {
-                    if (HitBoxes.collisionBoxMap.get(gob.getres().name) != null) {
-                        HitBoxes.CollisionBoxSecondary[] collisionBoxes = HitBoxes.collisionBoxMap.get(gob.getres().name);
+                    HitBoxes.CollisionBoxSecondary[] collisionBoxes = HitBoxes.collisionBoxMap.get(gob.getres().name);
+                    if (collisionBoxes != null) {
                         for (HitBoxes.CollisionBoxSecondary collisionBox : collisionBoxes) {
-                            if (collisionBox.hitAble) {
-                                if (collisionBox.coords.length > 2) {
-                                    double minX = Double.MAX_VALUE;
-                                    double minY = Double.MAX_VALUE;
-                                    double maxX = Double.MIN_VALUE;
-                                    double maxY = Double.MIN_VALUE;
-
-                                    for (Coord2d coord : collisionBox.coords) {
-                                        minX = Math.min(minX, coord.x);
-                                        minY = Math.min(minY, coord.y);
-                                        maxX = Math.max(maxX, coord.x);
-                                        maxY = Math.max(maxY, coord.y);
-                                    }
-                                    Coord2d topLeft = new Coord2d(minX, minY);
-                                    Coord2d bottomRight = new Coord2d(maxX, maxY);
-                                    m.excludeGob(topLeft.floor(), bottomRight.floor(), gob);
+                            if (collisionBox.hitAble && collisionBox.coords.length > 2) {
+                                double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE;
+                                double maxX = Double.MIN_VALUE, maxY = Double.MIN_VALUE;
+                                for (Coord2d coord : collisionBox.coords) {
+                                    minX = Math.min(minX, coord.x);
+                                    minY = Math.min(minY, coord.y);
+                                    maxX = Math.max(maxX, coord.x);
+                                    maxY = Math.max(maxY, coord.y);
                                 }
+                                Coord2d topLeft = new Coord2d(minX, minY);
+                                Coord2d bottomRight = new Coord2d(maxX, maxY);
+                                m.excludeGob(topLeft.floor(), bottomRight.floor(), gob);
                             }
                         }
                     }
@@ -113,74 +107,58 @@ public class Pathfinder implements Runnable {
             }
         }
 
-        // if player is located at a position occupied by a gob (can happen when starting too close to gobs)
-        // move it slightly away from it
         if (m.isOriginBlocked()) {
             Pair<Integer, Integer> freeloc = m.getFreeLocation();
-
             if (freeloc == null) {
                 terminate = true;
                 m.dbgdump();
                 return;
             }
-
             mc = new Coord2d(src.x + freeloc.a - Map.origin, src.y + freeloc.b - Map.origin).floor(posres);
             mv.wdgmsg("click", Coord.z, mc, 1, 0);
-
-            // FIXME
             try {
                 Thread.sleep(30);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            // need to recalculate map
+            } catch (InterruptedException ignored) {}
             moveinterupted = true;
             m.dbgdump();
             return;
         }
 
-        // exclude any bounding boxes overlapping the destination gob
-        if (this.gob != null)
-            if (HitBoxes.collisionBoxMap.get(this.gob.getres().name) != null) {
-                HitBoxes.CollisionBoxSecondary[] collisionBoxes = HitBoxes.collisionBoxMap.get(this.gob.getres().name);
+        if (this.gob != null) {
+            HitBoxes.CollisionBoxSecondary[] collisionBoxes = HitBoxes.collisionBoxMap.get(this.gob.getres().name);
+            if (collisionBoxes != null) {
                 for (HitBoxes.CollisionBoxSecondary collisionBox : collisionBoxes) {
-                    if (collisionBox.hitAble) {
-                        if (collisionBox.coords.length > 2) {
-                            double minX = Double.MAX_VALUE;
-                            double minY = Double.MAX_VALUE;
-                            double maxX = Double.MIN_VALUE;
-                            double maxY = Double.MIN_VALUE;
-
-                            for (Coord2d coord : collisionBox.coords) {
-                                minX = Math.min(minX, coord.x);
-                                minY = Math.min(minY, coord.y);
-                                maxX = Math.max(maxX, coord.x);
-                                maxY = Math.max(maxY, coord.y);
-                            }
-                            Coord2d topLeft = new Coord2d(minX, minY);
-                            Coord2d bottomRight = new Coord2d(maxX, maxY);
-                            m.excludeGob(topLeft.floor(), bottomRight.floor(), this.gob);
+                    if (collisionBox.hitAble && collisionBox.coords.length > 2) {
+                        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE;
+                        double maxX = Double.MIN_VALUE, maxY = Double.MIN_VALUE;
+                        for (Coord2d coord : collisionBox.coords) {
+                            minX = Math.min(minX, coord.x);
+                            minY = Math.min(minY, coord.y);
+                            maxX = Math.max(maxX, coord.x);
+                            maxY = Math.max(maxY, coord.y);
                         }
+                        Coord2d topLeft = new Coord2d(minX, minY);
+                        Coord2d bottomRight = new Coord2d(maxX, maxY);
+                        m.excludeGob(topLeft.floor(), bottomRight.floor(), this.gob);
                     }
                 }
             }
+        }
 
         if (Map.DEBUG_TIMINGS)
             System.out.println("      Gobs Processing: " + (double) (System.nanoTime() - start) / 1000000.0 + " ms.");
 
         Iterable<Edge> path = m.main();
+
         if (Map.DEBUG_TIMINGS)
             System.out.println("--------------- Total: " + (double) (System.nanoTime() - starttotal) / 1000000.0 + " ms.");
 
         m.dbgdump();
-        //System.out.println("path length: " + path.spliterator().getExactSizeIfKnown());
+
         Iterator<Edge> it = path.iterator();
         while (it.hasNext() && !moveinterupted && !terminate) {
             Edge e = it.next();
-
             mc = new Coord2d(src.x + e.dest.x - Map.origin, src.y + e.dest.y - Map.origin).floor(posres);
-            //System.out.println("moving to mc: " + mc);
 
             if (action != null && !it.hasNext())
                 mv.ui.gui.act(action);
@@ -202,34 +180,34 @@ public class Pathfinder implements Runnable {
                     return;
             }
 
-            // wait for it to finish
-            while (!moveinterupted && !terminate) {
-                if (!player.isMoving()) {
-                    try {
-                        Thread.sleep(25);
-                    } catch (InterruptedException e1) {
-                        return;
-                    }
-                    if (!player.isMoving())
-                        break;
-                }
-
+            Coord2d destWorld = mc.mul(posres);
+            long segmentStart = System.currentTimeMillis();
+            long estimate = estimateTravelTimeWorld(player.rc, destWorld, player);
+            long lead = Math.min(50, (long) (estimate * 0.05));
+            long wait = Math.max(0, estimate - lead - avgOverrun);
+            if (wait > 0) {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(wait);
                 } catch (InterruptedException e1) {
                     return;
                 }
-
-                long now = System.currentTimeMillis();
-
-                // FIXME
-                // when right clicking gobs, char will try to navigate towards gob's rc
-                // however he will be blocked by gob's bounding box.
-                // therefore we just wait for a bit
-                LinMove lm = player.getLinMove();
-                if (gob != null && !it.hasNext() && lm != null && now - lm.lastupd > 500)
-                    break;
             }
+
+
+            while (!moveinterupted && !terminate) {
+                if (!player.isMoving()) {
+                    break;
+                }
+                try {
+                    Thread.sleep(25);
+                } catch (InterruptedException e1) {
+                    return;
+                }
+            }
+
+            long actual = System.currentTimeMillis() - segmentStart;
+            long overrun = actual - estimate;
+            avgOverrun = (avgOverrun + overrun) / 2;
 
             if (moveinterupted) {
                 interruptedRetries--;
@@ -242,6 +220,15 @@ public class Pathfinder implements Runnable {
         terminate = true;
     }
 
+    private long estimateTravelTimeWorld(Coord2d curPos, Coord2d destPos, Gob player) {
+        LinMove lm = player.getLinMove();
+        double speed = (lm != null) ? lm.getv() : 0; // world units per second
+        if (speed <= 0) {
+            return RESPONSE_TIMEOUT;
+        }
+        double dist = curPos.dist(destPos);
+        return (long)((dist / speed) * 1000.0);
+    }
 
     public static boolean isInsideBoundBox(Coord gobRc, double gobA, String resName, Coord point) {
         if (HitBoxes.collisionBoxMap.get(resName) != null) {
