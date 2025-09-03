@@ -19,10 +19,6 @@ public class TwoOptionSwitch<T> extends Widget {
 
     private int hoverIndex = -1;
 
-    public TwoOptionSwitch(Coord size, int rowHeight, T first, T second, Function<T, String> renderer) {
-        this(size, rowHeight, Arrays.asList(first, second), renderer);
-    }
-
     public TwoOptionSwitch(Coord size, int rowHeight, Collection<T> data, Function<T, String> renderer) {
         this.rowHeight = UI.scale(rowHeight);
         this.textPaddingX = UI.scale(8);
@@ -30,9 +26,8 @@ public class TwoOptionSwitch<T> extends Widget {
         this.textRenderer = (renderer != null) ? renderer : String::valueOf;
 
         setItemsInternal(data);
-        Coord scaled = UI.scale(size);
-        int h = Math.max(scaled.y, this.rowHeight * 2);
-        this.sz = new Coord(scaled.x, h);
+        int h = Math.max(size.y, this.rowHeight * 2);
+        this.sz = new Coord(size.x, h);
     }
 
     private void setItemsInternal(Collection<T> data) {
@@ -43,13 +38,14 @@ public class TwoOptionSwitch<T> extends Widget {
         selectedIndex = Math.min(Math.max(selectedIndex, 0), 1);
     }
 
+    protected void changed(String selectedText, int selectedIndex) {}
+
     public void toggle() {
         selectedIndex = 1 - selectedIndex;
+        changed(getSelected(), selectedIndex);
     }
 
-    public String getSelected() {
-        return textRenderer.apply(items.get(selectedIndex));
-    }
+    public String getSelected() { return textRenderer.apply(items.get(selectedIndex)); }
 
     @Override
     public void resize(Coord newSize) {
