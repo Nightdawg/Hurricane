@@ -23,7 +23,7 @@ public class SingleSelectList<T> extends Widget {
     private int hoverIndex = -1;
 
     public SingleSelectList(Coord size, int rowHeight, Collection<T> data, Function<T, String> renderer) {
-        this.sz = UI.scale(size);
+        this.sz = size;
         this.rowHeight = UI.scale(rowHeight);
         this.textPaddingX = UI.scale(8);
         this.separatorThickness = Math.max(1, UI.scale(1));
