@@ -4,8 +4,8 @@ import java.util.*;
 
 public class FishingAtlas {
 
-    public static final Set<String> fishingPoles = new HashSet<>(Arrays.asList(
-            "Primitive Casting-Rod", "Bushcraft Fishingpole"
+    public static final List<String> fishingPoles = new ArrayList<>(Arrays.asList(
+            "Bushcraft Fishingpole", "Primitive Casting-Rod"
     ));
 
     public static final Set<String> fishingHooks = new HashSet<>(Arrays.asList(
