@@ -1,4 +1,4 @@
-package haven.generic;
+package haven.widgets;
 
 import haven.Coord;
 import haven.GOut;
@@ -9,10 +9,9 @@ import haven.Widget;
 import java.util.*;
 import java.util.function.Function;
 
-public class MultiSelectList<T> extends Widget {
+public class SingleSelectList<T> extends Widget {
     private final List<T> items = new ArrayList<>();
-    private final Set<Integer> selectedIndices = new LinkedHashSet<>();
-    private final List<T> selectedValues = new ArrayList<>();
+    private int selectedIndex = -1;
 
     private final int rowHeight;
     private final int textPaddingX;
@@ -21,34 +20,37 @@ public class MultiSelectList<T> extends Widget {
     private final Scrollbar verticalScrollbar;
     private final Function<T, String> textRenderer;
 
-    private int selectionAnchorIndex = -1;
     private int hoverIndex = -1;
 
-    public MultiSelectList(Coord size, int rowHeight, Collection<T> data, Function<T, String> renderer) {
+    public SingleSelectList(Coord size, int rowHeight, Collection<T> data, Function<T, String> renderer) {
         this.sz = UI.scale(size);
         this.rowHeight = UI.scale(rowHeight);
         this.textPaddingX = UI.scale(8);
         this.separatorThickness = Math.max(1, UI.scale(1));
         this.textRenderer = (renderer != null) ? renderer : String::valueOf;
+
         if (data != null) items.addAll(data);
-        this.verticalScrollbar = add(new Scrollbar(this.sz.y, 0, Math.max(0, items.size() * this.rowHeight - this.sz.y)) {
+
+        this.verticalScrollbar = add(new Scrollbar(this.sz.y, 0,
+                Math.max(0, items.size() * this.rowHeight - this.sz.y)) {
             public void changed() { scrollOffsetY = this.val; }
         }, new Coord(this.sz.x - Scrollbar.width, 0));
-        recomputeSelectedValues();
+
+        clampScroll();
     }
 
     public void setItems(Collection<T> data) {
         items.clear();
         if (data != null) items.addAll(data);
-        selectedIndices.clear();
-        selectionAnchorIndex = -1;
+        selectedIndex = -1;
         clampScroll();
         resize(this.sz);
-        recomputeSelectedValues();
     }
 
-    public List<T> getSelected() {
-        return Collections.unmodifiableList(selectedValues);
+    public String getSelected() {
+        if (selectedIndex < 0 || selectedIndex >= items.size())
+            return null;
+        return textRenderer.apply(items.get(selectedIndex));
     }
 
     @Override
@@ -84,28 +86,15 @@ public class MultiSelectList<T> extends Widget {
     public boolean mousedown(MouseDownEvent ev) {
         if (ev.b != 1) return false;
         if (ev.c.x >= this.sz.x - Scrollbar.width) return false;
+
         int index = (ev.c.y + scrollOffsetY) / rowHeight;
         if (index < 0 || index >= items.size()) return false;
-        boolean shift = ui.modshift;
-        if (shift) {
-            if (selectionAnchorIndex < 0) selectionAnchorIndex = index;
-            int lo = Math.min(selectionAnchorIndex, index), hi = Math.max(selectionAnchorIndex, index);
-            int others = 0, selOthers = 0;
-            for (int i = lo; i <= hi; i++) {
-                if (i == selectionAnchorIndex) continue;
-                others++;
-                if (selectedIndices.contains(i)) selOthers++;
-            }
-            if (others > 0 && selOthers == others) {
-                for (int i = lo; i <= hi; i++) if (i != selectionAnchorIndex) selectedIndices.remove(i);
-            } else {
-                for (int i = lo; i <= hi; i++) selectedIndices.add(i);
-            }
+
+        if (selectedIndex == index) {
+            selectedIndex = -1;
         } else {
-            if (selectedIndices.contains(index)) selectedIndices.remove(index); else selectedIndices.add(index);
-            selectionAnchorIndex = index;
+            selectedIndex = index;
         }
-        recomputeSelectedValues();
         return true;
     }
 
@@ -127,13 +116,16 @@ public class MultiSelectList<T> extends Widget {
         g.chcolor(16, 16, 16, 160);
         g.frect(Coord.z, this.sz);
         g.chcolor();
+
         int first = Math.max(0, scrollOffsetY / rowHeight);
         int visibleCount = Math.max(1, (this.sz.y + rowHeight - 1) / rowHeight);
         int last = Math.min(items.size(), first + visibleCount + 1);
         int innerWidth = this.sz.x - Scrollbar.width;
+
         for (int i = first; i < last; i++) {
             int y = i * rowHeight - scrollOffsetY;
-            if (selectedIndices.contains(i)) {
+
+            if (i == selectedIndex) {
                 g.chcolor(60, 120, 200, 160);
                 g.frect(Coord.of(0, y), Coord.of(innerWidth, rowHeight));
                 g.chcolor();
@@ -142,27 +134,25 @@ public class MultiSelectList<T> extends Widget {
                 g.frect(Coord.of(0, y), Coord.of(innerWidth, rowHeight));
                 g.chcolor();
             }
-            if (i == hoverIndex && !selectedIndices.contains(i)) {
+
+            if (i == hoverIndex && i != selectedIndex) {
                 g.chcolor(255, 255, 255, 30);
                 g.frect(Coord.of(0, y), Coord.of(innerWidth, rowHeight));
                 g.chcolor();
             }
+
             String text = textRenderer.apply(items.get(i));
             g.atext(text, Coord.of(textPaddingX, y + (rowHeight / 2)), 0, 0.5);
+
             g.chcolor(255, 255, 255, 40);
-            g.frect(Coord.of(0, y + rowHeight - separatorThickness), Coord.of(innerWidth, separatorThickness));
+            g.frect(Coord.of(0, y + rowHeight - separatorThickness),
+                    Coord.of(innerWidth, separatorThickness));
             g.chcolor();
         }
+
         super.draw(g);
     }
 
     @Override public void wdgmsg(String msg, Object... args) {}
     @Override public void wdgmsg(Widget sender, String msg, Object... args) {}
-
-    private void recomputeSelectedValues() {
-        selectedValues.clear();
-        for (int idx : selectedIndices) {
-            if (idx >= 0 && idx < items.size()) selectedValues.add(items.get(idx));
-        }
-    }
 }
