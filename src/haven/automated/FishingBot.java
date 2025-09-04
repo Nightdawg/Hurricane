@@ -4,12 +4,13 @@ import haven.*;
 import haven.Button;
 import haven.Label;
 import haven.Window;
-import haven.automated.helpers.FishingData;
+import haven.automated.helpers.FishingAtlas;
+import haven.widgets.MultiSelectList;
+import haven.widgets.TwoOptionSwitch;
 
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 
 import static haven.OCache.posres;
 
@@ -18,16 +19,94 @@ public class FishingBot extends Window implements Runnable {
 
     private boolean stop;
     private boolean active;
+
     private final Button startButton;
-    private final Label fishingDirLabel;
-    private Coord fishingDir;
+
+    private final TwoOptionSwitch<String> fishingPoleChoice;
+    private final MultiSelectList<String> hookChoice;
+    private final MultiSelectList<String> fishLineChoice;
+    private final MultiSelectList<String> baitChoice;
+    private final MultiSelectList<String> lureChoice;
 
     public FishingBot(GameUI gui) {
-        super(UI.scale(120, 140), "FishingBot");
+        super(UI.scale(415, 190), "Fishing Bot");
         this.gui = gui;
         this.stop = false;
         this.active = false;
-        fishingDir = new Coord(0, -44);
+
+        Label fishingLabel = new Label("Choose Fishing Pole:"){
+            {
+                setstroked(Color.BLACK);
+                setcolor(Color.LIGHT_GRAY);
+            }
+        };
+        add(fishingLabel, UI.scale(20, 0));
+
+        Label hookLabel = new Label("Choose Hook:"){
+            {
+                setstroked(Color.BLACK);
+                setcolor(Color.LIGHT_GRAY);
+            }
+        };
+        add(hookLabel, UI.scale(30, 73));
+
+        Label fishLineLabel = new Label("Choose Fishline:"){
+            {
+                setstroked(Color.BLACK);
+                setcolor(Color.LIGHT_GRAY);
+            }
+        };
+        add(fishLineLabel, UI.scale(155, 0));
+
+        Label baitLabel = new Label("Choose Bait:"){
+            {
+                setstroked(Color.BLACK);
+                setcolor(Color.LIGHT_GRAY);
+            }
+        };
+        add(baitLabel, UI.scale(295, 0));
+
+
+        fishingPoleChoice = add(new TwoOptionSwitch<String>(UI.scale(120, 36), 18, FishingAtlas.fishingPoles, s -> s) {
+            @Override
+            protected void changed(String sel, int idx) {
+                if (idx == 0) {
+                    baitChoice.show();
+                    lureChoice.hide();
+                    baitLabel.settext("Choose Bait:");
+                    active = false;
+                    startButton.change("Start");
+                } else {
+                    baitChoice.hide();
+                    lureChoice.show();
+                    baitLabel.settext("Choose Lure:");
+                    active = false;
+                    startButton.change("Start");
+                }
+            }
+        }, UI.scale(10, 20));
+
+        hookChoice = add(
+                new MultiSelectList<>(UI.scale(130, 72), 18, FishingAtlas.fishingHooks, s -> s),
+                UI.scale(10, 92)
+        );
+
+        fishLineChoice = add(
+                new MultiSelectList<>(UI.scale(130, 144), 18, FishingAtlas.fishingLines, s -> s),
+                UI.scale(135, 20)
+        );
+
+        baitChoice = add(
+                new MultiSelectList<>(UI.scale(140, 144), 18, FishingAtlas.fishingBaits, s -> s),
+                UI.scale(260, 20)
+        );
+
+        lureChoice = add(
+                new MultiSelectList<>(UI.scale(140, 144), 18, FishingAtlas.fishingLures, s -> s),
+                UI.scale(260, 20)
+        );
+        lureChoice.hide();
+
 
         startButton = add(new Button(UI.scale(50), "Start") {
             @Override
@@ -39,57 +118,7 @@ public class FishingBot extends Window implements Runnable {
                     this.change("Start");
                 }
             }
-        }, UI.scale(30, 100));
-
-        Button northDirection = new Button(UI.scale(25), "N") {
-            @Override
-            public void click() {
-                changeDirection(1);
-            }
-        };
-        add(northDirection, UI.scale(45, 10));
-        Button eastDirection = new Button(UI.scale(25), "E") {
-            @Override
-            public void click() {
-                changeDirection(2);
-            }
-        };
-        add(eastDirection, UI.scale(75, 35));
-        Button southDirection = new Button(UI.scale(25), "S") {
-            @Override
-            public void click() {
-                changeDirection(3);
-            }
-        };
-        add(southDirection, UI.scale(45, 60));
-        Button westDirection = new Button(UI.scale(25), "W") {
-            @Override
-            public void click() {
-                changeDirection(4);
-            }
-        };
-        add(westDirection, UI.scale(15, 35));
-
-        fishingDirLabel = new Label("N");
-        add(fishingDirLabel, UI.scale(52, 38));
-        fishingDirLabel.tooltip = RichText.render("Choose water direction. 4 Tiles in front of player.", UI.scale(300));
-    }
-
-
-    private void changeDirection(int dir){
-        if(dir == 1){
-            fishingDir = new Coord(0, -44);
-            fishingDirLabel.settext("N");
-        } else if (dir == 2) {
-            fishingDir = new Coord(44, 0);
-            fishingDirLabel.settext("E");
-        } else if (dir == 3) {
-            fishingDir = new Coord(0, 44);
-            fishingDirLabel.settext("S");
-        } else if (dir == 4) {
-            fishingDir = new Coord(-44, 0);
-            fishingDirLabel.settext("W");
-        }
+        }, UI.scale(180, 175));
     }
 
     private int contentAnalysis(WItem item) {
@@ -100,133 +129,232 @@ public class FishingBot extends Window implements Runnable {
                     count++;
                 }
             }
-        } catch (Loading ignored){}
+        } catch (Loading ignored) {
+        }
         return count;
     }
 
 
+    private void prepareFishingPole() {
+        String poleSel = fishingPoleChoice.getSelected();
 
-    private void manageFishingPole(){
-        Equipory equipory = gui.getequipory();
-        WItem leftHand = equipory.slots[6];
-        WItem rightHand = equipory.slots[7];
-        int fishingPoleState = -1;
+        Equipory eq = gui.getequipory();
         int hand = -1;
-        if (leftHand != null && leftHand.item != null && leftHand.item.getres() != null && leftHand.item.getres().name.contains("gfx/invobjs/small/bushpole")) {
-            fishingPoleState = contentAnalysis(leftHand);
-            hand = 6;
-        } else if (rightHand != null && rightHand.item != null && rightHand.item.getres() != null && rightHand.item.getres().name.contains("gfx/invobjs/small/bushpole")) {
-            fishingPoleState = contentAnalysis(rightHand);
-            hand = 7;
+        for (int slot : new int[]{6, 7}) {
+            WItem it = eq.slots[slot];
+            if (it != null && it.item != null) {
+                String name = it.item.getname();
+                if (poleSel.equals(name)) {
+                    hand = slot;
+                    break;
+                }
+            }
         }
-
-        if(fishingPoleState == -1){
-            startButton.change("Start");
-            active = false;
-            gui.error("No fishing pole in hand.");
+        if (hand == -1) {
+            deactivate("Fishbot: You need to wear " + poleSel + ". Stopping..");
             return;
         }
 
-        List<WItem> items = new ArrayList<>();
-        if(fishingPoleState < 3){
-            items = AUtils.getAllItemsFromAllInventoriesAndStacksExcludeBeltAndKeyring(gui);
-        }
+        WItem pole = eq.slots[hand];
+        int state = contentAnalysis(pole);
 
-        if(fishingPoleState == 0){
+        List<WItem> items = (state < 3)
+                ? AUtils.getAllItemsFromAllInventoriesAndStacksExcludeBeltAndKeyring(gui)
+                : Collections.emptyList();
+
+        if (state == 0) {
             putOnFishingLine(items, hand);
-        } else if (fishingPoleState == 1){
+        } else if (state == 1) {
             putOnHook(items, hand);
-        } else if (fishingPoleState == 2){
-            putOnBait(items, hand);
-        } else if (fishingPoleState == 3){
-            if(gui.prog == null){
-                gui.wdgmsg("act", "fish");
-                gui.map.wdgmsg("click", Coord.z, gui.map.player().rc.add(Coord2d.of(fishingDir)).floor(posres), 1, 0);
-                sleep(1000);
-                gui.map.wdgmsg("click", Coord.z, gui.map.player().rc.add(Coord2d.of(fishingDir)).floor(posres), 3, 0);
+        } else if (state == 2) {
+            if ("Primitive Casting-Rod".equals(poleSel)) {
+                putOnLure(items, hand);
             } else {
-                sleep(1000);
+                putOnBait(items, hand);
             }
+        } else if (state == 3) {
+            // ready to fish
         }
     }
 
-    private void putOnFishingLine(List<WItem> items, int hand){
-        List<WItem> fishingLines = new ArrayList<>();
-        for(WItem item : items){
-            if(item.item.getname().contains("Fishline")){
-                fishingLines.add(item);
+
+    private void putOnFishingLine(List<WItem> items, int hand) {
+        List<String> selected = fishLineChoice.getSelected();
+        Set<String> allowedNames = (selected != null && !selected.isEmpty())
+                ? new HashSet<>(selected) : FishingAtlas.fishingLines;
+
+        List<WItem> candidates = new ArrayList<>();
+        for (WItem it : items) {
+            if (it == null || it.item == null) continue;
+            String name = it.item.getname();
+            if (name != null && allowedNames.contains(name)) {
+                candidates.add(it);
             }
         }
-        if(fishingLines.size() == 0){
-            active = false;
-            startButton.change("Start");
-            gui.error("No fishing line in inventories. Stopping");
-        } else {
-            gui.msg("Putting on fishing line.", Color.WHITE);
-            fishingLines.get(0).item.wdgmsg("take", Coord.z);
-            gui.getequipory().slots[hand].item.wdgmsg("itemact", 0);
+
+        if (candidates.isEmpty()) {
+            deactivate("Fishbot: No matching fishlines found in inventory. Stopping..");
+            return;
+        }
+
+        Collections.shuffle(candidates);
+        WItem chosen = candidates.getFirst();
+
+        chosen.item.wdgmsg("take", Coord.z);
+
+        WItem handItem = gui.getequipory().slots[hand];
+        if (handItem != null && handItem.item != null) {
+            handItem.item.wdgmsg("itemact", 0);
             sleep(500);
+        } else {
+            deactivate("Fishbot: No fishing pole in hand slot: " + hand + " to attach the line to. Stopping..");
         }
     }
 
-    private void putOnHook(List<WItem> items, int hand){
-        List<WItem> hooks = new ArrayList<>();
-        for(WItem item : items){
-            if(item.item.getname().contains("Hook")){
-                hooks.add(item);
+    private void putOnHook(List<WItem> items, int hand) {
+        List<String> selected = hookChoice.getSelected();
+        Set<String> allowedNames = (selected != null && !selected.isEmpty())
+                ? new HashSet<>(selected)
+                : FishingAtlas.fishingHooks;
+
+        List<WItem> candidates = new ArrayList<>();
+        for (WItem it : items) {
+            if (it == null || it.item == null) continue;
+            String name = it.item.getname();
+            if (name != null && allowedNames.contains(name)) {
+                candidates.add(it);
             }
         }
-        if(hooks.size() == 0){
-            active = false;
-            startButton.change("Start");
-            gui.error("No hook in inventories. Stopping");
-        } else {
-            gui.msg("Putting on fishing hook.", Color.WHITE);
-            hooks.get(0).item.wdgmsg("take", Coord.z);
-            gui.getequipory().slots[hand].item.wdgmsg("itemact", 0);
+
+        if (candidates.isEmpty()) {
+            deactivate("Fishbot: No matching hooks found in inventory. Stopping..");
+            return;
+        }
+
+        Collections.shuffle(candidates);
+        WItem chosen = candidates.getFirst();
+
+        chosen.item.wdgmsg("take", Coord.z);
+
+        WItem handItem = gui.getequipory().slots[hand];
+        if (handItem != null && handItem.item != null) {
+            handItem.item.wdgmsg("itemact", 0);
             sleep(500);
+        } else {
+            deactivate("Fishbot: No fishing pole in hand slot: " + hand + " to attach the hook to. Stopping..");
         }
     }
 
-    private void putOnBait(List<WItem> items, int hand){
-        List<WItem> bait = new ArrayList<>();
-        for(WItem item : items){
-            if(FishingData.baits.contains(item.item.getname())){
-                bait.add(item);
+
+    private void putOnBait(List<WItem> items, int hand) {
+        List<String> selected = baitChoice.getSelected();
+        Set<String> allowedNames = (selected != null && !selected.isEmpty())
+                ? new HashSet<>(selected)
+                : FishingAtlas.fishingBaits;
+
+        List<WItem> candidates = new ArrayList<>();
+        for (WItem it : items) {
+            if (it == null || it.item == null) continue;
+            String name = it.item.getname();
+            if (name != null && allowedNames.contains(name)) {
+                candidates.add(it);
             }
         }
-        if(bait.size() == 0){
-            active = false;
-            startButton.change("Start");
-            gui.error("No bait in inventories. Stopping");
-        } else {
-            gui.msg("Putting on bait.", Color.WHITE);
-            bait.get(0).item.wdgmsg("take", Coord.z);
-            gui.getequipory().slots[hand].item.wdgmsg("itemact", 0);
+
+        if (candidates.isEmpty()) {
+            deactivate("Fishbot: No matching baits found in inventory. Stopping..");
+            return;
+        }
+
+        Collections.shuffle(candidates);
+        WItem chosen = candidates.getFirst();
+
+        chosen.item.wdgmsg("take", Coord.z);
+
+        WItem handItem = gui.getequipory().slots[hand];
+        if (handItem != null && handItem.item != null) {
+            handItem.item.wdgmsg("itemact", 0);
             sleep(500);
+        } else {
+            deactivate("Fishbot: No fishing pole in hand slot: " + hand + " to attach the bait to. Stopping..");
         }
     }
 
+    private void putOnLure(List<WItem> items, int hand) {
+        List<String> selected = lureChoice.getSelected();
+        Set<String> allowedNames = (selected != null && !selected.isEmpty())
+                ? new HashSet<>(selected)
+                : FishingAtlas.fishingLures;
+
+        List<WItem> candidates = new ArrayList<>();
+        for (WItem it : items) {
+            if (it == null || it.item == null) continue;
+            String name = it.item.getname();
+            if (name != null && allowedNames.contains(name)) {
+                candidates.add(it);
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            deactivate("Fishbot: No matching lures found in inventory. Stopping..");
+            return;
+        }
+
+        Collections.shuffle(candidates);
+        WItem chosen = candidates.getFirst();
+
+        chosen.item.wdgmsg("take", Coord.z);
+
+        WItem handItem = gui.getequipory().slots[hand];
+        if (handItem != null && handItem.item != null) {
+            handItem.item.wdgmsg("itemact", 0);
+            sleep(500);
+        } else {
+            deactivate("Fishbot: No fishing pole in hand slot: " + hand + " to attach the lure to. Stopping..");
+        }
+    }
 
 
     @Override
     public void run() {
         while (!stop) {
-            if(active){
-                int freeSpace = 0;
-                for(Inventory inventory: gui.getAllInventories()){
-                    if (!AUtils.isBeltOrKeyring(inventory)) {
-                        freeSpace = freeSpace + inventory.getFreeSpace();
-                    }
+            if (!checkVitals()) {
+                sleep(1000);
+                continue;
+            }
+            if (active) {
+                if (gui.maininv.getFreeSpace() < 3) {
+                    //Todo might add fish stockpiling
+                    deactivate("Fishing Bot: Full inventory! Stopping..");
                 }
-                if(freeSpace < 3){
-                    active = false;
-                    gui.error("full inv stopping");
-                    startButton.change("Start");
-                }
-                manageFishingPole();
+                prepareFishingPole();
+
+
             }
             sleep(200);
+        }
+    }
+
+    private boolean checkVitals() {
+        try {
+            double hp = gui.getmeters("hp").get(1).a;
+            if (hp < 0.02) {
+                gui.act("travel", "hearth");
+                try {
+                    Thread.sleep(8000);
+                } catch (InterruptedException ignored) {
+                }
+                deactivate("Fishing Bot: HP IS " + hp + " .. PORTING HOME!");
+                return false;
+            }
+            double nrj = ui.gui.getmeter("nrj", 0).a;
+            if (nrj < 0.25) {
+                deactivate("Fishing Bot: Low on energy! Stopping..");
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            return true;
         }
     }
 
@@ -235,6 +363,13 @@ public class FishingBot extends Window implements Runnable {
             Thread.sleep(duration);
         } catch (InterruptedException ignored) {
         }
+    }
+
+    public void deactivate(String message) {
+        gui.msg(message, Color.WHITE);
+        System.out.println(message);
+        active = false;
+        startButton.change("Start");
     }
 
     @Override
@@ -255,5 +390,103 @@ public class FishingBot extends Window implements Runnable {
             gui.map.pfthread.interrupt();
         }
         this.destroy();
+    }
+
+    private List<FishWindowRow> returnFishWindow(){
+        List<FishWindowRow> rows;
+
+        Optional<Window> test = returnFishingWindow();
+
+        if (test.isPresent()) {
+            sleep(1000);
+
+            rows = new ArrayList<>();
+
+            boolean sawButton = false;
+            Button currentBtn;
+            FishWindowRow currentRow = null;
+            int labelIndex = 0;
+
+            for (Widget w : test.get().children()) {
+                if (!sawButton) {
+                    if (w instanceof Button) {
+                        sawButton = true;
+                        currentBtn = (Button) w;              // start first line
+                        currentRow = new FishWindowRow(currentBtn);
+                    }
+                } else {
+                    if (w instanceof Button) {
+                        rows.add(currentRow);
+
+                        currentBtn = (Button) w;
+                        currentRow = new FishWindowRow(currentBtn);
+                        labelIndex = 0;
+                    } else if (w instanceof Label) {
+                        String t = ((Label) w).texts;
+                        t = (t == null) ? "" : t.trim();
+                        switch (labelIndex) {
+                            case 0:
+                                if (!t.isEmpty()) currentRow.fishName = t;
+                                break;
+                            case 1:
+                                if (!t.isEmpty()) {
+                                    String digits = t.replaceAll("\\D+", "");
+                                    if (!digits.isEmpty()) currentRow.gearPct = Integer.parseInt(digits);
+                                }
+                                break;
+                            case 3:
+                                if (!t.isEmpty()) {
+                                    String digits = t.replaceAll("\\D+", "");
+                                    if (!digits.isEmpty()) currentRow.lurePct = Integer.parseInt(digits);
+                                }
+                                break;
+                            case 5:
+                                if (!t.isEmpty()) {
+                                    String digits = t.replaceAll("\\D+", "");
+                                    if (!digits.isEmpty()) currentRow.finalPct = Integer.parseInt(digits);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        labelIndex++;
+                    }
+                }
+            }
+
+            for (FishWindowRow r : rows) {
+                System.out.println(
+                        r.button.wdgid() + " - " +
+                                (r.fishName == null ? "" : r.fishName) +
+                                " | gear="  + (r.gearPct  == null ? "" : (r.gearPct  + "%")) +
+                                " | lure="  + (r.lurePct  == null ? "" : (r.lurePct  + "%")) +
+                                " | final=" + (r.finalPct == null ? "" : (r.finalPct + "%"))
+                );
+            }
+
+        } else {
+            rows = Collections.emptyList();
+        }
+        return rows;
+    }
+
+    private Optional<Window> returnFishingWindow(){
+        return ui.getAllWidgets().stream()
+                .filter(Window.class::isInstance)
+                .map(Window.class::cast)
+                .filter(win -> "This is bait".equals(win.cap))
+                .findFirst();
+    }
+}
+
+class FishWindowRow {
+    Button button;
+    String fishName;
+    Integer gearPct;
+    Integer lurePct;
+    Integer finalPct;
+
+    FishWindowRow(Button button) {
+        this.button = button;
     }
 }
