@@ -87,6 +87,7 @@ public class MiniMap extends Widget {
 	public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
 	public static boolean highlightMapTiles = Utils.getprefb("highlightMapTiles", false);
+	public static boolean showMapFogOfWar = Utils.getprefb("showMapFogOfWar", false);
 	private final List<MapSprite> mapSprites = new LinkedList<>();
 
     public MiniMap(Coord sz, MapFile file) {
@@ -1171,6 +1172,8 @@ public class MiniMap extends Widget {
 	}
 
 	void drawFogOfWar(GOut g) {
+		if (!MiniMap.showMapFogOfWar)
+			return;
 		java.util.ArrayList<java.awt.Rectangle> cover = new java.util.ArrayList<>();
 		java.awt.Rectangle viewport = new java.awt.Rectangle(0, 0, this.sz.x, this.sz.y);
 		cover.add(viewport);

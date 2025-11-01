@@ -141,6 +141,16 @@ public class MapWnd extends Window implements Console.Directory {
 			TileHighlight.toggle(ui.gui);
 		})
 		.settip("Highlight Map Tiles\n\nLeft-click to toggle Tile Highlighting\nRight-click to open Highlight Settings", true);
+	toolbarTop.add(new ICheckBox("gfx/hud/mmap/fow", "", "-d", "-h", "-dh"), UI.scale(new Coord(50, 0)))
+		.state(() -> MiniMap.showMapFogOfWar)
+		.click(() -> {
+			Utils.setprefb("showMapFogOfWar", !MiniMap.showMapFogOfWar);
+			MiniMap.showMapFogOfWar = !MiniMap.showMapFogOfWar;
+		})
+		.rclick(() -> {
+
+		})
+		.settip("Show Fog of War\n\nThis is just an overlay that shows which map tiles you have seen/explored during this session.\nThe fog resets when you log out.", true);
 	toolbarTop.c = new Coord(UI.scale(2), UI.scale(2));
 	toolbarTop.pack();
 	toolbar = add(new Widget(Coord.z));
