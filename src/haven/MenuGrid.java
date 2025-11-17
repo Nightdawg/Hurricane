@@ -776,6 +776,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Bots/TurnipBot");
 		makeLocal("customclient/menugrid/Bots/CellarDiggingBot");
 		makeLocal("customclient/menugrid/Bots/CleanupBot");
+		makeLocal("customclient/menugrid/Bots/GrubGrubBot");
 		makeLocal("customclient/menugrid/Bots/RoastingSpitBot");
 
 		// Category: Other Scripts & Tools
@@ -929,6 +930,22 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 						gui.cleanupBot.reqdestroy();
 						gui.cleanupBot = null;
 						gui.cleanupThread = null;
+					}
+				}
+			} else if (ad[2].equals("GrubGrubBot")) {
+				if (gui.grubGrubBot == null && gui.grubGrubThread == null) {
+					gui.grubGrubBot = new GrubGrubBot(gui);
+					gui.grubGrubThread = new Thread(gui.grubGrubBot, "GrubGrubBot");
+					gui.grubGrubThread.start();
+					GrubGrubBot.transferTicksInstead = true;
+					gui.msg("GrubGrub Bot started.", Color.WHITE);
+				} else {
+					if (gui.grubGrubBot != null) {
+						GrubGrubBot.transferTicksInstead = false;
+						gui.msg("No more GrubGrub.", Color.WHITE);
+						gui.grubGrubBot.stop();
+						gui.grubGrubBot = null;
+						gui.grubGrubThread = null;
 					}
 				}
 			} else if (ad[2].equals("CellarDiggingBot")) {

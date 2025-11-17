@@ -82,7 +82,7 @@
       <javaversion atleast="21" />
     </condition>
     <javac srcdir="src" destdir="build/classes" debug="on"
-	   source="15" target="15" includeantruntime="no"
+	   source="21" target="21" includeantruntime="no"
 	   bootclasspath="${boot-classpath}">
       <classpath>
 	<pathelement path="lib/ext/jogl/jogl-all.jar" />
