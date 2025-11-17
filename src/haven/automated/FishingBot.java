@@ -112,7 +112,7 @@ public class FishingBot extends Window implements Runnable {
             {
                 a = true;
             }
-        }, UI.scale(100, 173));
+        }, UI.scale(100, 177));
 
         startButton = add(new Button(UI.scale(50), "Start") {
             @Override
