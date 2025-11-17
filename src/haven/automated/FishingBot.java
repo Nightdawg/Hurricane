@@ -21,6 +21,7 @@ public class FishingBot extends Window implements Runnable {
     private boolean active;
 
     private final Button startButton;
+    private final CheckBox startCheckBox;
 
     private final TwoOptionSwitch<String> fishingPoleChoice;
     private final MultiSelectList<String> hookChoice;
@@ -34,7 +35,7 @@ public class FishingBot extends Window implements Runnable {
         this.stop = false;
         this.active = false;
 
-        Label fishingLabel = new Label("Choose Fishing Pole:"){
+        Label fishingLabel = new Label("Choose Fishing Pole:") {
             {
                 setstroked(Color.BLACK);
                 setcolor(Color.LIGHT_GRAY);
@@ -42,7 +43,7 @@ public class FishingBot extends Window implements Runnable {
         };
         add(fishingLabel, UI.scale(20, 0));
 
-        Label hookLabel = new Label("Choose Hook:"){
+        Label hookLabel = new Label("Choose Hook:") {
             {
                 setstroked(Color.BLACK);
                 setcolor(Color.LIGHT_GRAY);
@@ -50,7 +51,7 @@ public class FishingBot extends Window implements Runnable {
         };
         add(hookLabel, UI.scale(30, 73));
 
-        Label fishLineLabel = new Label("Choose Fishline:"){
+        Label fishLineLabel = new Label("Choose Fishline:") {
             {
                 setstroked(Color.BLACK);
                 setcolor(Color.LIGHT_GRAY);
@@ -58,7 +59,7 @@ public class FishingBot extends Window implements Runnable {
         };
         add(fishLineLabel, UI.scale(155, 0));
 
-        Label baitLabel = new Label("Choose Bait:"){
+        Label baitLabel = new Label("Choose Bait:") {
             {
                 setstroked(Color.BLACK);
                 setcolor(Color.LIGHT_GRAY);
@@ -107,6 +108,11 @@ public class FishingBot extends Window implements Runnable {
         );
         lureChoice.hide();
 
+        startCheckBox = add(new CheckBox("Fishing"){
+            {
+                a = true;
+            }
+        }, UI.scale(100, 173));
 
         startButton = add(new Button(UI.scale(50), "Start") {
             @Override
@@ -118,7 +124,7 @@ public class FishingBot extends Window implements Runnable {
                     this.change("Start");
                 }
             }
-        }, UI.scale(180, 175));
+        }, UI.scale(210, 175));
     }
 
     private int contentAnalysis(WItem item) {
@@ -173,7 +179,9 @@ public class FishingBot extends Window implements Runnable {
                 putOnBait(items, hand);
             }
         } else if (state == 3) {
-            // ready to fish
+            if (startCheckBox.a) {
+                beginFishing();
+            }
         }
     }
 
@@ -324,14 +332,11 @@ public class FishingBot extends Window implements Runnable {
             }
             if (active) {
                 if (gui.maininv.getFreeSpace() < 3) {
-                    //Todo might add fish stockpiling
                     deactivate("Fishing Bot: Full inventory! Stopping..");
                 }
                 prepareFishingPole();
-
-
             }
-            sleep(200);
+            sleep(500);
         }
     }
 
@@ -355,6 +360,34 @@ public class FishingBot extends Window implements Runnable {
             return true;
         } catch (Exception e) {
             return true;
+        }
+    }
+
+    private Coord2d getFishingCoord() {
+        Gob player = gui.map.player();
+        if (player == null) {
+            return null;
+        }
+        return new Coord2d(player.rc.x + 22 * Math.cos(player.a), player.rc.y + 22 * Math.sin(player.a));
+    }
+
+    private void beginFishing() {
+        Gob player = gui.map.player();
+        if (player == null) {
+            return;
+        }
+        Set<String> poses = player.getPoses();
+        if (poses.contains("fishidle")) {
+            return;
+        }
+
+        Coord2d fishCoord = getFishingCoord();
+        if (fishCoord != null) {
+            gui.menu.wdgmsg("use", 7,0);
+            sleep(500);
+            gui.map.wdgmsg("click", Coord.z, fishCoord.floor(posres), 1, 0);
+            sleep(500);
+            gui.map.wdgmsg("click", Coord.z, fishCoord.floor(posres), 3, 0);
         }
     }
 
@@ -392,7 +425,7 @@ public class FishingBot extends Window implements Runnable {
         this.destroy();
     }
 
-    private List<FishWindowRow> returnFishWindow(){
+    private List<FishWindowRow> returnFishWindow() {
         List<FishWindowRow> rows;
 
         Optional<Window> test = returnFishingWindow();
@@ -458,8 +491,8 @@ public class FishingBot extends Window implements Runnable {
                 System.out.println(
                         r.button.wdgid() + " - " +
                                 (r.fishName == null ? "" : r.fishName) +
-                                " | gear="  + (r.gearPct  == null ? "" : (r.gearPct  + "%")) +
-                                " | lure="  + (r.lurePct  == null ? "" : (r.lurePct  + "%")) +
+                                " | gear=" + (r.gearPct == null ? "" : (r.gearPct + "%")) +
+                                " | lure=" + (r.lurePct == null ? "" : (r.lurePct + "%")) +
                                 " | final=" + (r.finalPct == null ? "" : (r.finalPct + "%"))
                 );
             }
@@ -470,7 +503,7 @@ public class FishingBot extends Window implements Runnable {
         return rows;
     }
 
-    private Optional<Window> returnFishingWindow(){
+    private Optional<Window> returnFishingWindow() {
         return ui.getAllWidgets().stream()
                 .filter(Window.class::isInstance)
                 .map(Window.class::cast)
