@@ -25,7 +25,7 @@ public class HitBoxGobSprite<T extends RenderTree.Node> extends Sprite {
 	if(show == visible) {return false;}
 	visible = show;
 	if(show) {
-	    Loading.waitfor(() -> RUtils.multiadd(slots, fx));
+	    Loading.waitfor(() -> RUtils.multiaddSafe(slots, fx));
 	} else {
 	    for (RenderTree.Slot slot : slots)
 		slot.clear();

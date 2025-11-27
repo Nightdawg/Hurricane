@@ -126,6 +126,7 @@
       <manifest>
 	<attribute name="Main-Class" value="haven.MainFrame" />
 	<attribute name="Class-Path" value="jogl-all.jar gluegen-rt.jar lwjgl-fat.jar lwjgl-awt.jar lwjgl-opengl-fat.jar steamworks4j.jar builtin-res.jar hafen-res.jar sqlite-jdbc-3.42.0.0.jar" />
+    <attribute name="Enable-Native-Access" value="ALL-UNNAMED" />
       </manifest>
     </jar>
     <chmod file="build/hafen.jar" perm="a+x" />
@@ -185,6 +186,7 @@
     </copy>
     <copy file="etc/ansgar-config.properties" tofile="bin/haven-config.properties" />
     <copy file="Play.bat" todir="bin"/>
+    <copy file="Play_Linux.sh" todir="bin"/>
     <copy file="workshop-client.properties" todir="bin"/>
     <copy file="steamicon.png" todir="bin"/>
     <copy file="steam_appid.txt" todir="bin"/>
@@ -244,7 +246,7 @@
     </exec>
   </target>
 
-    <target name="clean">
+  <target name="clean">
     <delete dir="build" />
     <delete dir="lib/ext" />
     <delete dir="bin" />

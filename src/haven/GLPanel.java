@@ -29,6 +29,7 @@ package haven;
 import java.util.*;
 import haven.render.*;
 import haven.render.gl.*;
+import java.awt.Cursor;
 import java.awt.Toolkit;
 import haven.JOGLPanel.SyncMode;
 
@@ -108,14 +109,14 @@ public interface GLPanel extends UIPanel, UI.Context {
 
 	public static class ProfileCycle implements BGL.Request {
 	    final CPUProfile prof;
-	    final String label;
 	    ProfileCycle prev;
 	    CPUProfile.Frame frame;
+	    Profile.Part curp;
 
-	    ProfileCycle(CPUProfile prof, ProfileCycle prev, String label) {
+	    ProfileCycle(CPUProfile prof, ProfileCycle prev, GLRender out) {
 		this.prof = prof;
 		this.prev = prev;
-		this.label = label;
+		out.submit(this);
 	    }
 
 	    public void run(GL gl) {
@@ -124,8 +125,6 @@ public interface GLPanel extends UIPanel, UI.Context {
 			/* The reason frame would be null is if the
 			 * environment has become invalid and the previous
 			 * cycle never ran. */
-			if(label != null)
-			    prev.frame.tick(label);
 			prev.frame.fin();
 		    }
 		    prev = null;
@@ -134,18 +133,18 @@ public interface GLPanel extends UIPanel, UI.Context {
 	    }
 	}
 
-	public static class ProfileTick implements BGL.Request {
+	public static class ProfilePart implements BGL.Request {
 	    final ProfileCycle prof;
 	    final String label;
 
-	    ProfileTick(ProfileCycle prof, String label) {
+	    ProfilePart(ProfileCycle prof, String label) {
 		this.prof = prof;
 		this.label = label;
 	    }
 
 	    public void run(GL gl) {
 		if((prof != null) && (prof.frame != null))
-		    prof.frame.tick(label);
+		    prof.frame.part(label);
 	    }
 	}
 
@@ -218,39 +217,37 @@ public interface GLPanel extends UIPanel, UI.Context {
 	}
 
 	private String cursmode = defaultcurs();
-	private Resource lastcursor = null;
+	private Object lastcursor = null;
 	private Coord curshotspot = Coord.z;
 	private void drawcursor(UI ui, GOut g) {
-	    Resource curs;
+	    Object curs;
 	    synchronized(ui) {
 		curs = ui.getcurs(ui.mc);
 	    }
-	    if(cursmode == "awt") {
-		if(curs != lastcursor) {
-		    try {
-			if(curs == null) {
-			    curshotspot = Coord.z;
-			    p.setCursor(null);
-			} else {
-			    curshotspot = curs.flayer(Resource.negc).cc;
-			    p.setCursor(UIPanel.makeawtcurs(curs.flayer(Resource.imgc).img, curshotspot));
+	    if(curs instanceof Resource) {
+		Resource res = (Resource)curs;
+		if(cursmode == "awt") {
+		    if(curs != lastcursor) {
+			try {
+			    curshotspot = res.flayer(Resource.negc).cc;
+			    p.setCursor(UIPanel.makeawtcurs(res.flayer(Resource.imgc).img, curshotspot));
+			} catch(Exception e) {
+			    cursmode = "tex";
 			}
-		    } catch(Exception e) {
-			cursmode = "tex";
 		    }
-		}
-	    } else if(cursmode == "tex") {
-		if(curs == null) {
-		    curshotspot = Coord.z;
-		    if(lastcursor != null)
-			p.setCursor(null);
-		} else {
-		    if(lastcursor == null)
+		} else if(cursmode == "tex") {
+		    if(!(lastcursor instanceof Resource))
 			p.setCursor(emptycurs);
-		    curshotspot = UI.scale(curs.flayer(Resource.negc).cc);
+		    curshotspot = UI.scale(res.flayer(Resource.negc).cc);
 		    Coord dc = ui.mc.sub(curshotspot);
-		    g.image(curs.flayer(Resource.imgc), dc);
+		    g.image(res.flayer(Resource.imgc), dc);
 		}
+	    } else if(curs instanceof UI.Cursor) {
+		if(curs != lastcursor)
+		    p.setCursor(UIPanel.getsyscurs((UI.Cursor)curs));
+	    } else {
+		if(curs != lastcursor)
+		    Warning.warn("unexpected cursor specification: %s", curs);
 	    }
 	    lastcursor = curs;
 	}
@@ -336,75 +333,73 @@ public interface GLPanel extends UIPanel, UI.Context {
 		    Debug.cycle(ui.modflags());
 		    GSettings prefs = ui.gprefs;
 		    SyncMode syncmode = prefs.syncmode.val;
-		    CPUProfile.Frame curf = profile.get() ? uprof.new Frame() : null;
+		    CPUProfile.Current curf = profile.get() ?  CPUProfile.set(uprof.new Frame()) : null;
 		    GPUProfile.Frame curgf = profilegpu.get() ? gprof.new Frame(buf) : null;
+		    rprofc = profile.get() ? new ProfileCycle(rprof, rprofc, buf) : null;
 		    BufferBGL.Profile frameprof = false ? new BufferBGL.Profile() : null;
 		    if(frameprof != null) buf.submit(frameprof.start);
-		    buf.submit(new ProfileTick(rprofc, "wait"));
+		    buf.submit(new ProfilePart(rprofc, "tick"));
+		    if(curgf != null) curgf.part(buf, "tick");
 		    Fence curframe = new Fence();
 		    if(syncmode == SyncMode.FRAME)
 			buf.submit(curframe);
 
 		    boolean tickwait = (syncmode == SyncMode.FRAME) || (syncmode == SyncMode.TICK);
 		    if(!tickwait) {
+			CPUProfile.phase(curf, "dwait");
 			if(prevframe != null) {
 			    double now = Utils.rtime();
 			    prevframe.waitfor();
 			    prevframe = null;
 			    fwaited += Utils.rtime() - now;
 			}
-			if(curf != null) curf.tick("dwait");
 		    }
 
 		    int cfno = frameno++;
 		    synchronized(ui) {
+			CPUProfile.phase(curf, "dsp");
 			ed.dispatch(ui);
 			ui.mousehover(ui.mc);
-			if(curf != null) curf.tick("dsp");
 
+			CPUProfile.phase(curf, "stick");
 			if(ui.sess != null) {
 			    ui.sess.glob.ctick();
 			    ui.sess.glob.gtick(buf);
 			}
-			if(curf != null) curf.tick("stick");
+			CPUProfile.phase(curf, "tick");
 			ui.tick();
 			ui.gtick(buf);
 			Area shape = p.shape();
 			if((ui.root.sz.x != (shape.br.x - shape.ul.x)) || (ui.root.sz.y != (shape.br.y - shape.ul.y)))
 			    ui.root.resize(new Coord(shape.br.x - shape.ul.x, shape.br.y - shape.ul.y));
-			if(curf != null) curf.tick("tick");
-			buf.submit(new ProfileTick(rprofc, "tick"));
-			if(curgf != null) curgf.tick(buf, "tick");
+			buf.submit(new ProfilePart(rprofc, "draw"));
+			if(curgf != null) curgf.part(buf, "draw");
 		    }
 
 		    if(tickwait) {
+			CPUProfile.phase(curf, "dwait");
 			if(prevframe != null) {
 			    double now = Utils.rtime();
 			    prevframe.waitfor();
 			    prevframe = null;
 			    fwaited += Utils.rtime() - now;
 			}
-			if(curf != null) curf.tick("dwait");
 		    }
 
+		    CPUProfile.phase(curf, "draw");
 		    display(ui, buf);
-		    if(curf != null) curf.tick("draw");
-		    if(curgf != null) curgf.tick(buf, "draw");
-		    buf.submit(new ProfileTick(rprofc, "gl"));
+		    CPUProfile.phase(curf, "aux");
+		    if(curgf != null) curgf.part(buf, "swap");
+		    buf.submit(new ProfilePart(rprofc, "swap"));
 		    buf.submit(new BufferSwap(cfno));
-		    if(curgf != null) curgf.tick(buf, "swap");
-		    buf.submit(new ProfileTick(rprofc, "swap"));
 		    if(curgf != null) curgf.fin(buf);
 		    if(syncmode == SyncMode.FINISH) {
+			buf.submit(new ProfilePart(rprofc, "finish"));
 			buf.submit(new GLFinish());
-			buf.submit(new ProfileTick(rprofc, "finish"));
 		    }
 		    if(syncmode != SyncMode.FRAME)
 			buf.submit(curframe);
-		    if(profile.get())
-			buf.submit(rprofc = new ProfileCycle(rprof, rprofc, "aux"));
-		    else
-			rprofc = null;
+		    buf.submit(new ProfilePart(rprofc, "wait"));
 		    buf.submit(new FrameCycle());
 		    if(frameprof != null) {
 			buf.submit(frameprof.stop);
@@ -412,8 +407,8 @@ public interface GLPanel extends UIPanel, UI.Context {
 		    }
 		    env.submit(buf);
 		    buf = null;
-		    if(curf != null) curf.tick("aux");
 
+		    CPUProfile.phase(curf, "wait");
 		    double now = Utils.rtime();
 		    double fd = framedur();
 		    if(then + fd > now) {
@@ -441,9 +436,8 @@ public interface GLPanel extends UIPanel, UI.Context {
 			}
 		    }
 		    framep = (framep + 1) % frames.length;
-		    if(curf != null) curf.tick("wait");
 
-		    if(curf != null) curf.fin();
+		    CPUProfile.end(curf);
 		    prevframe = curframe;
 		}
 	    } finally {

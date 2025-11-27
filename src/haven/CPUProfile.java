@@ -29,44 +29,118 @@ package haven;
 import java.util.*;
 
 public class CPUProfile extends Profile {
+    private final long epoch;
+    private long fno = 1;
+
     public CPUProfile(int hl) {
 	super(hl);
+	epoch = System.nanoTime();
     }
 
-    public class Frame extends Profile.Frame {
-	private List<Long> pw = new LinkedList<Long>();
-	private List<String> nw = new LinkedList<String>();
-	private long then, last, sub;
+    private double txl(long tm) {
+	return((tm - epoch) * 1e-9);
+    }
 
-	public Frame() {
-	    last = then = System.nanoTime();
+    private class Part extends Profile.Part {
+	private long f, t;
+	private Part curp = null;
+
+	public Part(Object nm) {
+	    super(nm);
+	    f = System.nanoTime();
 	}
 
-	public void tick(String nm) {
-	    long now = System.nanoTime();
-	    pw.add(now - last - sub);
-	    nw.add(nm);
-	    sub = 0;
-	    last = now;
+	public double f() {return(txl(f));}
+	public double t() {return(txl(t));}
+
+	public Part part(Object nm) {
+	    Part p = new Part(nm);
+	    if((curp != null) && (curp.t == 0))
+		curp.t = p.f;
+	    add(p);
+	    return(curp = p);
 	}
 
-	public void add(String nm, long tm) {
-	    pw.add(tm);
-	    nw.add(nm);
-	    sub += tm;
+	private void fin(long tm) {
+	    t = tm;
+	    if((curp != null) && (curp.t == 0))
+		curp.fin(tm);
 	}
 
 	public void fin() {
-	    double total = (System.nanoTime() - then) / 1000000000.0;
-	    String[] nm = new String[nw.size()];
-	    double[] prt = new double[pw.size()];
-	    for(int i = 0; i < pw.size(); i++) {
-		nm[i] = nw.get(i);
-		prt[i] = pw.get(i) / 1000000000.0;
-	    }
-	    fin(total, nm, prt);
-	    pw = null;
-	    nw = null;
+	    fin(System.nanoTime());
 	}
+    }
+
+    public class Frame extends Part {
+	public Frame() {super(String.format("frame %,d", fno++));}
+
+	public void fin() {
+	    super.fin();
+	    CPUProfile.this.add(this);
+	}
+    }
+
+    public static final ThreadLocal<Current> current = new ThreadLocal<>();
+    public static class Current implements AutoCloseable {
+	public final Part part;
+	private final Current parent;
+
+	public Current(Part part, Current parent) {
+	    this.part = part;
+	    this.parent = parent;
+	}
+
+	public void fin() {
+	    part.fin();
+	    current.set(parent);
+	}
+
+	public void close() {
+	    fin();
+	}
+    }
+
+    public static Current set(Part part) {
+	Current ret = new Current(part, null);
+	current.set(ret);
+	return(ret);
+    }
+
+    public static Current begin(Object nm) {
+	Current cur = current.get();
+	if(cur == null)
+	    return(null);
+	Current ret = new Current(cur.part.part(nm), cur);
+	current.set(ret);
+	return(ret);
+    }
+
+    public static Current phase(Object nm) {
+	Current cur = current.get();
+	if(cur == null)
+	    return(null);
+	Current ret = new Current(cur.parent.part.part(nm), cur.parent);
+	current.set(ret);
+	return(ret);
+    }
+
+    public static Current phase(Current on, Object nm) {
+	Current cur = current.get();
+	if(cur == null)
+	    return(null);
+	Current ret = new Current(on.part.part(nm), on);
+	current.set(ret);
+	return(ret);
+    }
+
+    public static void end(Current cur) {
+	if(cur == null)
+	    return;
+	cur.fin();
+    }
+
+    public static void end() {
+	end(current.get());
     }
 }

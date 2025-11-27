@@ -9,7 +9,7 @@ import haven.MenuGrid.Pagina;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/croster", version = 75)
+@haven.FromResource(name = "ui/croster", version = 76)
 public class RosterButton extends MenuGrid.PagButton {
     public final GameUI gui;
     public RosterWindow wnd;
@@ -29,7 +29,7 @@ public class RosterButton extends MenuGrid.PagButton {
 	if(wnd == null) {
 	    wnd = new RosterWindow();
 	    wnd.addroster(rost);
-	    gui.addchild(wnd, "misc", new Coord(0, 0), new Object[] {"id", "croster"});
+		gui.addchild(wnd, "misc", new Coord(0, 0), new Object[] {"id", "croster"});
 	    synchronized(RosterWindow.rosters) {
 		RosterWindow.rosters.put(pag.scm.ui.sess.glob, wnd);
 	    }

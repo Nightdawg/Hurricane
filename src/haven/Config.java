@@ -40,7 +40,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.33a";
+	public static final String clientVersion = "v1.38";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -185,7 +185,7 @@ public class Config {
 	    return(prop(name, Double::parseDouble, () -> defval));
 	}
 	public static Variable<byte[]> propb(String name, byte[] defval) {
-	    return(prop(name, Utils::hex2byte, () -> defval));
+	    return(prop(name, Utils.hex::dec, () -> defval));
 	}
 	public static Variable<URI> propu(String name, URI defval) {
 	    return(prop(name, Config::parseuri, () -> defval));
@@ -317,7 +317,7 @@ public class Config {
 		Bootstrap.authuser.set(opt.arg);
 		break;
 	    case 'C':
-		Bootstrap.authck.set(Utils.hex2byte(opt.arg));
+		Bootstrap.authck.set(Utils.hex.dec(opt.arg));
 		break;
 	    case 'p':
 		Utils.prefspec.set(opt.arg);
@@ -1122,10 +1122,12 @@ public class Config {
 		if (MappingClient.initialized()) {
 			MappingClient.destroy();
 		}
-		MappingClient.init(ui.sess.glob);
-		MappingClient automapper = MappingClient.getInstance();
-		if (automapper != null)
-			automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");
+        if (!OptWnd.webmapEndpointTextEntry.text().isEmpty()) {
+            MappingClient.init(ui.sess.glob);
+            MappingClient automapper = MappingClient.getInstance();
+            if (automapper != null)
+                automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");
+        }
 	}
 
 	public static final Map<String, String> ORE_FULL_NAMES = new HashMap<>();

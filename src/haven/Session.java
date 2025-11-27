@@ -45,6 +45,7 @@ public class Session implements Resource.Resolver {
     public static final int MSG_OBJDATA = 6;
     public static final int MSG_OBJACK = 7;
     public static final int MSG_CLOSE = 8;
+    public static final int MSG_CRYPT = 9;
     public static final int SESSERR_AUTH = 1;
     public static final int SESSERR_BUSY = 2;
     public static final int SESSERR_CONN = 3;
@@ -58,12 +59,37 @@ public class Session implements Resource.Resolver {
     public int connfailed = 0;
     public String connerror = null;
     LinkedList<PMessage> uimsgs = new LinkedList<PMessage>();
-    String username;
+    public final User user;
     final Map<Integer, CachedRes> rescache = new TreeMap<Integer, CachedRes>();
     public final Glob glob;
-    public byte[] sesskey;
+    public SignKey sesskey;
     private boolean closed = false;
 	public UI ui;
+
+    public static class User {
+	public final String name;
+	public String alias = null, readname = null, prsname = null;
+
+	public User(String name) {
+	    this.name = name;
+	}
+
+	public User alias(String val) {alias = val; return(this);}
+	public User readname(String val) {readname = val; return(this);}
+	public User prsname(String val) {prsname = val; return(this);}
+
+	public String readname() {return((readname != null) ? readname : name);}
+	public String prsname() {return((prsname != null) ? prsname : name);}
+	public String reauth() {return(name);}
+
+	public User copy() {
+	    User ret = new User(this.name);
+	    ret.alias = this.alias;
+	    ret.readname = this.readname;
+	    ret.prsname = this.prsname;
+	    return(ret);
+	}
+    }
 
     @SuppressWarnings("serial")
     public static class MessageException extends RuntimeException {
@@ -211,7 +237,7 @@ public class Session implements Resource.Resolver {
 	    int resver = msg.uint16();
 	    cachedres(resid).set(resname, resver);
 	} else if(msg.type == RMessage.RMSG_SESSKEY) {
-	    sesskey = msg.bytes();
+	    sesskey = new SignKey.HMAC(Digest.SHA256, msg.bytes());
 	} else {
 	    throw(new MessageException("Unknown rmsg type: " + msg.type, msg));
 	}
@@ -238,12 +264,12 @@ public class Session implements Resource.Resolver {
 	    }
 	};
 
-    public Session(SocketAddress server, String username, byte[] cookie, Object... args) throws InterruptedException {
-	this.conn = new Connection(server, username);
-	this.username = username;
+    public Session(SocketAddress server, User user, boolean encrypt, byte[] cookie, Object... args) throws InterruptedException {
+	this.conn = new Connection(server);
+	this.user = user;
 	this.glob = new Glob(this);
 	conn.add(conncb);
-	conn.connect(cookie, args);
+	conn.connect((user.alias != null) ? user.alias : user.name, encrypt, cookie, args);
     }
 
     public void close() {

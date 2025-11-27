@@ -1088,12 +1088,16 @@ public class ChatUI extends Widget {
 				for (Widget w = ui.gui.lchild; w != null; w = w.prev) {
 					if (w instanceof MusicWnd) {
 						final MusicWnd musicWnd = (MusicWnd)w;
-						musicWnd.hafenMidiplayer.synchPlay(timetoplay, track);
+						if (musicWnd.hafenMidiplayer != null)
+							musicWnd.hafenMidiplayer.synchPlay(timetoplay, track);
 					}
 				}
 			}
 			catch (NumberFormatException ignored) {}
-		}
+		} else if (name.equals("Party") && Party.isTargetMarkerMessage(msg)) {
+            ui.sess.glob.party.handleMarkerMessage(msg);
+            return false;
+        }
 		return true;
 	}
 

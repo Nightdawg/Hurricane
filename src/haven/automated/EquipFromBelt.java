@@ -36,6 +36,9 @@ public class EquipFromBelt implements Runnable {
                     case "Equip_BoarSpear":
                         equipTwoHanderFromBelt("gfx/invobjs/small/boarspear", "Boar Spear");
                         break;
+                    case "Equip_GiantNeedle":
+                        equipTwoHanderFromBelt("gfx/invobjs/small/giantneedle", "Giant Needle");
+                        break;
                     case "Equip_Pickaxe":
                         equipTwoHanderFromBelt("gfx/invobjs/small/pickaxe", "Pickaxe");
                         break;

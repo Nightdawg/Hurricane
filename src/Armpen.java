@@ -4,7 +4,7 @@ import haven.*;
 import haven.res.ui.tt.wpn.info.*;
 
 /* >tt: Armpen */
-@haven.FromResource(name = "ui/tt/wpn/armpen", version = 7)
+@haven.FromResource(name = "ui/tt/wpn/armpen", version = 8)
 public class Armpen extends WeaponInfo {
     public final double deg;
 

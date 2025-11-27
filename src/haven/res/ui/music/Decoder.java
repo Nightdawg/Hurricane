@@ -10,7 +10,7 @@ import java.awt.event.KeyEvent;
 import haven.Audio.CS;
 
 /* >wdg: MusicWnd */
-@haven.FromResource(name = "ui/music", version = 34)
+@haven.FromResource(name = "ui/music", version = 35)
 public abstract class Decoder implements Sprite.Factory {
     public Sprite create(Sprite.Owner owner, Resource res, Message sdt) {
 	int key = sdt.uint8();

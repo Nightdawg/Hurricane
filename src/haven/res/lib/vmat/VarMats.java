@@ -7,7 +7,7 @@ import haven.ModSprite.*;
 import java.util.*;
 import java.util.function.Consumer;
 
-@haven.FromResource(name = "lib/vmat", version = 38)
+@haven.FromResource(name = "lib/vmat", version = 39)
 public abstract class VarMats extends GAttrib implements Mod {
     public VarMats(Gob gob) {
 	super(gob);
@@ -24,7 +24,7 @@ public abstract class VarMats extends GAttrib implements Mod {
 		if(mid >= 0) {
 		    Material vm = varmat(mid);
 		    if(vm != null)
-			part.wraps.addFirst(vm);
+			part.wraps.addFirst(new VarWrap.Applier(vm, mid));
 		}
 	    }
 	}
@@ -32,3 +32,5 @@ public abstract class VarMats extends GAttrib implements Mod {
 
     public int order() {return(100);}
 }
+
+/* >objdelta: AttrMats */

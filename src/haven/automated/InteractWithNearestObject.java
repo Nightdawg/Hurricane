@@ -57,9 +57,9 @@ public class InteractWithNearestObject implements Runnable {
     public void run() {
         Gob theObject = null;
         Gob player = gui.map.player();
-        Coord2d plc = player.rc;
         if (player == null)
             return; // player is null, possibly taking a road, don't bother trying to do any of the below
+        Coord2d plc = player.rc;
         for (Gob gob : Utils.getAllGobs(gui)) {
             double distFromPlayer = gob.rc.dist(plc);
             if (gob.id == gui.map.plgob || distFromPlayer >= maxDistance)

@@ -6,6 +6,7 @@ import haven.Label;
 import haven.Window;
 import haven.automated.helpers.AreaSelectCallback;
 import haven.automated.helpers.FarmingStatic;
+import haven.res.ui.grainslot.Grainslot;
 import haven.res.ui.tt.q.quality.Quality;
 
 import java.awt.*;

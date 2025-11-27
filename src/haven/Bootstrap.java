@@ -99,7 +99,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	String sv = Utils.getpref(name + "@" + hostname, null);
 	if(sv == null)
 	    return(def);
-	byte[] ret = Utils.hex2byte(sv);
+	byte[] ret = Utils.hex.dec(sv);
 	if((ret.length == 0) && !zerovalid)
 	    return(def);
 	return(ret);
@@ -110,7 +110,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	    return(user);
 	/* Mangle name because Java pref names have a somewhat
 	 * ridiculously short limit. */
-	return(Utils.byte2hex(Digest.hash(Digest.MD5, user.getBytes(Utils.utf8))));
+	return(Utils.hex.enc(Digest.hash(Digest.MD5, user.getBytes(Utils.utf8))));
     }
 
     public static byte[] gettoken(String user, String hostname) {
@@ -129,7 +129,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 
     public static void settoken(String user, String hostname, byte[] token) {
 	String prefnm = user;
-	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + hostname, (token == null) ? "" : Utils.byte2hex(token));
+	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + hostname, (token == null) ? "" : Utils.hex.enc(token));
 	rottokens(user, hostname, token != null, true);
     }
 
@@ -169,10 +169,10 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	Session sess;
 	retry: do {
 	    byte[] cookie, token;
-	    String acctname;
+	    Session.User acct;
 	    SocketAddress authaddr = null;
 	    if(initcookie != null) {
-		acctname = inituser;
+		acct = new Session.User(inituser);
 		cookie = initcookie;
 		initcookie = null;
 	    } else if((inituser != null) && (inittoken != null)) {
@@ -187,10 +187,12 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 			    authed = new AuthClient.TokenCred(inituser, inittoken).tryauth(auth);
 			} catch(AuthClient.Credentials.AuthException e) {
 			}
-			setpref("lasttoken-" + mangleuser(inituser), Utils.byte2hex(inittoken));
+			setpref("lasttoken-" + mangleuser(inituser), Utils.hex.enc(inittoken));
 			if(authed != null) {
-			    acctname = authed;
+			    acct = new Session.User(authed);
 			    cookie = auth.getcookie();
+			    if(Connection.encrypt.get())
+				acct.alias(auth.getalias());
 			    settoken(authed, hostname, auth.gettoken());
 			    break authed;
 			}
@@ -198,8 +200,10 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		    if((token = gettoken(inituser, hostname)) != null) {
 			try {
 			    String authed = new AuthClient.TokenCred(inituser, token).tryauth(auth);
-			    acctname = authed;
+			    acct = new Session.User(authed);
 			    cookie = auth.getcookie();
+			    if(Connection.encrypt.get())
+				acct.alias(auth.getalias());
 			    break authed;
 			} catch(AuthClient.Credentials.AuthException e) {
 			    settoken(inituser, hostname, null);
@@ -229,16 +233,18 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		try(AuthClient auth = new AuthClient(authserver, authport)) {
 		    authaddr = auth.address();
 		    try {
-			acctname = creds.tryauth(auth);
+			acct = new Session.User(creds.tryauth(auth));
 		    } catch(AuthClient.Credentials.AuthException e) {
 			settoken(creds.name(), hostname, null);
 			ui.uimsg(1, "error", e.getMessage());
 			continue retry;
 		    }
 		    cookie = auth.getcookie();
+		    if(Connection.encrypt.get())
+			acct.alias(auth.getalias());
 		    if(savepw) {
 			byte[] ntoken = (creds instanceof AuthClient.TokenCred) ? ((AuthClient.TokenCred)creds).token : auth.gettoken();
-			settoken(acctname, hostname, ntoken);
+			settoken(acct.name, hostname, ntoken);
 		    }
 		} catch(UnknownHostException e) {
 		    ui.uimsg(1, "error", "Could not locate server");
@@ -259,9 +265,9 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 			if(i > 0)
 			    ui.uimsg(1, "prg", String.format("Connecting (address %d/%d)...", i + 1, addrs.length));
 			try {
-			    sess = new Session(new InetSocketAddress(addrs[i], port), acctname, cookie);
-				sess.ui = ui;
-			    break connect;
+			    sess = new Session(new InetSocketAddress(addrs[i], port), acct, Connection.encrypt.get(), cookie);
+                sess.ui = ui;
+                break connect;
 			} catch(Connection.SessionConnError err) {
 			} catch(Connection.SessionError err) {
 			    ui.uimsg(1, "error", err.getMessage());
@@ -280,7 +286,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 	    break retry;
 	} while(true);
 	ui.destroy(1);
-	haven.error.ErrorHandler.setprop("usr", sess.username);
+	haven.error.ErrorHandler.setprop("usr", sess.user.name);
 	return(new RemoteUI(sess));
     }
 

@@ -181,7 +181,7 @@ public class MCache implements MapSource {
 	    if(ver == 1) {
 		int matid = 0, omatid = -1;
 		Collection<String> tags = Collections.emptyList();
-		Object[] data = buf.list();
+		Object[] data = buf.list(resmapper());
 		for(Object argp : data) {
 		    Object[] arg = (Object[])argp;
 		    switch((String)arg[0]) {
@@ -207,7 +207,7 @@ public class MCache implements MapSource {
 		this.omatid = omatid;
 		this.tags = tags;
 	    } else {
-		throw(new Resource.LoadException("unknown overlay version: " + ver, res));
+		throw(new Resource.UnknownFormatException(res, "overlay version", ver));
 	    }
 	}
 

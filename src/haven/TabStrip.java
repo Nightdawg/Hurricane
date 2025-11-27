@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class TabStrip<T> extends Widget {
-    public static final IBox frame = new IBox("customclient/tab", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
+    public static final IBox frame = new IBox.Scaled("customclient/tab", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
     private final List<Button<T>> buttons = new ArrayList<Button<T>>();
     private final Action1<T> callback;
     private Button<T> selected;

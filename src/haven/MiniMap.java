@@ -940,6 +940,9 @@ public class MiniMap extends Widget {
     public boolean mousedown(MouseDownEvent ev) {
 	dsloc = xlate(ev.c);
 	if(dsloc != null) {
+		if (ui.modmeta && ev.b == 1){
+			ui.gui.map.addCheckpoint(dsloc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)));
+		}
 	    dsicon = iconat(ev.c);
 	    dsmark = markerat(dsloc.tc);
 	    if((dsicon != null) && clickicon(dsicon, dsloc, ev.b, true))
@@ -954,6 +957,8 @@ public class MiniMap extends Widget {
 	    dsmark = null;
 	}
 	if(dragp(ev.b)) {
+		if (OptWnd.enableQueuedMovementCheckBox.a && ui.modmeta) // ND: Prevent dragging the map by mistake when we're trying to add a checkpoint for queued movement
+			return false;
 	    Location loc = curloc;
 	    if((drag == null) && (loc != null)) {
 		drag = ui.grabmouse(this);
@@ -1037,8 +1042,6 @@ public class MiniMap extends Widget {
 						chat.send("LOC@" + (int)(clickloc.x-player.rc.x) + "x" + (int)(clickloc.y-player.rc.y));
 					}
 				}
-			} else if (ui.modmeta && button == 1){
-				mv.addCheckpoint(loc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)));
 			}
 			if (OptWnd.autoEquipBunnySlippersPlateBootsCheckBox.a) {
 				ui.gui.map.switchToPlateBoots();
@@ -1055,6 +1058,9 @@ public class MiniMap extends Widget {
 			}
 		mv.wdgmsg("click", mc, loc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)).floor(posres),	button, ui.modflags());
 		} else {
+            if(mv.checkpointManager != null && mv.checkpointManagerThread != null && button == 3){
+                mv.checkpointManager.pauseIt();
+            }
 			if (OptWnd.autoEquipBunnySlippersPlateBootsCheckBox.a) {
 				if (button == 3)
 					ui.gui.map.switchBunnySlippersAndPlateBoots(gob);

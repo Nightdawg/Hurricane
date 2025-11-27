@@ -10,7 +10,7 @@ import java.awt.event.KeyEvent;
 import haven.Audio.CS;
 
 /* >wdg: MusicWnd */
-@haven.FromResource(name = "ui/music", version = 34)
+@haven.FromResource(name = "ui/music", version = 35)
 public class NoteOverlay extends Sprite implements Sprite.CUpd {
     public static final int A4 = 9;
     public final MusicOverlay base;
@@ -97,6 +97,6 @@ public class NoteOverlay extends Sprite implements Sprite.CUpd {
 		eof();
 	    }
 	}
-	clip.vol = ev*OptWnd.instrumentsSoundVolumeSlider.val/100d;
+	clip.vol = ev;
     }
 }
