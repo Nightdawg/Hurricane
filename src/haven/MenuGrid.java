@@ -762,6 +762,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Toggles/MineSupportRadii");
 		makeLocal("customclient/menugrid/Toggles/MineSupportSafeTiles");
 		makeLocal("customclient/menugrid/Toggles/MineSweeper");
+		makeLocal("customclient/menugrid/Toggles/PathfinderWalking");
 		makeLocal("customclient/menugrid/Toggles/ClearAllCombatDamage");
 		makeLocal("customclient/menugrid/Toggles/AnimalAutoPeace");
 		makeLocal("customclient/menugrid/Toggles/AutoDrinking");
@@ -873,6 +874,8 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				AutoDropManagerWindow.autoDropItemsCheckBox.set(!AutoDropManagerWindow.autoDropItemsCheckBox.a);
 			} else if (ad[2].equals("FlowerMenuAutoSelect")) {
 				FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.set(!FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.a);
+			} else if (ad[2].equals("PathfinderWalking")) {
+				//todo
 			}
 		} else if (ad[1].equals("Bots")) { // Category: Toggles
 			if (ad[2].equals("OceanScoutBot")) {
