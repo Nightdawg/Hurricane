@@ -9,7 +9,7 @@ import haven.MenuGrid.Pagina;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/croster", version = 75)
+@haven.FromResource(name = "ui/croster", version = 76)
 public class RosterWindow extends Window {
     public static final Map<Glob, RosterWindow> rosters = new HashMap<>();
     public static int rmseq = 0;

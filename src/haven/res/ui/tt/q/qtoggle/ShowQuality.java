@@ -10,7 +10,7 @@ import haven.res.ui.pag.toggle.*;
 import haven.MenuGrid.Pagina;
 
 /* >pagina: ShowQuality$Fac */
-@haven.FromResource(name = "ui/tt/q/qtoggle", version = 7)
+@haven.FromResource(name = "ui/tt/q/qtoggle", version = 8)
 public class ShowQuality extends MenuGrid.PagButton {
     public ShowQuality(Pagina pag) {
 	super(pag);
@@ -27,7 +27,7 @@ public class ShowQuality extends MenuGrid.PagButton {
     */
 
     public void use(MenuGrid.Interaction iact) {
-		OptWnd.showQualityDisplayCheckBox.set(!OptWnd.showQualityDisplayCheckBox.a);
+	OptWnd.showQualityDisplayCheckBox.set(!OptWnd.showQualityDisplayCheckBox.a);
 	pag.scm.ui.msg("Quality display is now turned " + (OptWnd.showQualityDisplayCheckBox.a ? "on" : "off") + ".", null,
 		       Audio.resclip(OptWnd.showQualityDisplayCheckBox.a ? Toggle.sfxon : Toggle.sfxoff));
     }

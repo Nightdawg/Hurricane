@@ -128,7 +128,7 @@ public class DowseFx extends Sprite {
 
     public void gtick(Render g) {
 //	g.update(d1.va.bufs[0], DataBuffer.Filler.of(v1()));
-	g.update(d2.va.bufs[0], DataBuffer.Filler.of(v2()));
+	g.update(d2.va.bufs[0], DataBuffer.Filler.of(v2modified()));
     }
 
     public boolean tick(double dt) {

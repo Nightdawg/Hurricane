@@ -33,10 +33,11 @@ import haven.render.*;
 import haven.Skeleton.Pose;
 import haven.Skeleton.PoseMod;
 
+@Resource.PublishedCode.Builtin(type = Sprite.Factory.class, name = "mod")
 public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
     public static final Collection<RMod> rmods = new ArrayList<>();
     private static final ThreadLocal<Cons> curcons = new ThreadLocal<Cons>();
-    private static RenderTree.Node[] noparts = {};
+    private static final RenderTree.Node[] noparts = {};
     private static final Ticker[] notickers = {};
     private static final EquipTarget[] noeqtgts = {};
     private static final Mod[] nomods = {};
@@ -55,11 +56,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	    public Sprite create(Owner owner, Resource res, Message sdt) {
 		if((res.layer(FastMesh.MeshRes.class) != null) ||
 		   (res.layer(RenderLink.Res.class) != null))
-		    return(new ModSprite(owner, res, sdt) {
-			    public String toString() {
-				return(String.format("#<mod-sprite %s>", res.name));
-			    }
-			});
+		    return(new ModSprite(owner, res, sdt));
 		return(null);
 	    }
 	};
@@ -252,7 +249,8 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 
     protected ModSprite(boolean dummy, Owner owner, Resource res) {
 	super(owner, res);
-	if((gob = owner.fcontext(Gob.class, false)) != null) {
+	gob = (owner == null) ? null : owner.fcontext(Gob.class, false);
+	if(gob != null) {
 	    omods = getomods();
 	    lastupd = gob.updateseq;
 	}
@@ -593,7 +591,7 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 	public final Pose pose;
 	public final Skeleton.ResPose[] descs;
 	public PoseMod[] mods = {};
-	private Map<Skeleton.ResPose, PoseMod> ids = Collections.emptyMap();
+	private Map<Skeleton.ResPose, PoseMod> ids = initids;
 	private boolean stat = false;
 	private Pose oldpose;
 	private float ipold;

@@ -1,6 +1,7 @@
 package haven.automated.helpers;
 
-import haven.Grainslot;
+
+import haven.res.ui.grainslot.Grainslot;
 
 import java.util.ArrayList;
 import java.util.List;

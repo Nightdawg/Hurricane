@@ -9,7 +9,7 @@ import haven.resutil.*;
 import haven.resutil.Ridges.*;
 
 /* >flavor: RidgeEdge$Fac */
-@haven.FromResource(name = "gfx/tiles/flavor/ridge-edge", version = 1)
+@haven.FromResource(name = "gfx/tiles/flavor/ridge-edge", version = 2)
 public class RidgeEdge implements Tileset.Flavor {
     public NodeWrap mat;
     public float r = 1.25f, zoff = -0.12f, xoff = -0.12f;
@@ -115,7 +115,7 @@ public class RidgeEdge implements Tileset.Flavor {
 				if(!mbuf.emptyp()) {
 				    FastMesh mesh = mbuf.mkmesh();
 				    Gob ob = new Tileset.Flavor.GridObj(buf);
-				    ob.setattr(new SprDrawable(ob, new StaticSprite(ob, Resource.classres(RidgeEdge.class), mat.apply(mesh))));
+				    ob.setattr(new SprDrawable(ob, owner -> new StaticSprite(owner, Resource.classres(RidgeEdge.class), mat.apply(mesh))));
 				    buf.add(ob);
 				}
 			    }

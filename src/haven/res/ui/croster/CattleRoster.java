@@ -9,7 +9,7 @@ import haven.MenuGrid.Pagina;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/croster", version = 75)
+@haven.FromResource(name = "ui/croster", version = 76)
 public abstract class CattleRoster <T extends Entry> extends Widget {
     public static final int WIDTH = UI.scale(900);
     public static final Comparator<Entry> namecmp = (a, b) -> a.name.compareTo(b.name);
@@ -21,7 +21,7 @@ public abstract class CattleRoster <T extends Entry> extends Widget {
     public List<T> display = Collections.emptyList();
     public boolean dirty = true;
     public Comparator<? super T> order = namecmp;
-    public Column mousecol, ordercol;
+    public Column<? super T> mousecol, ordercol;
     public boolean revorder;
 
     public CattleRoster() {
@@ -50,9 +50,10 @@ public abstract class CattleRoster <T extends Entry> extends Widget {
 	pack();
     }
 
-    public static <E extends Entry>  List<Column> initcols(Column... attrs) {
+    @SafeVarargs
+    public static <E extends Entry>  List<Column<? super E>> initcols(Column<? super E>... attrs) {
 	for(int i = 0, x = CheckBox.sbox.sz().x + UI.scale(10); i < attrs.length; i++) {
-	    Column attr = attrs[i];
+	    Column<? super E> attr = attrs[i];
 	    attr.x = x;
 	    x += attr.w;
 	    x += UI.scale(attr.r ? 5 : 1);
@@ -93,7 +94,7 @@ public abstract class CattleRoster <T extends Entry> extends Widget {
 	super.tick(dt);
     }
 
-    protected abstract List<Column> cols();
+    protected abstract List<Column<? super T>> cols();
 
     public void drawcols(GOut g) {
 	Column prev = null;
@@ -125,24 +126,24 @@ public abstract class CattleRoster <T extends Entry> extends Widget {
 	super.draw(g);
     }
 
-    public Column onhead(Coord c) {
+    public Column<? super T> onhead(Coord c) {
 	if((c.y < 0) || (c.y >= HEADH))
 	    return(null);
-	for(Column col : cols()) {
+	for(Column<? super T> col : cols()) {
 	    if((c.x >= col.x) && (c.x < col.x + col.w))
 		return(col);
 	}
 	return(null);
     }
 
-    public void mousemove(Coord c) {
-	super.mousemove(c);
-	mousecol = onhead(c);
+    public void mousemove(MouseMoveEvent ev) {
+	super.mousemove(ev);
+	mousecol = onhead(ev.c);
     }
 
-    public boolean mousedown(Coord c, int button) {
-	Column col = onhead(c);
-	if(button == 1) {
+    public boolean mousedown(MouseDownEvent ev) {
+	Column<? super T> col = onhead(ev.c);
+	if(ev.b == 1) {
 	    if((col != null) && (col.order != null)) {
 		revorder = (col == ordercol) ? !revorder : false;
 		this.order = col.order;
@@ -153,11 +154,11 @@ public abstract class CattleRoster <T extends Entry> extends Widget {
 		return(true);
 	    }
 	}
-	return(super.mousedown(c, button));
+	return(super.mousedown(ev));
     }
 
-    public boolean mousewheel(Coord c, int amount) {
-	sb.ch(amount * UI.scale(15));
+    public boolean mousewheel(MouseWheelEvent ev) {
+	sb.ch(ev.a * UI.scale(15));
 	return(true);
     }
 

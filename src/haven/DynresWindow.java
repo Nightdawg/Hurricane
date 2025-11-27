@@ -71,24 +71,23 @@ public class DynresWindow extends Window {
 	    if(in != null) {
 		if(!Utils.eq(conn.getContentType(), "application/x-haven-ttol"))
 		    throw(new IOException("Unexpected reply from server: " + status + " " + conn.getResponseMessage()));
-		Object[] data = new StreamMessage(in).list();
+		Object[] data = new StreamMessage(in).list(new Resource.PoolMapper(Resource.remote()));
 		return(Utils.mapdecn(data, String.class, Object.class));
 	    }
 	}
 	try(InputStream in = conn.getInputStream()) {
 	    if(!Utils.eq(conn.getContentType(), "application/x-haven-ttol"))
 		throw(new IOException("Unexpected reply from server" + status + " " + conn.getResponseMessage()));
-	    Object[] data = new StreamMessage(in).list();
+	    Object[] data = new StreamMessage(in).list(new Resource.PoolMapper(Resource.remote()));
 	    return(Utils.mapdecn(data, String.class, Object.class));
 	}
     }
 
     public static String auth(Session sess) {
 	return("Haven " +
-	       Utils.base64enc(Utils.concat(sess.username.getBytes(Utils.utf8),
-					    new byte[] {0},
-					    Digest.hash(Digest.HMAC.of(Digest.SHA256, sess.sesskey),
-							"dynres".getBytes(Utils.ascii)))));
+	       Utils.b64.enc(Utils.concat(sess.user.reauth().getBytes(Utils.utf8),
+					  new byte[] {0},
+					  sess.sesskey.sign("dynres".getBytes(Utils.ascii)))));
     }
 
     public BufferedImage process(BufferedImage in) {
@@ -594,7 +593,7 @@ public class DynresWindow extends Window {
 			return(null);
 		    List<Spec> ret = new ArrayList<>();
 		    try(InputStream in = Http.fetch(service.get().resolve("previews").toURL())) {
-			for(Object desc : new StreamMessage(in).list())
+			for(Object desc : new StreamMessage(in).list(new Resource.PoolMapper(Resource.remote())))
 			    ret.add(new Spec(Utils.mapdecn(desc, String.class, Object.class)));
 		    } catch(IOException exc) {
 			throw(new RuntimeException(exc));

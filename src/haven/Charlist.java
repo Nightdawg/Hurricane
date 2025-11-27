@@ -34,7 +34,8 @@ import static haven.LoginScreen.*;
 
 public class Charlist extends Widget {
     public static final Coord bsz = UI.scale(364, 96);
-    public static final Text.Furnace tf = new PUtils.BlurFurn(new PUtils.TexFurn(new Text.Foundry(Text.fraktur, 20).aa(true), Window.ctex), UI.scale(2), UI.scale(2), Color.BLACK);
+    public static final Text.Furnace nf = new PUtils.BlurFurn(new PUtils.TexFurn(new Text.Foundry(Text.fraktur, 20).aa(true), Window.ctex), UI.scale(2), UI.scale(2), Color.BLACK);
+    public static final Text.Furnace df = new PUtils.BlurFurn(Button.tf, UI.scale(2), UI.scale(2), Color.BLACK);
     public static final int margin = UI.scale(0);
     public static final int btnw = UI.scale(100);
     public final int height;
@@ -42,6 +43,8 @@ public class Charlist extends Widget {
     public final List<Char> chars = new ArrayList<Char>();
     public final Boxlist list;
     public Avaview avalink;
+    private boolean dirty;
+    private boolean showdisc;
 	public static HSlider themeSongVolumeSlider;
 
     @RName("charlist")
@@ -70,6 +73,7 @@ public class Charlist extends Widget {
 
     public static class Char {
 	public final String name;
+	public String disc;
 	public Composited.Desc avadesc;
 	public Resource.Resolver avamap;
 	public Collection<ResData> avaposes;
@@ -88,22 +92,27 @@ public class Charlist extends Widget {
     public class Charbox extends Widget {
 	public final Char chr;
 	public final Avaview ava;
+	public final ILabel name, disc;
 
 	public Charbox(Char chr) {
 	    super(bsz);
 	    this.chr = chr;
 	    Widget avaf = adda(Frame.with(this.ava = new Avaview(Avaview.dasz, -1, "avacam"), false), Coord.of(sz.y / 2), 0.5, 0.5);
-	    add(new Img(tf.render(chr.name).tex()), avaf.pos("ur").adds(10, 0));
-	    add(new Button(UI.scale(60), "Play"), pos("cbl").adds(100, -46)).action(() -> {
-			Charlist.this.wdgmsg("play", chr.name);
-			Config.setPlayerName(chr.name);
-			Config.initAutomapper(ui);
-		});
+	    name = add(new ILabel(chr.name, nf), avaf.pos("ur").adds(5, 0));
+	    disc = add(new ILabel("", df), name.pos("bl"));
+        add(new Button(UI.scale(60), "Play"), pos("cbl").adds(100, -46)).action(() -> {
+            Charlist.this.wdgmsg("play", chr.name);
+            Config.setPlayerName(chr.name);
+            Config.initAutomapper(ui);
+        });
 	}
 
 	public void tick(double dt) {
 	    if(chr.avadesc != ava.avadesc)
 		ava.pop(chr.avadesc, chr.avamap);
+	    String sdisc = showdisc ? (chr.disc == null ? "" : chr.disc) : "";
+	    if(!Utils.eq(sdisc, disc.text()))
+		disc.settext(sdisc);
 		playCharSelectTheme();
 	}
 
@@ -189,6 +198,25 @@ public class Charlist extends Widget {
 		stopCharSelectTheme();
 	}
 
+    private void checkdisc() {
+	String one = null;
+	boolean f = true;
+	showdisc = false;
+	synchronized(chars) {
+	    for(Char c : chars) {
+		if(f) {
+		    one = c.disc;
+		    f = false;
+		} else {
+		    if(!Utils.eq(one, c.disc)) {
+			showdisc = true;
+			break;
+		    }
+		}
+	    }
+	}
+    }
+
     private int scrolltgt = -1;
     private double scrollval = -1;
     public void tick(double dt) {
@@ -203,6 +231,10 @@ public class Charlist extends Widget {
 		scrollval = -1;
 	    }
 	    list.scrollval((int)Math.round(scrollval = nv));
+	}
+	if(dirty) {
+	    checkdisc();
+	    dirty = false;
 	}
 	if (avalink != null && !movedAvalink) {
 		avalink.parent.c = new Coord(avalink.parent.c.x + UI.scale(267), avalink.parent.c.y - UI.scale(50));
@@ -246,6 +278,7 @@ public class Charlist extends Widget {
 		if(list.sel == null)
 		    list.change(c);
 	    }
+	    dirty = true;
 	} else if(msg == "ava") {
 	    String cnm = (String)args[0];
 	    Object[] rawdesc = (Object[])args[1];
@@ -261,6 +294,19 @@ public class Charlist extends Widget {
 		for(Char c : chars) {
 		    if(c.name.equals(cnm)) {
 			c.ava(ava, map, poses);
+			dirty = true;
+			break;
+		    }
+		}
+	    }
+	} else if(msg == "srv") {
+	    String cnm = (String)args[0];
+	    String disc = (String)args[1];
+	    synchronized(chars) {
+		for(Char c : chars) {
+		    if(c.name.equals(cnm)) {
+			c.disc = disc;
+			dirty = true;
 			break;
 		    }
 		}

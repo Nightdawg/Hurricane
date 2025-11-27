@@ -199,7 +199,6 @@ public class LoginScreen extends Widget {
 	GameUI.trackingToggled = false;
 	GameUI.crimesToggled = false;
 	MenuGrid.loginTogglesNeedUpdate = true;
-	OptWnd.flowerMenuAutoSelectManagerWindow = null;
 	Gob.batWingCapeEquipped = false;
 	Gob.nightQueenDefeated = false;
 	Gob.alarmPlayed.clear();
@@ -426,7 +425,7 @@ public class LoginScreen extends Widget {
 		parse: if(pw.length() == 64) {
 		    byte[] ptok;
 		    try {
-			ptok = Utils.hex2byte(pw);
+			ptok = Utils.hex.dec(pw);
 		    } catch(IllegalArgumentException e) {
 			break parse;
 		    }

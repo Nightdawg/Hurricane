@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import haven.MenuGrid.Pagina;
 
 /* >tt: Quality */
-@haven.FromResource(name = "ui/tt/q/quality", version = 26)
+@haven.FromResource(name = "ui/tt/q/quality", version = 27)
 public class Quality extends QBuff implements GItem.OverlayInfo<Tex> {
     public static boolean show = Utils.getprefb("qtoggle", false);
     public static final BufferedImage qualityWorkaround = Resource.remote().loadwait("ui/tt/q/quality").layer(Resource.imgc, 0).scaled();
@@ -66,8 +66,8 @@ public class Quality extends QBuff implements GItem.OverlayInfo<Tex> {
     }
 
     public void drawoverlay(GOut g, Tex ol) {
-	if(OptWnd.showQualityDisplayCheckBox.a)
-	    g.aimage(ol, new Coord(g.sz().x, 0), 0.95, 0.2);
+        if(OptWnd.showQualityDisplayCheckBox.a)
+            g.aimage(ol, new Coord(g.sz().x, 0), 0.95, 0.2);
     }
 
     public static final LinkedHashMap<String, Color> liquidColorsMap = new LinkedHashMap<String, Color>(){{

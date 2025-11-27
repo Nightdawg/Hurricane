@@ -26,6 +26,7 @@
 
 package haven;
 
+import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
 import haven.res.ui.pag.toggle.Toggle;
@@ -645,6 +646,8 @@ public class OptWnd extends Window {
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 	public static HSlider mapIconsSizeSlider;
+	public static CheckBox improvedInstrumentMusicWindowCheckBox;
+    public static CheckBox preventEscKeyFromClosingWindowsCheckBox;
 
     public class InterfaceSettingsPanel extends Panel {
 	public InterfaceSettingsPanel(Panel back) {
@@ -970,6 +973,19 @@ public class OptWnd extends Window {
 			buf = PUtils.convolve(buf, tsz, GobIcon.filter);
 			MiniMap.plp = new TexI(buf);
 		}), rightColumn.pos("ur").adds(6, -4)).tooltip = resetButtonTooltip;
+		rightColumn = add(improvedInstrumentMusicWindowCheckBox = new CheckBox("Improved Instrument Music Window"){
+			{a = (Utils.getprefb("improvedInstrumentMusicWindow", true));}
+			public void changed(boolean val) {
+				Utils.setprefb("improvedInstrumentMusicWindow", val);
+			}
+		}, rightColumn.pos("bl").adds(0, 15));
+		improvedInstrumentMusicWindowCheckBox.tooltip = improvedInstrumentMusicWindowTooltip;
+        rightColumn = add(preventEscKeyFromClosingWindowsCheckBox = new CheckBox("Prevent ESC from closing Windows"){
+            {a = (Utils.getprefb("preventEscKeyFromClosingWindows", false));}
+            public void changed(boolean val) {
+                Utils.setprefb("preventEscKeyFromClosingWindows", val);
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
 
 		Widget backButton;
 		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
@@ -2372,6 +2388,7 @@ public class OptWnd extends Window {
 				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
 				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
 			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+            partyChatPingColorOptionWidget.tooltip = partyChatPingColorOptionTooltip;
 			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed"){
 				{a = Utils.getprefb("showObjectsSpeed", false);}
 				public void changed(boolean val) {
@@ -2975,14 +2992,14 @@ public class OptWnd extends Window {
 			}, prev.pos("bl").adds(0, 6));
 			autoSelect1stFlowerMenuCheckBox.tooltip = autoSelect1stFlowerMenuTooltip;
 			prev = add(autoRepeatFlowerMenuCheckBox = new CheckBox("Auto-Repeat Flower-Menu (hold Ctrl+Shift)"){
-				{a = Utils.getprefb("autoRepeatFlowerMenu", false);}
+				{a = Utils.getprefb("autoRepeatFlowerMenu", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("autoRepeatFlowerMenu", val);
 				}
 			}, prev.pos("bl").adds(0, 2));
 			autoRepeatFlowerMenuCheckBox.tooltip = autoRepeatFlowerMenuTooltip;
 			prev = add(alsoUseContainersWithRepeaterCheckBox = new CheckBox("Also use containers with Auto-Repeat"){
-				{a = Utils.getprefb("alsoUseContainersWithRepeater", false);}
+				{a = Utils.getprefb("alsoUseContainersWithRepeater", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("alsoUseContainersWithRepeater", val);
 				}
@@ -3639,44 +3656,44 @@ public class OptWnd extends Window {
 
 			// TODO: ND: Would be nice if this was a scrollable list with selectable items, rather than individual checkboxes
 			leftColumn = add(new Label("Disable Variable Materials for Objects:"), leftColumn.pos("bl").adds(0, 10).x(UI.scale(0)));
-			leftColumn = add(disableHerbalistTablesVarMatsCheckBox = new CheckBox("Herbalist Tables Variable Materials"){
+			leftColumn = add(disableHerbalistTablesVarMatsCheckBox = new CheckBox("Herbalist Tables Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableHerbalistTablesVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableHerbalistTablesVarMats", val);
 				}
 			}, leftColumn.pos("bl").adds(12, 8));
-			leftColumn = add(disableCupboardsVarMatsCheckBox = new CheckBox("Cupboards Variable Materials"){
+			leftColumn = add(disableCupboardsVarMatsCheckBox = new CheckBox("Cupboards Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableCupboardsVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableCupboardsVarMats", val);
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
-			leftColumn = add(disableChestsVarMatsCheckBox = new CheckBox("Chests Variable Materials"){
+			leftColumn = add(disableChestsVarMatsCheckBox = new CheckBox("Chests Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableChestsVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableChestsVarMats", val);
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
-			leftColumn = add(disableMetalCabinetsVarMatsCheckBox = new CheckBox("Metal Cabinets Variable Materials"){
+			leftColumn = add(disableMetalCabinetsVarMatsCheckBox = new CheckBox("Metal Cabinets Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableMetalCabinetsVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableMetalCabinetsVarMats", val);
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
-			leftColumn = add(disableTrellisesVarMatsCheckBox = new CheckBox("Trellises Variable Materials"){
+			leftColumn = add(disableTrellisesVarMatsCheckBox = new CheckBox("Trellises Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableTrellisesVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableTrellisesVarMats", val);
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
-			leftColumn = add(disableSmokeShedsVarMatsCheckBox = new CheckBox("Smoke Sheds Variable Materials"){
+			leftColumn = add(disableSmokeShedsVarMatsCheckBox = new CheckBox("Smoke Sheds Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableSmokeShedsVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableSmokeShedsVarMats", val);
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
 
-			leftColumn = add(disableAllObjectsVarMatsCheckBox = new CheckBox("ALL OBJECTS Variable Materials (YES, ALL!)"){
+			leftColumn = add(disableAllObjectsVarMatsCheckBox = new CheckBox("ALL OBJECTS Variable Materials (Requires Reload)"){
 				{a = (Utils.getprefb("disableAllObjectsVarMats", false));}
 				public void changed(boolean val) {
 					Utils.setprefb("disableAllObjectsVarMats", val);
@@ -4298,6 +4315,7 @@ public class OptWnd extends Window {
 			prev = add(webmapEndpointTextEntry = new TextEntry(UI.scale(220), Utils.getpref("webMapEndpoint", "")){
 				protected void changed() {
 					Utils.setpref("webMapEndpoint", this.buf.line());
+                    MappingClient.destroy();
 					super.changed();
 				}
 			}, prev.pos("ur").adds(6, 0));
@@ -4812,6 +4830,10 @@ public class OptWnd extends Window {
 	private static final Object showYourCombatRangeCirclesTooltip = RichText.render("This will display two circles under your character, that show your unarmed range, and currently equipped weapon range (if you have a weapon equipped)." +
 			"\n" +
 			"\n$col[185,185,185]{The circles only show up when you're on foot.}", UI.scale(300));
+	private static final Object improvedInstrumentMusicWindowTooltip = RichText.render("The improved window changes the layout of the keys, and adds an automatic player you can use to play notes from midi files." +
+			"\nYou have to re-open the instrument music window after changing this setting." +
+			"\n" +
+			"\n$col[185,185,185]{If you want to use Midi2Haven to play notes with a midi controller, you must disable this improvement and use the default window layout.}", UI.scale(300));
 
 	// Display Settings Tooltips
 	private static final Object granularityPositionTooltip = RichText.render("This works like the :placegrid console command. " +
@@ -4897,6 +4919,7 @@ public class OptWnd extends Window {
 	private static final Object showBeeSkepsHarvestIconsTooltip = RichText.render("This will show icons for Wax and Honey when they can be harvested from Bee Skeps." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
+    private static final Object partyChatPingColorOptionTooltip = RichText.render("$col[218,163,0]{Note:} $col[185,185,185]{If you ping players for your party, you will instead set a Party Mark on them.}", UI.scale(300));
 
 
 	// Quality Display Settings Tooltips

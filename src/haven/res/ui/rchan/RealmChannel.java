@@ -7,7 +7,7 @@ import java.awt.Color;
 import java.awt.font.TextAttribute;
 
 /* >wdg: RealmChannel */
-@haven.FromResource(name = "ui/rchan", version = 21)
+@haven.FromResource(name = "ui/rchan", version = 22)
 public class RealmChannel extends ChatUI.MultiChat {
     private final Map<Long, Sender> senders = new HashMap<>();
 
@@ -48,15 +48,12 @@ public class RealmChannel extends ChatUI.MultiChat {
     public class PNamedMessage extends Message {
 	public final Sender from;
 	public final String text;
-	public final int w;
-	private String cn;
 	private Text r = null;
 	private final String timestamp = Utils.timestamp();
 
-	public PNamedMessage(Sender from, String text, int w) {
+	public PNamedMessage(Sender from, String text) {
 	    this.from = from;
 	    this.text = text;
-	    this.w = w;
 	}
 
 	public class Rendered implements Indir<Text> {
@@ -75,62 +72,32 @@ public class RealmChannel extends ChatUI.MultiChat {
 
 	private String nm() {
 	    BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(from.bid);
-	    if(b != null) {
+		if(b != null) {
 			if (from.name != null){
 				return (from.name + " [Memo: " + b.name + "]");
 			}
 		}
 	    if(from.name != null)
 		return(from.name);
-	    return("??? (Not Memorised)");
+		return("??? (Not Memorised)");
 	}
 
 	public Indir<Text> render(int w) {
-	    /* Saving cn right now is just for name lookup, but that
-	     * should go throught rmsgs instead. */
-	    return(new Rendered(w, cn = nm()));
+	    return(new Rendered(w, nm()));
 	}
 
 	public boolean valid(Indir<Text> data) {
 	    return(((Rendered)data).nm.equals(nm()));
 	}
-
-	/* Remove me */
-	private double lnmck = 0;
-	public Text text() {
-	    double now = Utils.rtime();
-	    if((r == null) || (now - lnmck > 1)) {
-		BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(from.bid);
-		String nm = nm();
-		if((r == null) || !nm.equals(cn)) {
-		    r = ChatUI.fnd.render(RichText.Parser.quote(String.format("[" + timestamp + "] " + "%s: %s", nm, text)), w, TextAttribute.FOREGROUND, from.color);
-		    cn = nm;
-		}
-	    }
-	    return(r);
-	}
-
-	/* Remove me */
-	public Tex tex() {
-	    return(text().tex());
-	}
-
-	/* Remove me */
-	public Coord sz() {
-	    if(r == null)
-		return(text().sz());
-	    else
-		return(r.sz());
-	}
     }
 
     public PNamedMessage msgbyname(String nm) {
-	for(ListIterator<Message> i = msgs.listIterator(msgs.size()); i.hasPrevious();) {
-	    Message cur = i.previous();
-	    if(cur instanceof PNamedMessage) {
-		PNamedMessage msg = (PNamedMessage)cur;
-		if((msg.cn != null) && (nm.equals("") || msg.cn.equals(nm)))
-		    return(msg);
+	for(ListIterator<RenderedMessage> i = rmsgs.listIterator(rmsgs.size()); i.hasPrevious();) {
+	    RenderedMessage cur = i.previous();
+	    if(cur.data() instanceof PNamedMessage.Rendered) {
+		PNamedMessage.Rendered r = (PNamedMessage.Rendered)cur.data();
+		if((r.nm != null) && (nm.equals("") || r.nm.equals(nm)))
+		    return((PNamedMessage)cur.msg);
 	    }
 	}
 	return(null);
@@ -267,20 +234,20 @@ public class RealmChannel extends ChatUI.MultiChat {
 	    if(args.length > 4)
 		pname = (String)args[4];
 	    if(cfrom == null) {
-		append(new MyMessage(line, iw()));
+		append(new MyMessage(line));
 	    } else {
 		Sender from = frombyid(cfrom.longValue(), bfrom.intValue());
 		if((pname != null) && (from.name == null))
 		    from.name = pname;
 		from.lastseen = now;
 		if(now > from.muted) {
-		    Message cmsg = new PNamedMessage(from, line, iw());
+		    Message cmsg = new PNamedMessage(from, line);
 		    append(cmsg);
 		}
 	    }
 	} else if(msg == "err") {
 	    String err = (String)args[0];
-	    Message cmsg = new SimpleMessage(err, wcol, iw());
+	    Message cmsg = new SimpleMessage(err, wcol);
 	    append(cmsg);
 	} else if(msg == "enter") {
 	} else if(msg == "leave") {
