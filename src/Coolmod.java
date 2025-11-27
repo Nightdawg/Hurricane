@@ -4,7 +4,7 @@ import haven.*;
 import haven.res.ui.tt.wpn.info.*;
 
 /* >tt: Coolmod */
-@haven.FromResource(name = "ui/tt/wpn/coolmod", version = 2)
+@haven.FromResource(name = "ui/tt/wpn/coolmod", version = 3)
 public class Coolmod extends WeaponInfo {
     public final double mod;
 

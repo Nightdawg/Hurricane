@@ -4,7 +4,7 @@ import haven.*;
 import haven.res.ui.tt.wpn.info.*;
 
 /* >tt: Grievous */
-@haven.FromResource(name = "ui/tt/wpn/grievous", version = 2)
+@haven.FromResource(name = "ui/tt/wpn/grievous", version = 3)
 public class Grievous extends WeaponInfo {
     public final double deg;
 

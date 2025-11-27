@@ -9,7 +9,7 @@ import haven.MenuGrid.Pagina;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/croster", version = 75)
+@haven.FromResource(name = "ui/croster", version = 76)
 public class Entry extends Widget {
     public static final int WIDTH = CattleRoster.WIDTH;
     public static final int HEIGHT = UI.scale(20);
@@ -81,10 +81,10 @@ public class Entry extends Widget {
 	g.image(rend[idx], new Coord(col.x + (int)Math.round((col.w - sz.x) * a), (this.sz.y - sz.y) / 2));
     }
 
-    public boolean mousedown(Coord c, int button) {
-	if(super.mousedown(c, button))
+    public boolean mousedown(MouseDownEvent ev) {
+	if(ev.propagate(this) || super.mousedown(ev))
 	    return(true);
-	getparent(CattleRoster.class).wdgmsg("click", id, button, ui.modflags(), ui.mc);
+	getparent(CattleRoster.class).wdgmsg("click", id, ev.b, ui.modflags(), ui.mc);
 	return(true);
     }
 

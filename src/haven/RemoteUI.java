@@ -149,6 +149,6 @@ public class RemoteUI implements UI.Receiver, UI.Runner {
     }
 
     public String title() {
-	return(sess.username);
+	return(sess.user.readname());
     }
 }

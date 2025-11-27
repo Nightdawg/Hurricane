@@ -4,7 +4,7 @@ import haven.*;
 import haven.res.ui.tt.wpn.info.*;
 
 /* >tt: Range */
-@haven.FromResource(name = "ui/tt/wpn/range", version = 1)
+@haven.FromResource(name = "ui/tt/wpn/range", version = 2)
 public class Range extends WeaponInfo {
     public final double mod;
 

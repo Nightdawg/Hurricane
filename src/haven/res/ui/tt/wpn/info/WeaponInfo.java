@@ -5,7 +5,7 @@ import haven.*;
 import java.util.*;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/tt/wpn/info", version = 4)
+@haven.FromResource(name = "ui/tt/wpn/info", version = 5)
 public abstract class WeaponInfo extends ItemInfo.Tip {
     public WeaponInfo(Owner owner) {
 	super(owner);
@@ -14,7 +14,7 @@ public abstract class WeaponInfo extends ItemInfo.Tip {
     public static class Subtip extends Tip {
 	final List<WeaponInfo> ls = new ArrayList<>();
 
-	Subtip() {super(null);}
+	Subtip(Owner owner) {super(owner);}
 
 	public void layout(Layout l) {
 	    Collections.sort(ls, Comparator.comparing(WeaponInfo::order));
@@ -25,7 +25,7 @@ public abstract class WeaponInfo extends ItemInfo.Tip {
 	}
     }
 
-    public static final Layout.ID<Subtip> sid = Subtip::new;
+    public static final Layout.TipID<Subtip> sid = Subtip::new;
 
     public void add(CompImage img) {
 	img.add(CompImage.mk(wpntip()), new Coord(0, img.sz.y));

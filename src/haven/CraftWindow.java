@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CraftWindow extends Window {
-	private static final IBox frame = new IBox("customclient/tab", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
+	private static final IBox frame = new IBox.Scaled("customclient/tab", "tl", "tr", "bl", "br", "extvl", "extvr", "extht", "exthb");
 	private final TabStrip<MenuGrid.Pagina> tabStrip;
 	private final Map<MenuGrid.Pagina, TabStrip.Button<MenuGrid.Pagina>> tabs = new HashMap<MenuGrid.Pagina, TabStrip.Button<MenuGrid.Pagina>>();
 	public Makewindow makeWidget;

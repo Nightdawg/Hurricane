@@ -11,7 +11,7 @@ import java.util.*;
 import java.awt.Color;
 
 /* >wdg: haven.res.ui.barterbox.Shopbox */
-@haven.FromResource(name = "ui/barterbox", version = 74)
+@haven.FromResource(name = "ui/barterbox", version = 75)
 public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Owner {
     public static final Text qlbl = Text.render("Quality:");
     public static final Text any = Text.render("Any");
@@ -58,7 +58,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     public abstract class AttrCache<T> {
 	private List<ItemInfo> forinfo = null;
 	private T save = null;
-
+	
 	public T get() {
 	    try {
 		List<ItemInfo> info = info();
@@ -71,7 +71,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    }
 	    return(save);
 	}
-
+	
 	protected abstract T find(List<ItemInfo> info);
     }
 
@@ -216,12 +216,12 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	}
     }
 
-    public boolean mousedown(Coord c, int button) {
-	if((button == 3) && c.isect(pricec, sqsz) && (price != null)) {
+    public boolean mousedown(MouseDownEvent ev) {
+	if((ev.b == 3) && ev.c.isect(pricec, sqsz) && (price != null)) {
 	    wdgmsg("pclear");
 	    return(true);
 	}
-	return(super.mousedown(c, button));
+	return(super.mousedown(ev));
     }
 
     public void wdgmsg(Widget sender, String msg, Object... args) {

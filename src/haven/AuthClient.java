@@ -183,6 +183,16 @@ public class AuthClient implements Closeable {
 	}
     }
 
+    public String getalias() throws IOException {
+	Message rpl = cmd("logalias");
+	String stat = rpl.string();
+	if(stat.equals("ok")) {
+	    return(rpl.string());
+	} else {
+	    throw(new RuntimeException("Unexpected reply `" + stat + "' from auth server"));
+	}
+    }
+
     public static class TokenInfo {
 	public byte[] id = new byte[] {};
 	public String desc = "";
@@ -490,7 +500,7 @@ public class AuthClient implements Closeable {
 				return;
 			    }
 			    System.out.println(acct);
-			    System.out.println(Utils.byte2hex(test.getcookie()));
+			    System.out.println(Utils.hex.enc(test.getcookie()));
 			} finally {
 			    test.close();
 			}

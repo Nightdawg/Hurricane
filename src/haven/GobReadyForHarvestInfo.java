@@ -42,6 +42,7 @@ public class GobReadyForHarvestInfo extends GobInfo {
 		put("strawberrytree", "gfx/invobjs/woodstrawberry");
 		put("walnuttree", "gfx/invobjs/walnut");
 		put("whitebeam", "gfx/invobjs/whitebeamfruit");
+        put("charredtree", null); // ND: Need to manually add this here, cause the sdt shows them as having seeds, when they don't.
 
 		// Bushes:
 		put("ghostpipe", "gfx/invobjs/ghostpipes");

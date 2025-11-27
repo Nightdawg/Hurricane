@@ -27,6 +27,7 @@
 package haven;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -117,7 +118,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public boolean combatFoeHighlighted = false;
 	private GobSpeedInfo gobSpeedInfo;
 	public String currentWeapon = "";
-	GobCombatDataInfo combatDataInfo;
+    public boolean combatInfoAdded = false;
+    private Overlay partyMarkOverlay;
 
     public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
@@ -140,7 +142,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public Overlay(Gob gob, int id, Indir<Resource> res, Message sdt) {
-	    this(gob, id, owner -> Sprite.create(owner, res.get(), sdt));
+	    this(gob, id, Sprite.Mill.of(res, sdt));
 	}
 
 	public Overlay(Gob gob, Sprite spr) {
@@ -226,7 +228,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    .add(Overlay.class, o -> o);
 	public <T> T context(Class<T> cl) {return(OwnerContext.orparent(cl, ctxr.context(cl, this, false), gob));}
 	public Random mkrandoom() {return(gob.mkrandoom());}
-	@Deprecated
+//	@Deprecated
 	public Resource getres() {return(gob.getres());}
 
 	public String getSprResName() {
@@ -1034,7 +1036,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return(Utils.mkrandoom(id));
     }
 
-    @Deprecated
+//    @Deprecated
     public Resource getres() {
 	Drawable d = getattr(Drawable.class);
 	if(d != null)
@@ -1281,6 +1283,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
 		HitBoxes.addHitBox(this);
+        if (glob.party != null) {
+            synchronized (glob.party.targetMarkers) {
+                for (Map.Entry<Party.TargetMark, Long> entry : glob.party.targetMarkers.entrySet()) {
+                    if (this.id != -1 && entry.getValue().equals(this.id)) {
+                        addTargetMarker(entry.getKey());
+                    }
+                }
+            }
+        }
 	}
 
 	public void updPose(HashSet<String> poses) {
@@ -2082,10 +2093,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 								for (Composited.MD item : c.comp.cmod) {
 									if (item.mod.get().basename().equals("male")) {
 										playerGender = "male";
+										break;
 									} else if (item.mod.get().basename().equals("female")) {
 										playerGender = "female";
-									} else {
+										break;
+									} else if (item.mod.get().basename().equals("mannequin-w1") || item.mod.get().basename().equals("mannequin-w2")){
 										isMannequin = true;
+										break;
 									}
 								}
 							}
@@ -2565,17 +2579,39 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public void addCombatDataInfo(Fightview.Relation rel) {
-		if (combatDataInfo == null) {
-			combatDataInfo = new GobCombatDataInfo(this, rel);
-			setattr(GobCombatDataInfo.class, combatDataInfo);
-		}
+        if (!combatInfoAdded) {
+            setattr(GobCombatDataInfo.class, new GobCombatDataInfo(this, rel));
+            combatInfoAdded = true;
+        }
 	}
 
 	public void removeCombatDataInfo() {
-		if (combatDataInfo != null) {
-			delattr(GobCombatDataInfo.class);
-			combatDataInfo = null;
-		}
+        setattr(GobCombatDataInfo.class, null);
+        combatInfoAdded = false;
 	}
+
+    public void addTargetMarker(Party.TargetMark targetMarker) {
+        try {
+            removeTargetMarker();
+            Resource.Image rimg = Resource.local().loadwait(targetMarker.resPath).layer(Resource.imgc);
+            BufferedImage buf = rimg.img;
+            buf = PUtils.rasterimg(PUtils.blurmask2(buf.getRaster(), 4, 1, Color.BLACK));
+            Tex tex = new TexI(buf);
+
+            PartyMarkSprite partyMarkSprite = new PartyMarkSprite(this, tex);
+            partyMarkOverlay = new Overlay(this, partyMarkSprite);
+            addol(partyMarkOverlay);
+        } catch (Exception ignored) {}
+    }
+
+    public void removeTargetMarker() {
+        try {
+            if (partyMarkOverlay != null) {
+                removeOl(partyMarkOverlay);
+                partyMarkOverlay = null;
+            }
+        } catch (Exception ignored) {}
+    }
+
 
 }

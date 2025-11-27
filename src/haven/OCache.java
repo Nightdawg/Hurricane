@@ -275,15 +275,19 @@ public class OCache implements Iterable<Gob> {
 
     public static class OlSprite implements Sprite.Mill<Sprite> {
 	public final Indir<Resource> res;
-	public Message sdt;
+	public byte[] sdt;
 
-	public OlSprite(Indir<Resource> res, Message sdt) {
+	public OlSprite(Indir<Resource> res, byte[] sdt) {
 	    this.res = res;
 	    this.sdt = sdt;
 	}
 
 	public Sprite create(Sprite.Owner owner) {
-	    return(Sprite.create(owner, res.get(), sdt));
+	    return(Sprite.create(owner, res.get(), new MessageBuf(sdt)));
+	}
+
+	public String toString() {
+	    return(String.format("#<ol-mill %s %s>", res, Utils.hex.enc(sdt)));
 	}
     }
 
@@ -295,22 +299,21 @@ public class OCache implements Iterable<Gob> {
 	    int olid = olidf >>> 1;
 	    int resid = msg.uint16();
 	    Indir<Resource> res;
-	    Message sdt;
+	    byte[] sdt;
 	    if(resid == 65535) {
 		res = null;
-		sdt = Message.nil;
+		sdt = new byte[0];
 	    } else {
 		if((resid & 0x8000) != 0) {
 		    resid &= ~0x8000;
-		    sdt = new MessageBuf(msg.bytes(msg.uint8()));
+		    sdt = msg.bytes(msg.uint8());
 		} else {
-		    sdt = Message.nil;
+		    sdt = new byte[0];
 		}
 		res = Delta.getres(g, resid);
 	    }
 	    Gob.Overlay ol = g.findol(olid);
 	    if(res != null) {
-		sdt = new MessageBuf(sdt);
 		Gob.Overlay nol = null;
 		if(ol == null) {
 		    if(prs || (g.lastolid == 0) || (Gob.olidcmp(olid, g.lastolid) > 0)) {
@@ -322,11 +325,10 @@ public class OCache implements Iterable<Gob> {
 		    }
 		} else {
 		    OlSprite os = (ol.sm instanceof OlSprite) ? (OlSprite)ol.sm : null;
-		    if((os != null) && Utils.eq(os.sdt, sdt)) {
+		    if((os != null) && Arrays.equals(os.sdt, sdt)) {
 		    } else if((os != null) && (ol.spr instanceof Sprite.CUpd)) {
-			MessageBuf copy = new MessageBuf(sdt);
-			((Sprite.CUpd)ol.spr).update(copy);
-			os.sdt = copy;
+			((Sprite.CUpd)ol.spr).update(new MessageBuf(sdt));
+			os.sdt = sdt;
 		    } else {
 			nol = new Gob.Overlay(g, olid, new OlSprite(res, sdt));
 			nol.old = msg.old;
@@ -482,7 +484,22 @@ public class OCache implements Iterable<Gob> {
 	    this.id = id;
 	    this.frame = frame;
 	}
+
+	public ObjDelta(ObjDelta from) {
+	    this.fl = from.fl;
+	    this.id = from.id;
+	    this.frame = from.frame;
+	    this.initframe = from.initframe;
+	    this.rem = from.rem;
+	    for(AttrDelta attr : from.attrs)
+		attrs.add(attr.clone());
+	}
+
 	public ObjDelta() {}
+
+	public ObjDelta clone() {
+	    return(new ObjDelta(this));
+	}
     }
 
     public static class AttrDelta extends PMessage {

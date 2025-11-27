@@ -6,7 +6,7 @@ import static haven.PUtils.*;
 import java.awt.image.BufferedImage;
 
 /* >tt: Weight */
-@haven.FromResource(name = "ui/tt/wpn/atkw", version = 5)
+@haven.FromResource(name = "ui/tt/wpn/atkw", version = 6)
 public class Weight extends WeaponInfo {
     public final Resource attr;
 

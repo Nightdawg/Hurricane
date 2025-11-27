@@ -12,7 +12,7 @@ import haven.Audio.CS;
 import javax.sound.midi.*;
 
 /* >wdg: MusicWnd */
-@haven.FromResource(name = "ui/music", version = 34)
+@haven.FromResource(name = "ui/music", version = 35)
 public class MusicWnd extends Window {
     public Tex[] tips;
     public Map<Integer, Integer> keys;
@@ -96,14 +96,14 @@ public class MusicWnd extends Window {
 	}
     }
 
-    public boolean keydown(KeyEvent ev) {
+    public boolean keydown(KeyDownEvent ev) {
 	if (originalLayout){
-	double now = (ev.getWhen() / 1000.0) + latcomp;
-	Integer keyp = keys.get(ev.getKeyCode());
+	double now = (ev.awt.getWhen() / 1000.0) + latcomp;
+	Integer keyp = keys.get(ev.awt.getKeyCode());
 	if(keyp != null) {
 	    int key = keyp + 12;
-	    if((ev.getModifiersEx() & KeyEvent.SHIFT_DOWN_MASK) != 0) key += 12;
-	    if((ev.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)  key -= 12;
+	    if((ev.awt.getModifiersEx() & KeyMatch.S) != 0) key += 12;
+	    if((ev.awt.getModifiersEx() & KeyMatch.C) != 0)  key -= 12;
 	    if(!cur[key]) {
 		if(actn >= act.length) {
 		    wdgmsg("stop", act[0], (float)(now - start));
@@ -118,8 +118,8 @@ public class MusicWnd extends Window {
 	    return(true);
 	}
 	} else {
-		final double n = ev.getWhen() / 1000.0 + this.latcomp;
-		final Integer n2 = keys.get(ev.getKeyCode());
+		final double n = ev.awt.getWhen() / 1000.0 + this.latcomp;
+		final Integer n2 = keys.get(ev.awt.getKeyCode());
 		if (n2 != null) {
 			int n3 = n2;
 			if (!this.cur[n3]) {
@@ -154,10 +154,10 @@ public class MusicWnd extends Window {
 	}
     }
 
-    public boolean keyup(KeyEvent ev) {
+    public boolean keyup(KeyUpEvent ev) {
 	if (originalLayout){
-	double now = (ev.getWhen() / 1000.0) + latcomp;
-	Integer keyp = keys.get(ev.getKeyCode());
+	double now = (ev.awt.getWhen() / 1000.0) + latcomp;
+	Integer keyp = keys.get(ev.awt.getKeyCode());
 	if(keyp != null) {
 	    int key = keyp;
 	    stopnote(now, key);
@@ -166,15 +166,15 @@ public class MusicWnd extends Window {
 	    return(true);
 	}
 	} else {
-		final double n = ev.getWhen() / 1000.0 + this.latcomp;
-		final Integer n2 = keys.get(ev.getKeyCode());
+		final double n = ev.awt.getWhen() / 1000.0 + this.latcomp;
+		final Integer n2 = keys.get(ev.awt.getKeyCode());
 		if (n2 != null) {
 			final int intValue = n2;
 			this.stopnote(n, intValue);
 			return true;
 		}
 	}
-	return(super.keydown(ev));
+	return(super.keyup(ev));
     }
 
 	public void setMusicWndLayout (boolean originalLayout) {
@@ -561,5 +561,5 @@ public class MusicWnd extends Window {
 		}
 		super.wdgmsg(sender, msg, args);
 	}
-	
+
 }

@@ -1669,7 +1669,6 @@ public class Resource implements Serializable {
 		    }
 		} else if(t == 4) {
 		    Object[] data = buf.list(resmapper());
-		    Debug.dump(data);
 		    for(int i = 0; i < data.length; i++) {
 			Object[] datum = (Object[])data[i];
 			switch(Utils.sv(datum[0])) {
@@ -2371,7 +2370,6 @@ public class Resource implements Serializable {
 
 	private static HashMap<String, Class> customFetchedClasses = new HashMap<String, Class>(){{ // ND: Stole this from shubla, it overrides the stupid fetched res file code, doesn't even check for the res version.
 		put("ui/tt/armor$haven.ItemInfo$InfoFactory", Armor.Fac.class);
-		put("ui/grainslot$haven.Widget$Factory", Grainslot.GrainSlotFactory.class);
 	}};
 
 }

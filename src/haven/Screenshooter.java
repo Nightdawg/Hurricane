@@ -266,9 +266,9 @@ public class Screenshooter extends Window {
 	    conn.setFixedLengthStreamingMode(data.length);
 	    conn.addRequestProperty("Content-Type", fmt.ctype());
 	    MessageBuf auth = new MessageBuf();
-	    auth.addstring2(ui.sess.username + "/");
-	    auth.addbytes(ui.sess.sesskey);
-	    conn.addRequestProperty("Authorization", "Haven " + Utils.base64enc(auth.fin()));
+	    auth.addstring2(ui.sess.user.reauth() + "/");
+	    auth.addbytes(ui.sess.sesskey.sign("ss".getBytes(Utils.ascii)));
+	    conn.addRequestProperty("Authorization", "Haven " + Utils.b64.enc(auth.fin()));
 	    conn.connect();
 	    OutputStream out = conn.getOutputStream();
 	    try {

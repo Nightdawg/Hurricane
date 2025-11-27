@@ -10,7 +10,7 @@ import java.awt.event.KeyEvent;
 import haven.Audio.CS;
 
 /* >wdg: MusicWnd */
-@haven.FromResource(name = "ui/music", version = 34)
+@haven.FromResource(name = "ui/music", version = 35)
 public class MusicOverlay extends Sprite implements CS {
     public static final double HZ = 44100;
     public double start;
