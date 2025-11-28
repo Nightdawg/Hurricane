@@ -41,6 +41,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import haven.automated.*;
+import haven.automated.mapper.MappingClient;
 import haven.render.Location;
 import haven.res.ui.stackinv.ItemStack;
 
@@ -140,6 +141,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	private String myLastHealthBarText = "";
 	private Tex myStaminaBarTex = null;
 	private String myLastStaminaBarText = "";
+    private static final Tex mapperWarning = PUtils.strokeTex(Text.renderstroked("You need to relog for the Webmap Integration to send data!", Color.RED, Color.BLACK, Text.num12boldFnd));
+    private static final Tex mapperWarning2 = PUtils.strokeTex(Text.renderstroked("(This happens on newly created characters, or if you changed your endpoint)", Color.RED, Color.BLACK, Text.num12boldFnd));
 
 	// Script Threads
 	public Thread autoRepeatFlowerMenuScriptThread;
@@ -1354,7 +1357,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 
 		BufferedImage img = PUtils.rasterimg(buf);
 		BufferedImage txt = Text.renderstroked(String.format("%d%%", (int) (100 * prog))).img;
-		img.getGraphics().drawImage(txt, (img.getWidth() - txt.getWidth()) / 2, UI.scale(8) - txt.getHeight() / 2, null);
+		img.getGraphics().drawImage(txt, (img.getWidth() - txt.getWidth()) / 2, UI.scale(16) - txt.getHeight() / 2, null);
 
 	    if(this.curi != null)
 		this.curi.dispose();
@@ -1434,7 +1437,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			drawHealthMeterBar(g, hp, sc, msz);
 		}
 	}
-
+    if (statusWdg != null && !OptWnd.webmapEndpointTextEntry.text().isEmpty() && !MappingClient.initialized()) {
+        g.image(mapperWarning, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y));
+        g.image(mapperWarning2, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning2.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y + mapperWarning2.sz().y));
+    }
     }
     
     private String iconconfname() {

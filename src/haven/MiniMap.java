@@ -1058,6 +1058,9 @@ public class MiniMap extends Widget {
 			}
 		mv.wdgmsg("click", mc, loc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)).floor(posres),	button, ui.modflags());
 		} else {
+            if(mv.checkpointManager != null && mv.checkpointManagerThread != null && button == 3){
+                mv.checkpointManager.pauseIt();
+            }
 			if (OptWnd.autoEquipBunnySlippersPlateBootsCheckBox.a) {
 				if (button == 3)
 					ui.gui.map.switchBunnySlippersAndPlateBoots(gob);

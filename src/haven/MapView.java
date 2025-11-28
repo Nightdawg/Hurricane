@@ -2182,8 +2182,14 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 					if (clickb == 1 && (!ui.modshift || !ui.modctrl)) {
 						chats.get("Area Chat").send("@" + gob.id);
 					} else if (clickb == 3 && (!ui.modshift || !ui.modctrl)) {
-						if (chats.get("Party") != null)
-							chats.get("Party").send("@" + gob.id);
+                        if (chats.get("Party") != null) {
+                            if (gob.getres().name.equals("gfx/borka/body")) {
+                                String msg = ui.sess.glob.party.markNext(gob);
+                                chats.get("Party").send(msg);
+                            } else {
+                                chats.get("Party").send("@" + gob.id);
+                            }
+                        }
 					} else if (OptWnd.objectPermanentHighlightingCheckBox.a && clickb == 2 && !(ui.modshift || ui.modctrl)){
 						if (Gob.permanentHighlightList.contains(gob.id)) {
 							Gob.permanentHighlightList.remove(gob.id);

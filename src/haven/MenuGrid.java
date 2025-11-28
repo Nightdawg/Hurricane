@@ -803,6 +803,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		// Category: Quick Switch From Belt
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_B12");
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_BoarSpear");
+        makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_GiantNeedle");
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_BronzeSwordWoodenShield");
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_Cutblade");
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_FyrdsmansSwordWoodenShield");
