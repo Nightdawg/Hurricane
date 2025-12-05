@@ -74,10 +74,16 @@ public class MappingClient {
 	playerName = name;
     }
 
+	private String genus;
+
+	public void SetGenus(String genus) {
+		this.genus = genus;
+	}
+
     public void Track(long id, Coord2d coordinates) {
 	try {
 	    MCache.Grid g = glob.map.getgrid(toGC(coordinates));
-	    pu.Track(id, coordinates, g.id);
+	    pu.Track(id, coordinates, g.id, genus);
 	} catch (Exception ex) {}
     }
     
@@ -85,7 +91,7 @@ public class MappingClient {
 
     public void EnterGrid(Coord gc) {
 	lastGC = gc;
-	scheduler.execute(new GenerateGridUpdateTask(gc));
+	scheduler.execute(new GenerateGridUpdateTask(gc, genus));
     }
 
     public void CheckGridCoord(Coord2d c) {
@@ -98,17 +104,19 @@ public class MappingClient {
     private final Map<Long, MapRef> cache = new HashMap<Long, MapRef>();
 
     public void ProcessMap(MapFile mapfile, Predicate<MapFile.Marker> uploadCheck) {
-	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck), 5, TimeUnit.SECONDS);
+	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck, genus), 5, TimeUnit.SECONDS);
     }
 
     private class ExtractMapper implements Runnable {
 	MapFile mapfile;
 	Predicate<MapFile.Marker> uploadCheck;
 	int retries = 5;
+	String genus;
 
-	ExtractMapper(MapFile mapfile, Predicate<MapFile.Marker> uploadCheck) {
+	ExtractMapper(MapFile mapfile, Predicate<MapFile.Marker> uploadCheck, String genus) {
 	    this.mapfile = mapfile;
 	    this.uploadCheck = uploadCheck;
+		this.genus = genus;
 	}
 
 	@Override
@@ -124,7 +132,7 @@ public class MappingClient {
 //						})
 //						.collect(Collectors.toList());
 //
-//				scheduler.execute(new ProcessMapper(mapfile, markers));
+//				scheduler.execute(new ProcessMapper(mapfile, markers, genus));
 //			} finally {
 //				mapfile.lock.readLock().unlock();
 //			}
@@ -150,10 +158,12 @@ public class MappingClient {
     private class ProcessMapper implements Runnable {
 	MapFile mapfile;
 	List<MarkerData> markers;
+	String genus;
 
-	ProcessMapper(MapFile mapfile, List<MarkerData> markers) {
+	ProcessMapper(MapFile mapfile, List<MarkerData> markers, String genus) {
 	    this.mapfile = mapfile;
 	    this.markers = markers;
+		this.genus = genus;
 	}
 
 	@Override
@@ -174,6 +184,7 @@ public class MappingClient {
 			}
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);
+			o.put("genus", genus);
 			o.put("gridID", String.valueOf(gridId));
 			Coord gridOffset = md.m.tc.sub(mgc.mul(100));
 			o.put("x", gridOffset.x);
@@ -233,6 +244,7 @@ public class MappingClient {
     private class PositionUpdates implements Runnable {
 	private class Tracking {
 	    public String name;
+		public String genus;
 	    public String type;
 	    public long gridId;
 	    public Coord2d coords;
@@ -240,6 +252,7 @@ public class MappingClient {
 	    public JSONObject getJSON() {
 		JSONObject j = new JSONObject();
 		j.put("name", name);
+		j.put("genus", genus);
 		j.put("type", type);
 		j.put("gridID", String.valueOf(gridId));
 		JSONObject c = new JSONObject();
@@ -255,7 +268,7 @@ public class MappingClient {
 	private PositionUpdates() {
 	}
 	
-	private void Track(long id, Coord2d coordinates, long gridId) {
+	private void Track(long id, Coord2d coordinates, long gridId, String genus) {
 	    Tracking t = tracking.get(id);
 	    if(t == null) {
 		t = new Tracking();
@@ -278,6 +291,7 @@ public class MappingClient {
 		    }
 		}
 	    }
+		t.genus = genus;
 	    t.gridId = gridId;
 	    t.coords = gridOffset(coordinates);
 	}
@@ -337,10 +351,12 @@ public class MappingClient {
     
     private class GenerateGridUpdateTask implements Runnable {
 	Coord coord;
+	String genus;
 	int retries = 3;
 	
-	GenerateGridUpdateTask(Coord c) {
+	GenerateGridUpdateTask(Coord c, String genus) {
 	    this.coord = c;
+		this.genus = genus;
 	}
 	
 	@Override
@@ -356,7 +372,7 @@ public class MappingClient {
 			    gridRefs.put(String.valueOf(subg.id), new WeakReference<MCache.Grid>(subg));
 			}
 		    }
-		    scheduler.execute(new UploadGridUpdateTask(new GridUpdate(gridMap, gridRefs)));
+		    scheduler.execute(new UploadGridUpdateTask(new GridUpdate(gridMap, gridRefs), genus));
 		} catch (LoadingMap lm) {
 		    retries--;
 		    if(retries >= 0) {
@@ -372,9 +388,11 @@ public class MappingClient {
     
     private class UploadGridUpdateTask implements Runnable {
 	private final GridUpdate gridUpdate;
+	private final String genus;
 	
-	UploadGridUpdateTask(final GridUpdate gridUpdate) {
+	UploadGridUpdateTask(final GridUpdate gridUpdate, String genus) {
 	    this.gridUpdate = gridUpdate;
+		this.genus = genus;
 	}
 	
 	@Override
@@ -383,6 +401,7 @@ public class MappingClient {
 		HashMap<String, Object> dataToSend = new HashMap<>();
 		
 		dataToSend.put("grids", this.gridUpdate.grids);
+		dataToSend.put("genus", this.genus)
 		try {
 		    HttpURLConnection connection =
 			(HttpURLConnection) new URL(OptWnd.webmapEndpointTextEntry.buf.line() + "/gridUpdate").openConnection();
@@ -409,7 +428,7 @@ public class MappingClient {
 			    cache.put(Long.valueOf(gridUpdate.grids[1][1]), new MapRef(jo.getLong("map"), new Coord(jo.getJSONObject("coords").getInt("x"), jo.getJSONObject("coords").getInt("y"))));
 			}
 			for (int i = 0; reqs != null && i < reqs.length(); i++) {
-			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i))));
+			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i)), genus));
 			}
 		    }
 		    
@@ -421,10 +440,12 @@ public class MappingClient {
     private class GridUploadTask implements Runnable {
 	private final String gridID;
 	private final WeakReference<MCache.Grid> grid;
+	private final String genus;
 	
-	GridUploadTask(String gridID, WeakReference<MCache.Grid> grid) {
+	GridUploadTask(String gridID, WeakReference<MCache.Grid> grid, String genus) {
 	    this.gridID = gridID;
 	    this.grid = grid;
+		this.genus = genus;
 	}
 	
 	@Override
@@ -443,6 +464,7 @@ public class MappingClient {
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 			MultipartUtility multipart = new MultipartUtility(OptWnd.webmapEndpointTextEntry.buf.line() + "/gridUpload", "utf-8");
 			multipart.addFormField("id", this.gridID);
+			multipart.addFormField("genus", this.genus);
 			multipart.addFilePart("file", inputStream, "minimap.png");
 			extraData.put("season", glob.ast.is);
 			multipart.addFormField("extraData", extraData.toString());

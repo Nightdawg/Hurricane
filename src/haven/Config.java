@@ -1125,6 +1125,7 @@ public class Config {
             MappingClient automapper = MappingClient.getInstance();
             if (automapper != null)
                 automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");
+				automapper.SetGenus(ui.sess.user.genus);
         }
 	}
 

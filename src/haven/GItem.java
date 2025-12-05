@@ -219,7 +219,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    this.info = info;
 		try {
 			if (FoodService.isValidEndpoint() && !checkForHempBuff()) {
-				FoodService.checkFood(info, getres());
+				FoodService.checkFood(info, getres(), ui.sess.user.genus);
 			}
 		} catch (Exception ignored) {}
 	}
