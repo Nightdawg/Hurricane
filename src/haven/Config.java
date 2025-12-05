@@ -1120,7 +1120,7 @@ public class Config {
 		if (MappingClient.initialized()) {
 			MappingClient.destroy();
 		}
-        if (!OptWnd.webmapEndpointTextEntry.text().isEmpty()) {
+        if (!OptWnd.webmapEndpointTextEntry.text().isEmpty() && !GameUI.isW16) {
             MappingClient.init(ui.sess.glob);
             MappingClient automapper = MappingClient.getInstance();
             if (automapper != null)

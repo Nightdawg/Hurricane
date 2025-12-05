@@ -51,6 +51,7 @@ import static haven.Inventory.invsq;
 
 public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.Handler {
     private static final int blpw = UI.scale(0), brpw = UI.scale(142);
+	public static boolean isW16 = true;
     public final String chrid, genus;
     public final long plid;
     private final Hidepanel ulpanel, umpanel, urpanel, /*blpanel, mapmenupanel,*/ brpanel, menupanel;
@@ -376,6 +377,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	this.chrid = chrid;
 	this.plid = plid;
 	this.genus = genus;
+	if(!genus.equals("c646473983afec09")){
+		isW16 = false;
+	}
 	setcanfocus(true);
 	setfocusctl(true);
 	chat = new ChatUI();
