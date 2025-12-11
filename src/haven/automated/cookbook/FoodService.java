@@ -33,7 +33,7 @@ public class FoodService {
         scheduler.scheduleAtFixedRate(FoodService::sendItems, 10L, 10, TimeUnit.SECONDS);
     }
 
-    public static void checkFood(List<ItemInfo> ii, Resource res) {
+    public static void checkFood(List<ItemInfo> ii, Resource res, String genus) {
         List<ItemInfo> infoList = new ArrayList<>(ii);
         Defer.later(() -> {
             try {
@@ -49,6 +49,7 @@ public class FoodService {
                     parsedFoodInfo.resourceName = resName;
                     parsedFoodInfo.energy = (int) (Math.round(foodInfo.end * 100));
                     parsedFoodInfo.hunger = round2Dig(foodInfo.glut * 1000 / multiplier2);
+                    parsedFoodInfo.genus = genus;
 
                     for (int i = 0; i < foodInfo.evs.length; i++) {
                         parsedFoodInfo.feps.add(new FoodFEP(foodInfo.evs[i].ev.nm, round2Dig(foodInfo.evs[i].a / multiplier)));
@@ -241,6 +242,7 @@ public class FoodService {
     }
 
     public static class ParsedFoodInfo {
+        public String genus;
         public String itemName;
         public String resourceName;
         public Integer energy;
