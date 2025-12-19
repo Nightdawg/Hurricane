@@ -39,23 +39,9 @@ public class Inventory extends Widget implements DTarget {
     public boolean[] sqmask = null;
     public Map<GItem, WItem> wmap = new HashMap<GItem, WItem>();
 	public static Set<String> PLAYER_INVENTORY_NAMES = new HashSet<>(Arrays.asList("Inventory", "Belt", "Equipment", "Character Sheet", "Study"));
-
-	public static final Comparator<WItem> ITEM_COMPARATOR_ASC = new Comparator<WItem>() {
-		@Override
-		public int compare(WItem o1, WItem o2) {
-
-			double q1 = o1.item.getQBuff() != null ? o1.item.getQBuff().q : 0;
-			double q2 = o2.item.getQBuff() != null ? o2.item.getQBuff().q : 0;
-
-			return Double.compare(q1, q2);
-		}
-	};
-	public static final Comparator<WItem> ITEM_COMPARATOR_DESC = new Comparator<WItem>() {
-		@Override
-		public int compare(WItem o1, WItem o2) {
-			return ITEM_COMPARATOR_ASC.compare(o2, o1);
-		}
-	};
+	
+	// Sorting helper - manages all sorting functionality
+	private final InventorySorting sorting;
 
 	// ND: WHY is this happening when there's literally a texture resource for this?
 	// ND: This affects the menugrid slots color, I'm basically replacing it with the inventory square texture
@@ -99,12 +85,42 @@ public class Inventory extends Widget implements DTarget {
 		}
 	    }
 	}
+	// Ensure sort UI is added when drawing (fallback)
+	sorting.onDraw();
 	super.draw(g);
     }
 	
     public Inventory(Coord sz) {
 	super(sqsz.mul(sz).add(1, 1));
 	isz = sz;
+	sorting = new InventorySorting(this);
+    }
+    
+    @Override
+    public void pack() {
+	// Calculate minimum size based on grid
+	Coord minSize = sqsz.mul(isz).add(1, 1);
+	
+	// Calculate size needed for all children (including expand button)
+	Coord contentSize = contentsz();
+	
+	// Use the larger of the two to ensure both grid and expand button are visible
+	Coord newSize = new Coord(
+	    Math.max(minSize.x, contentSize.x),
+	    Math.max(minSize.y, contentSize.y)
+	);
+	
+	resize(newSize);
+    }
+    
+    public void cresize(Widget ch) {
+	super.cresize(ch);
+	sorting.onResize();
+    }
+
+    protected void added() {
+	super.added();
+	sorting.onAdded();
     }
     
     public boolean mousewheel(MouseWheelEvent ev) {
@@ -119,6 +135,22 @@ public class Inventory extends Widget implements DTarget {
 	}
 	return(true);
     }
+
+    // Package-private methods to allow OptWnd to manage sort UI
+    boolean sortUIAdded() {
+	return sorting.isSortUIAdded();
+    }
+    
+    // Package-private so OptWnd can call it
+    void addSortUI() {
+	sorting.addSortUI();
+    }
+    
+    // Package-private so OptWnd can call it
+    void removeSortUI() {
+	sorting.removeSortUI();
+    }
+
     
     public void addchild(Widget child, Object... args) {
 	add(child);
@@ -156,6 +188,7 @@ public class Inventory extends Widget implements DTarget {
 	    isz = (Coord)args[0];
 	    resize(invsq.sz().add(UI.scale(new Coord(-1, -1))).mul(isz).add(UI.scale(new Coord(1, 1))));
 	    sqmask = null;
+	    sorting.onSizeSet();
 	} else if(msg == "mask") {
 	    boolean[] nmask;
 	    if(args[0] == null) {
@@ -306,7 +339,7 @@ public class Inventory extends Widget implements DTarget {
 					} catch (Loading e) {}
 				}
 			}
-			Collections.sort(items, ascending ? ITEM_COMPARATOR_ASC : ITEM_COMPARATOR_DESC);
+			Collections.sort(items, ascending ? InventorySorting.QUALITY_COMPARATOR_ASC : InventorySorting.QUALITY_COMPARATOR_DESC);
 		} catch (Loading e) { }
 		return items;
 	}

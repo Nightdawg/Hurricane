@@ -81,6 +81,26 @@ public class OptWnd extends Window {
 	    move(cc.sub(this.sz.div(2)));
 	}
     }
+    
+    // Helper method to recursively update inventory sort UI
+    private void updateInventorySortUI(Widget parent, boolean enabled) {
+	if(parent instanceof Inventory) {
+	    Inventory inv = (Inventory)parent;
+	    if(enabled) {
+		// Re-add sort UI if enabled
+		if(!inv.sortUIAdded()) {
+		    inv.addSortUI();
+		}
+	    } else {
+		// Remove sort UI if disabled
+		inv.removeSortUI();
+	    }
+	}
+	// Recursively check children
+	for(Widget child = parent.child; child != null; child = child.next) {
+	    updateInventorySortUI(child, enabled);
+	}
+    }
 
     public class PButton extends Button {
 	public final Panel tgt;
@@ -643,6 +663,7 @@ public class OptWnd extends Window {
 	public static CheckBox alwaysShowCombatUIStaminaBarCheckBox;
 	public static CheckBox alwaysShowCombatUIHealthBarCheckBox;
 	public static CheckBox transparentQuestsObjectivesWindowCheckBox;
+	public static CheckBox enableInventorySortingCheckBox;
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 	public static HSlider mapIconsSizeSlider;
@@ -905,6 +926,20 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 32));
 		verticalContainerIndicatorsCheckBox.tooltip = verticalContainerIndicatorsTooltip;
+		rightColumn = add(enableInventorySortingCheckBox = new CheckBox("Enable Inventory Sorting"){
+			{a = (Utils.getprefb("enableInventorySorting", true));}
+			public void changed(boolean val) {
+				Utils.setprefb("enableInventorySorting", val);
+				// Update all existing inventory windows
+				if(ui != null && ui.gui != null) {
+					for(Window wnd : ui.gui.getAllWindows()) {
+						if(wnd != null) {
+							updateInventorySortUI(wnd, val);
+						}
+					}
+				}
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
 		Label expWindowLocationLabel;
 		rightColumn = add(expWindowLocationLabel = new Label("Experience Event Window Location:"), rightColumn.pos("bl").adds(0, 11));{
 			RadioGroup expWindowGrp = new RadioGroup(this) {
