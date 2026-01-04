@@ -97,6 +97,7 @@ public class CraftWindow extends Window {
 			removeTab(tabStrip.getButtonCount() - 1);
 		}
 		tabs.put(lastAction, added);
+        this.getparent(GameUI.class).setfocus(this);
 	}
 
 	private void removeTab(int index) {
