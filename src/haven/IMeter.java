@@ -38,7 +38,6 @@ public class IMeter extends LayerMeter {
     public static final Coord fsz = UI.scale(101, 34); // Full(?) size
     public static final Coord msz = UI.scale(75, 14); // Meter Size
     public final Indir<Resource> bg;
-	public final String meterType;
 	public final Tex bgTex;
 	private static final Text.Foundry tipF = new Text.Foundry(Text.sans, 10);
 	private Tex tipTex;
@@ -61,7 +60,6 @@ public class IMeter extends LayerMeter {
     public IMeter(Indir<Resource> bg, List<Meter> meters) {
 	super(fsz);
 	this.bg = bg;
-	meterType = bg.get().name;
 	bgTex = this.bg.get().flayer(Resource.imgc).tex();
 	set(meters);
     }

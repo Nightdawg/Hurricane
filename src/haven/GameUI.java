@@ -1439,11 +1439,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    chat.drawsmall(g, new Coord(chatWnd.c.x + UI.scale(10), by), UI.scale(100));
 	}
 
-	int x = (int)(ui.gui.sz.x / 2.0);
-	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
-	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+	int x = (int)(this.sz.x / 2.0);
+	int y = (int)(this.sz.y - ((this.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
+	int bottom = (int)(this.sz.y - ((this.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
 	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
-		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
+		IMeter.Meter stam = getmeter("stam", 0);
 		if (stam != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
 			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
@@ -1451,7 +1451,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 	}
 	if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
-		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
+		IMeter.Meter hp = getmeter("hp", 0);
 		if (hp != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
 			Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
@@ -2934,7 +2934,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		for (WItem item : getAllItemsFromAllInventoriesAndStacks()) {
 			item.reloadItemOls();
 		}
-		for (Widget window : ui.gui.getAllWindows()){
+		for (Widget window : getAllWindows()){
 			for (Widget w = window.lchild; w != null; w = w.prev) {
 				if (w instanceof Equipory) {
 					for (WItem equitem : ((Equipory) w).slots) {
@@ -3202,7 +3202,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		g.chcolor(Color.WHITE);
 
 		String staminaBarText = Fightsess.fmt1DecPlace((int)(m.a * 100));
-		Gob myself = ui.gui.map.player();
+		Gob myself = map.player();
 		if (myself != null && myself.imDrinking) {
 			g.chcolor(new Color(0, 222, 0));
 			staminaBarText += " (Drinking)";
