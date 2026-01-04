@@ -125,6 +125,13 @@ public class Window extends Widget {
 	if(visible())
 	    parent.setfocus(this);
 	initanim();
+     if (OptWnd.stackWindowsWhenOpenedCheckBox.a) {
+         if (this.cap != null) {
+             Coord loc = Utils.getprefc("wndc-" + this.cap, Coord.z);
+             if (loc != Coord.z) // ND: Should default to whatever loftar spawns them at
+                 this.c = loc;
+         }
+     }
     }
 
     public void chcap(String cap) {
@@ -451,6 +458,8 @@ public class Window extends Widget {
 	    dm.remove();
 	    dm = null;
 		preventDraggingOutside();
+        if (this.cap != null)
+            Utils.setprefc("wndc-" + this.cap, this.c);
         return(true);
 	}
 	return(super.mouseup(ev));
@@ -724,4 +733,11 @@ public class Window extends Widget {
 			}
 		}
 	}
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        if (this.cap != null)
+            Utils.setprefc("wndc-" + this.cap, this.c);
+    }
 }

@@ -648,6 +648,7 @@ public class OptWnd extends Window {
 	public static HSlider mapIconsSizeSlider;
 	public static CheckBox improvedInstrumentMusicWindowCheckBox;
     public static CheckBox preventEscKeyFromClosingWindowsCheckBox;
+    public static CheckBox stackWindowsWhenOpenedCheckBox;
 
     public class InterfaceSettingsPanel extends Panel {
 	public InterfaceSettingsPanel(Panel back) {
@@ -993,6 +994,13 @@ public class OptWnd extends Window {
                 Utils.setprefb("preventEscKeyFromClosingWindows", val);
             }
         }, rightColumn.pos("bl").adds(0, 2));
+        rightColumn = add(stackWindowsWhenOpenedCheckBox = new CheckBox("Stack Windows when Opened"){
+            {a = (Utils.getprefb("stackWindowsWhenOpened", false));}
+            public void changed(boolean val) {
+                Utils.setprefb("stackWindowsWhenOpened", val);
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
+        stackWindowsWhenOpenedCheckBox.tooltip = stackWindowsWhenOpenedTooltip;
 
 		Widget backButton;
 		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
@@ -4914,6 +4922,10 @@ public class OptWnd extends Window {
 	private static final Object transparentQuestsObjectivesWindowTooltip = RichText.render("This makes the Quest Objectives window background transparent, like in the default client." +
 			"\n" +
 			"\n$col[185,185,185]{You can still drag the window around, regardless.", UI.scale(300));
+
+    private static final Object stackWindowsWhenOpenedTooltip = RichText.render("This makes windows that have the same title open on top of each other." +
+            "\n" +
+            "\n$col[185,185,185]{This also saves their positions to wherever you dragged/closed them.}", UI.scale(320));
 
 	// Combat Settings Tooltips
 	private static final Object singleRowCombatMovesTooltip = RichText.render("This makes the Bottom Panel show the combat moves in one row, rather than two.", UI.scale(300));
