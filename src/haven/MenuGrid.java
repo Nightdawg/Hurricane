@@ -776,7 +776,6 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Bots/OceanScoutBot");
 		makeLocal("customclient/menugrid/Bots/FishingBot");
 		makeLocal("customclient/menugrid/Bots/TarKilnEmptierBot");
-		makeLocal("customclient/menugrid/Bots/TurnipBot");
 		makeLocal("customclient/menugrid/Bots/CellarDiggingBot");
 		makeLocal("customclient/menugrid/Bots/CleanupBot");
 		makeLocal("customclient/menugrid/Bots/GrubGrubBot");
@@ -924,20 +923,6 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 						gui.fishingBot.reqdestroy();
 						gui.fishingBot = null;
 						gui.fishingThread = null;
-					}
-				}
-			} else if (ad[2].equals("TurnipBot")) {
-				if (gui.turnipBot == null && gui.turnipThread == null) {
-					gui.turnipBot = new TurnipBot(gui);
-					gui.add(gui.turnipBot, Utils.getprefc("wndc-turnipBotWindow", new Coord(gui.sz.x/2 - gui.turnipBot.sz.x/2, gui.sz.y/2 - gui.turnipBot.sz.y/2 - 200)));
-					gui.turnipThread = new Thread(gui.turnipBot, "TurnipBot");
-					gui.turnipThread.start();
-				} else {
-					if (gui.turnipBot != null) {
-						gui.turnipBot.stop();
-						gui.turnipBot.reqdestroy();
-						gui.turnipBot = null;
-						gui.turnipThread = null;
 					}
 				}
 			} else if (ad[2].equals("CleanupBot")) {
