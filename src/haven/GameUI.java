@@ -384,7 +384,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	chat = new ChatUI();
 	chat.show();
 	chatWnd = new ChatWnd(Utils.getprefc("wndsz-chat", new Coord(UI.scale(410), 150)), "Chat", this);
-	chatWnd.add(chat, - UI.scale(13), - UI.scale(20));
+	chatWnd.add(chat, - UI.scale(18), - UI.scale(18));
 	add(chatWnd, Utils.getprefc("wndc-chat", UI.scale(new Coord(-100, 99999))));
 
 //	beltwdg.raise();

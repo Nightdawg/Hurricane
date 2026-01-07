@@ -845,31 +845,33 @@ public class MapWnd extends Window implements Console.Directory {
 		fixAndSavePos(a); // ND: Do this again to fix the window size when we resize the game window after switching the compact mode and we go back to the other mode. It's for my OCD, ok?
     }
 
-	public void fixAndSavePos(boolean compact) { // ND: Just like preventDraggingOutside() in Window.java, it's spaghetti, but it works on all interface scales guaranteed.
-		if (compact) {
+	public void fixAndSavePos(boolean compact) { // ND: Replaces preventDraggingOutside() and preventResizingOutside() from Window
+        Coord guiSize = ui.gui.sz;
+        Coord windowSize = this.sz;
+        if (compact) {
 			// ND: This prevents us from resizing it larger than the game window size
-			if(this.csz().x > ui.gui.sz.x) this.resize(ui.gui.sz.x, this.csz().y);
-			if(this.csz().y > ui.gui.sz.y) this.resize(this.csz().x, ui.gui.sz.y);
+			if(windowSize.x > ui.gui.sz.x){ this.resize(ui.gui.sz.x, windowSize.y); windowSize = this.csz();}
+			if(windowSize.y > ui.gui.sz.y){ this.resize(windowSize.x, ui.gui.sz.y); windowSize = this.csz();}
 			// ND: This prevents us from dragging it outside at all
 			if (this.c.x < 0) this.c.x = 0;
 			if (this.c.y < 0) this.c.y = 0;
-			if (this.c.x > (ui.gui.sz.x - this.csz().x)) this.c.x = ui.gui.sz.x - this.csz().x;
-			if (this.c.y > (ui.gui.sz.y - this.csz().y)) this.c.y = ui.gui.sz.y - this.csz().y;
+			if (this.c.x > (ui.gui.sz.x - windowSize.x)) this.c.x = ui.gui.sz.x - windowSize.x;
+			if (this.c.y > (ui.gui.sz.y - windowSize.y)) this.c.y = ui.gui.sz.y - windowSize.y;
 			smallmapc = this.c;
-			smallmapsz = this.csz();
+			smallmapsz = windowSize;
 			Utils.setprefc("smallmapc", smallmapc);
 			Utils.setprefc("smallmapsz", smallmapsz);
 		} else {
 			// ND: This prevents us from resizing it larger than the game window size
-			if(this.csz().x > ui.gui.sz.x - dlmrgn.x * 2 - dsmrgn.x) this.resize(ui.gui.sz.x - dlmrgn.x * 2 - dsmrgn.x, this.csz().y);
-			if(this.csz().y > ui.gui.sz.y - (dlmrgn.y + dsmrgn.y) * 2) this.resize(this.csz().x, ui.gui.sz.y - (dlmrgn.y+dsmrgn.y) * 2);
+            if(windowSize.x > guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x)) {this.resize(guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x), windowSize.y - dragResizeDiff.y); windowSize = this.sz;}
+            if(windowSize.y > guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)) {this.resize(windowSize.x - dragResizeDiff.x, guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)); windowSize = this.sz;}
 			// ND: This prevents us from dragging it outside at all
-			if (this.c.x < -dsmrgn.x) this.c.x = -dsmrgn.x;
-			if (this.c.y < -dsmrgn.y) this.c.y = -dsmrgn.y;
-			if (this.c.x > (ui.gui.sz.x - this.csz().x - (dlmrgn.x + dsmrgn.x) * 2)) this.c.x = ui.gui.sz.x - this.csz().x - (dlmrgn.x + dsmrgn.x) * 2;
-			if (this.c.y > (ui.gui.sz.y - this.csz().y - (dlmrgn.y + dsmrgn.y) * 2) - dsmrgn.y) this.c.y = ui.gui.sz.y - this.csz().y - (dlmrgn.y + dsmrgn.y) * 2 - dsmrgn.y;
+            if (this.c.x < -guiTopLeftCornerDiff.x) this.c.x = -guiTopLeftCornerDiff.x;
+            if (this.c.y < -guiTopLeftCornerDiff.y) this.c.y = -guiTopLeftCornerDiff.y;
+            if (this.c.x > (guiSize.x - windowSize.x + windowBottomRightCornerDiff.x)) this.c.x = guiSize.x - windowSize.x + windowBottomRightCornerDiff.x;
+            if (this.c.y > (guiSize.y - windowSize.y + windowBottomRightCornerDiff.y)) this.c.y = guiSize.y - windowSize.y + windowBottomRightCornerDiff.y;
 			bigmapc = this.c;
-			bigmapsz = this.csz();
+			bigmapsz = windowSize;
 			Utils.setprefc("bigmapc", bigmapc);
 			Utils.setprefc("bigmapsz", bigmapsz);
 		}
@@ -1160,4 +1162,14 @@ public class MapWnd extends Window implements Console.Directory {
 			return(true);
 		return(false);
 	}
+
+    @Override
+    public void preventDraggingOutside() { // ND: replaced by fixAndSavePos in this class
+        return;
+    }
+
+    @Override
+    public void preventResizingOutside() { // ND: replaced by fixAndSavePos in this class
+        return;
+    }
 }

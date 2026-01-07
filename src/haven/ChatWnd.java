@@ -14,16 +14,17 @@ public class ChatWnd extends Window {
             @Override
             public void mousemove(MouseMoveEvent ev) {
                 if (szdrag != null) {
-                    gui.chat.resize(sz.x - UI.scale(54), sz.y - UI.scale(51));
+                    gui.chat.resize(sz.x - UI.scale(36), sz.y - UI.scale(44));
                 }
                 super.mousemove(ev);
             }
 
             @Override
             public boolean mouseup(MouseUpEvent ev) {
-                fixWindowPosition();
+                preventResizingOutside();
+                preventDraggingOutside();
                 if (szdrag != null) {
-                    gui.chat.resize(sz.x - UI.scale(54), sz.y - UI.scale(51));
+                    gui.chat.resize(sz.x - UI.scale(36), sz.y - UI.scale(44));
                 }
                 return super.mouseup(ev);
             }
@@ -43,7 +44,7 @@ public class ChatWnd extends Window {
         super.added();
         if (deco instanceof DefaultDeco)
             ((DefaultDeco)deco).cbtn.hide();
-        gui.chat.resize(sz.x - UI.scale(54), sz.y - UI.scale(51));
+        gui.chat.resize(sz.x - UI.scale(36), sz.y - UI.scale(44));
     }
 
     @Override
@@ -54,19 +55,4 @@ public class ChatWnd extends Window {
         Utils.setprefc("wndsz-chat", sz);
     }
 
-    public void fixWindowPosition(){
-        // ND: This prevents us from resizing it larger than the game window size
-        if(this.csz().x > gui.sz.x - dlmrgn.x * 2 - dsmrgn.x) this.resize(gui.sz.x - dlmrgn.x * 2 - dsmrgn.x, this.csz().y);
-        if(this.csz().y > gui.sz.y - (int)(dlmrgn.y * 3.2)) this.resize(this.csz().x, gui.sz.y - (int)(dlmrgn.y * 3.2));
-        // ND: This prevents us from dragging it outside at all
-        if (this.c.x < -dsmrgn.x) this.c.x = -dsmrgn.x;
-        if (this.c.y < -dsmrgn.y) this.c.y = -dsmrgn.y;
-        if (this.c.x > (gui.sz.x - this.csz().x - (dlmrgn.x + dsmrgn.x) * 2)) this.c.x = gui.sz.x - this.csz().x - (dlmrgn.x + dsmrgn.x) * 2;
-        if (this.c.y > (gui.sz.y - this.csz().y - (int)(dlmrgn.y * 3.9))) this.c.y = gui.sz.y - this.csz().y - (int)(dlmrgn.y * 3.9);
-    }
-
-    @Override
-    public void preventDraggingOutside() {
-        fixWindowPosition();
-    }
 }

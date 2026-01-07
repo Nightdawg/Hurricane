@@ -27,7 +27,7 @@
 package haven;
 
 import haven.render.*;
-import java.util.function.*;
+
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import static haven.PUtils.*;
@@ -53,10 +53,10 @@ public class Window extends Widget {
     public static final Tex sizer = Resource.loadtex("gfx/hud/wnd/sizer");
     public static final Coord tlm = UI.scale(18, 30);
     public static final Coord brm = UI.scale(13, 22);
-	public static final Coord cpo = UI.rscale(27, 13); // ND: This is the location of the window title text
+	public static final Coord cpo = UI.rscale(27, 6); // ND: This is the location of the window title text
     public static final int capo = 7, capio = 2;
-    public static final Coord dlmrgn = UI.scale(24, 18);
-    public static final Coord dsmrgn = UI.scale(12, 12);
+    public static final Coord dlmrgn = UI.scale(10, 10); // ND: Margin set for LARGE windows, between the content and window edge
+    public static final Coord dsmrgn = UI.scale(4, 4); // ND: margin set for SMALL windows, between the content and window edge
     public static final BufferedImage ctex = Resource.loadsimg("gfx/hud/fonttex");
     public static final BufferedImage ctexUnfocused = Resource.loadsimg("gfx/hud/fonttexUnfocused");
     public static final Text.Furnace cf = Text.Imager.of(new PUtils.TexFurn(new Text.Foundry(Text.fraktur, 15).aa(true), ctex),
@@ -213,7 +213,7 @@ public class Window extends Widget {
 	    resize(wsz);
 	    ca = Area.sized(tlm, csz);
 	    aa = Area.sized(ca.ul.add(mrgn), asz);
-		cbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(9), - UI.scale(3)); // ND: UI Window close button location
+		cbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(9), - UI.scale(10)); // ND: UI Window close button location
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
@@ -234,13 +234,11 @@ public class Window extends Widget {
 	    }
 	    g.defstate();
 	    bgc.x = ca.ul.x;
-		if(!OptWnd.simplifiedUIThemeCheckBox.a){
-	    for(bgc.y = ca.ul.y; bgc.y < ca.br.y; bgc.y += bgl.sz().y)
-		g.image(bgl, bgc, ca.ul, ca.br);
-	    bgc.x = ca.br.x - bgr.sz().x;
-	    for(bgc.y = ca.ul.y; bgc.y < ca.br.y; bgc.y += bgr.sz().y)
-		g.image(bgr, bgc, ca.ul, ca.br);
-		}
+//	    for(bgc.y = ca.ul.y; bgc.y < ca.br.y; bgc.y += bgl.sz().y)
+//		g.image(bgl, bgc, ca.ul, ca.br);
+//	    bgc.x = ca.br.x - bgr.sz().x;
+//	    for(bgc.y = ca.ul.y; bgc.y < ca.br.y; bgc.y += bgr.sz().y)
+//		g.image(bgr, bgc, ca.ul, ca.br);
 	}
 
 	protected void drawframe(GOut g) {
@@ -690,49 +688,39 @@ public class Window extends Widget {
 	    });
     }
 
+    public static final Coord guiTopLeftCornerDiff = UI.scale(14, 7); // ND: You'd think gui.c starts in the top left corner of the screen. You'd be wrong. I don't even know how.
+    public static final Coord windowBottomRightCornerDiff = UI.scale(9, 18); // ND: I guess the window size Coord says it's larger than what it actually is, so I gotta correct this too.
+    public static final Coord dragResizeDiff = UI.scale(51, 72); // ND: I don't even know how to explain this one. Just trust the code.
+
 	public void preventDraggingOutside() { // ND: This code is just straight up spaghetti, I know.
-		if (ui != null && ui.gui != null) {
-			if (this.csz().x > 800 || this.csz().y > 500 || !OptWnd.snapWindowsBackInsideCheckBox.a) {
-				if (this.large) {
-					if (this.deco == null) { // ND: This is for windows that don't have the outer decoration (like compact map window)
-						if (this.c.x < 0 - (int)(this.csz().x/1.333)) this.c.x = 0 - (int)(this.csz().x/1.333);
-						if (this.c.y < 0 - (int)(this.csz().y/1.333)) this.c.y = 0 - (int)(this.csz().y/1.333);
-						if (this.c.x > (ui.gui.sz.x - (int)(this.csz().x*0.25))) this.c.x = ui.gui.sz.x - (int)(this.csz().x*0.25);
-						if (this.c.y > (ui.gui.sz.y - (int)(this.csz().y*0.25))) this.c.y = ui.gui.sz.y - (int)(this.csz().y*0.25);
-					} else {
-						if (this.c.x < -dsmrgn.x - (int)(this.csz().x/1.333)) this.c.x = -dsmrgn.x - (int)(this.csz().x/1.333);
-						if (this.c.y < -dsmrgn.y - (int)(this.csz().y/1.333)) this.c.y = -dsmrgn.y - (int)(this.csz().y/1.333);
-						if (this.c.x > (ui.gui.sz.x - (int)(this.csz().x*0.25) - (dlmrgn.x+dsmrgn.x) * 2)) this.c.x = ui.gui.sz.x - (int)(this.csz().x*0.25) - (dlmrgn.x+dsmrgn.x) * 2 ;
-						if (this.c.y > (ui.gui.sz.y - (int)(this.csz().y*0.25) - (dlmrgn.y+dsmrgn.y) * 2) - dsmrgn.x) this.c.y = ui.gui.sz.y - (int)(this.csz().y*0.25) - (dlmrgn.y+dsmrgn.y) * 2 - dsmrgn.y;
-					}
-				} else {
-					if (this.c.x < -dsmrgn.x - (int)(this.csz().x/1.333)) this.c.x = -dsmrgn.x - (int)(this.csz().x/1.333);
-					if (this.c.y < -dsmrgn.y - (int)(this.csz().y/1.333)) this.c.y = -dsmrgn.y - (int)(this.csz().y/1.333);
-					if (this.c.x > (ui.gui.sz.x - (int)(this.csz().x*0.25) - dlmrgn.x * 2)) this.c.x = ui.gui.sz.x - (int)(this.csz().x*0.25) - dlmrgn.x * 2;
-					if (this.c.y > (ui.gui.sz.y - (int)(this.csz().y*0.25) - dlmrgn.y * 2 - brm.y)) this.c.y = ui.gui.sz.y - (int)(this.csz().y*0.25) - dlmrgn.y * 2 - brm.y;
-				}
-			} else {
-				if (this.large) {
-					if (this.deco == null) { // ND: This is for windows that don't have the outer decoration (like compact map window)
-						if (this.c.x < 0) this.c.x = 0;
-						if (this.c.y < 0) this.c.y = 0;
-						if (this.c.x > (ui.gui.sz.x - this.csz().x)) this.c.x = ui.gui.sz.x - this.csz().x;
-						if (this.c.y > (ui.gui.sz.y - this.csz().y)) this.c.y = ui.gui.sz.y - this.csz().y;
-					} else {
-						if (this.c.x < -dsmrgn.x) this.c.x = -dsmrgn.x;
-						if (this.c.y < -dsmrgn.y) this.c.y = -dsmrgn.y;
-						if (this.c.x > (ui.gui.sz.x - this.csz().x - (dlmrgn.x+dsmrgn.x) * 2)) this.c.x = ui.gui.sz.x - this.csz().x - (dlmrgn.x+dsmrgn.x) * 2 ;
-						if (this.c.y > (ui.gui.sz.y - this.csz().y - (dlmrgn.y+dsmrgn.y) * 2) - dsmrgn.x) this.c.y = ui.gui.sz.y - this.csz().y - (dlmrgn.y+dsmrgn.y) * 2 - dsmrgn.y;
-					}
-				} else {
-					if (this.c.x < -dsmrgn.x) this.c.x = -dsmrgn.x;
-					if (this.c.y < -dsmrgn.y) this.c.y = -dsmrgn.y;
-					if (this.c.x > (ui.gui.sz.x - this.csz().x - dlmrgn.x * 2)) this.c.x = ui.gui.sz.x - this.csz().x - dlmrgn.x * 2;
-					if (this.c.y > (ui.gui.sz.y - this.csz().y - dlmrgn.y * 2 - brm.y)) this.c.y = ui.gui.sz.y - this.csz().y - dlmrgn.y * 2 - brm.y;
-				}
-			}
-		}
+        if (ui == null || ui.gui == null) {
+            return;
+        }
+        Coord guiSize = ui.gui.sz;
+        Coord windowSize = this.sz;
+        if (windowSize.x > 800 || windowSize.y > 500 || !OptWnd.snapWindowsBackInsideCheckBox.a) {
+            if (this.c.x < - guiTopLeftCornerDiff.x - (int)(windowSize.x * 0.70)) this.c.x = - guiTopLeftCornerDiff.x - (int)(windowSize.x * 0.70);
+            if (this.c.y < - guiTopLeftCornerDiff.y - (int)(windowSize.y * 0.70)) this.c.y = - guiTopLeftCornerDiff.y - (int)(windowSize.y * 0.70);
+            if (this.c.x > (guiSize.x - (int)(windowSize.x * 0.30) + windowBottomRightCornerDiff.x)) this.c.x = guiSize.x - (int)(windowSize.x * 0.30) + windowBottomRightCornerDiff.x;
+            if (this.c.y > (guiSize.y - (int)(windowSize.y * 0.30) + windowBottomRightCornerDiff.y)) this.c.y = guiSize.y - (int)(windowSize.y * 0.30) + windowBottomRightCornerDiff.y;
+        } else {
+            if (this.c.x < - guiTopLeftCornerDiff.x) this.c.x = - guiTopLeftCornerDiff.x;
+            if (this.c.y < - guiTopLeftCornerDiff.y) this.c.y = - guiTopLeftCornerDiff.y;
+            if (this.c.x > (guiSize.x - windowSize.x + windowBottomRightCornerDiff.x)) this.c.x = guiSize.x - windowSize.x + windowBottomRightCornerDiff.x;
+            if (this.c.y > (guiSize.y - windowSize.y + windowBottomRightCornerDiff.y)) this.c.y = guiSize.y - windowSize.y + windowBottomRightCornerDiff.y;
+        }
 	}
+
+    public void preventResizingOutside() {
+        if (ui == null || ui.gui == null) {
+            return;
+        }
+        Coord guiSize = ui.gui.sz;
+        Coord windowSize = this.sz;
+        // ND: This prevents us from resizing it larger than the game window size
+        if(windowSize.x > guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x)) {this.resize(guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x), windowSize.y - dragResizeDiff.y); windowSize = this.sz;}
+        if(windowSize.y > guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)) {this.resize(windowSize.x - dragResizeDiff.x, guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)); windowSize = this.sz;}
+    }
 
     @Override
     public void dispose() {
