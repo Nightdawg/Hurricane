@@ -6,7 +6,7 @@ import java.util.*;
 public class AccountList extends Widget {
     public static final LinkedHashMap<String, String> accountmap = new LinkedHashMap<>();
     private static final Coord SZ = UI.scale(240, 30);
-    private static final Coord SZ2 = UI.scale(240, 36);
+    private static final Coord SZ2 = UI.scale(246, 36);
 
     public int height, y;
     public final List<Account> accounts = new ArrayList<>();
