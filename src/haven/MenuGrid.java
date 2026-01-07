@@ -933,6 +933,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 					gui.cleanupThread.start();
 				} else {
 					if (gui.cleanupBot != null) {
+                        gui.cleanupBot.stop = true;
 						gui.cleanupBot.stop();
 						gui.cleanupBot.reqdestroy();
 						gui.cleanupBot = null;

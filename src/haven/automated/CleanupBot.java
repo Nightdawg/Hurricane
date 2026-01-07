@@ -10,7 +10,7 @@ import static java.lang.Thread.sleep;
 public class CleanupBot extends Window implements Runnable {
     private GameUI gui;
     private boolean chopBushes;
-    private boolean stop;
+    public boolean stop;
     private boolean chopTrees;
     private boolean chipRocks;
     private boolean destroyStumps;
@@ -121,14 +121,13 @@ public class CleanupBot extends Window implements Runnable {
                         }
                     }
                     else if (ui.gui.getmeter("nrj", 0).a < 0.25) {
-                        gui.error("Need food");
+                        gui.error("Cleanup Bot: Low on energy, stopping.");
                         stop();
                     }
                     else if (gui.getmeter("stam", 0).a < 0.40) {
                         try {
                             AUtils.drinkTillFull(gui, 0.99, 0.99);
                         } catch (InterruptedException e) {
-                            System.out.println("interrupted");
                         }
                     } else {
                         Gob gob = findClosestGob();
@@ -141,7 +140,6 @@ public class CleanupBot extends Window implements Runnable {
                 sleep(2000);
             }
         } catch (InterruptedException e) {
-            System.out.println("interrupted");
         }
     }
 
@@ -173,7 +171,7 @@ public class CleanupBot extends Window implements Runnable {
                     }
                 }
             } else {
-                gui.error("Nothing left to destroy.");
+                gui.error("Cleanup Bot: Nothing left to destroy.");
                 activeButton.change("Start");
                 active = false;
                 try {
@@ -242,7 +240,6 @@ public class CleanupBot extends Window implements Runnable {
             stop();
             reqdestroy();
             gui.cleanupBot = null;
-            gui.cleanupThread = null;
         } else
             super.wdgmsg(sender, msg, args);
     }
@@ -251,6 +248,10 @@ public class CleanupBot extends Window implements Runnable {
         ui.gui.map.wdgmsg("click", Coord.z, ui.gui.map.player().rc.floor(posres), 1, 0);
         if (ui.gui.map.pfthread != null) {
             ui.gui.map.pfthread.interrupt();
+        }
+        if (gui.cleanupThread != null) {
+            gui.cleanupThread.interrupt();
+            gui.cleanupThread = null;
         }
         this.destroy();
     }
