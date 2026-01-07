@@ -32,13 +32,13 @@ import java.awt.Font;
 import java.awt.image.BufferedImage;
 
 public class Button extends SIWidget {
-    public static BufferedImage bl = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/left") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/left"));
-    public static BufferedImage br = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/right") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/right"));
-    public static BufferedImage bt = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/top") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/top"));
-    public static BufferedImage bb = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/bottom") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/bottom"));
-    public static BufferedImage dt = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/dtex") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/dtex"));
-    public static BufferedImage ut = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/utex") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/utex"));
-    public static BufferedImage bm = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadsimg("gfx/hud/buttons/tbtn/mid") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/mid"));
+    public static final BufferedImage bl = Resource.loadsimg("gfx/hud/buttons/tbtn/left");
+    public static final BufferedImage br = Resource.loadsimg("gfx/hud/buttons/tbtn/right");
+    public static final BufferedImage bt = Resource.loadsimg("gfx/hud/buttons/tbtn/top");
+    public static final BufferedImage bb = Resource.loadsimg("gfx/hud/buttons/tbtn/bottom");
+    public static final BufferedImage dt = Resource.loadsimg("gfx/hud/buttons/tbtn/dtex");
+    public static final BufferedImage ut = Resource.loadsimg("gfx/hud/buttons/tbtn/utex");
+    public static final BufferedImage bm = Resource.loadsimg("gfx/hud/buttons/tbtn/mid");
     public static final int hs = bl.getHeight(), hl = bm.getHeight();
     public static final Resource click = Loading.waitfor(Resource.local().load("sfx/hud/btn"));
     public static final Audio.Clip clbtdown = Loading.waitfor(Resource.local().load("sfx/hud/lbtn")).layer(Resource.audio, "down");

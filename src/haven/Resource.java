@@ -2047,6 +2047,18 @@ public class Resource implements Serializable {
     }
 
     public static Image loadrimg(String name) {
+    if (name.startsWith("gfx/hud/")) {
+        String uiTheme =  Utils.getpref("uiThemeName", "Nightdawg Dark");
+        if (!uiTheme.equals("Nightdawg Dark")) {
+            String result = name.replaceFirst("^gfx/hud", "");
+            String finalString = "customclient/uiThemes/" + uiTheme + result;
+            try {
+                return local().loadwait(finalString).layer(imgc);
+            } catch (Exception ignored){
+                return(local().loadwait(name).layer(imgc));
+            }
+        }
+    }
 	return(local().loadwait(name).layer(imgc));
     }
 

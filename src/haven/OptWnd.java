@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.Future;
 
@@ -623,7 +624,7 @@ public class OptWnd extends Window {
 	}
     }
 
-	public static CheckBox simplifiedUIThemeCheckBox;
+	public static OldDropBox uiThemeDropBox;
 	public static CheckBox extendedMouseoverInfoCheckBox;
 	public static CheckBox disableMenuGridHotkeysCheckBox;
 	public static CheckBox alwaysOpenBeltOnLoginCheckBox;
@@ -850,27 +851,35 @@ public class OptWnd extends Window {
 		transparentQuestsObjectivesWindowCheckBox.tooltip = transparentQuestsObjectivesWindowTooltip;
 
 		Widget rightColumn;
-		rightColumn = add(simplifiedUIThemeCheckBox = new CheckBox("Simplified UI Theme"){
-			{a = (Utils.getprefb("simplifiedUITheme", false));}
-			public void changed(boolean val) {
-				Utils.setprefb("simplifiedUITheme", val);
-				Window.bg = (!val ? Resource.loadtex("gfx/hud/wnd/lg/bg") : Resource.loadtex("customclient/simplifiedUI/wnd/bg"));
-				Window.cl =  (!val ? Resource.loadtex("gfx/hud/wnd/lg/cl") : Resource.loadtex("customclient/simplifiedUI/wnd/cl"));
-				Window.br = (!val ? Resource.loadtex("gfx/hud/wnd/lg/br") : Resource.loadtex("customclient/simplifiedUI/wnd/br"));
-				Button.bl = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/left") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/left"));
-				Button.br = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/right") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/right"));
-				Button.bt = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/top") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/top"));
-				Button.bb = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/bottom") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/bottom"));
-				Button.dt = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/dtex") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/dtex"));
-				Button.ut = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/utex") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/utex"));
-				Button.bm = (!val ? Resource.loadsimg("gfx/hud/buttons/tbtn/mid") : Resource.loadsimg("customclient/simplifiedUI/buttons/tbtn/mid"));
-				if (simpleUIFuture != null)
-					simpleUIFuture.cancel(true);
-				simpleUIChanged = true;
-				simpleUIFuture = simpleUIExecutor.scheduleWithFixedDelay(OptWnd.this::resetSimpleUIChanged, 2, 3, TimeUnit.SECONDS);
-			}
-		}, UI.scale(230, 2));
-		simplifiedUIThemeCheckBox.tooltip = simplifiedUIThemeCheckBoxTooltip;
+        rightColumn = add(new Label("UI Theme (Req. Restart):"), UI.scale(230, 2));
+        List<String> uiThemes = Arrays.asList("Nightdawg Dark", "Trollex Red");
+        add(new OldDropBox<String>(uiThemes.size(), uiThemes) {
+            {
+                super.change(uiThemes.get(Utils.getprefi("uiThemeDropBox", 0)));
+            }
+            @Override
+            protected String listitem(int i) {
+                return uiThemes.get(i);
+            }
+            @Override
+            protected int listitems() {
+                return uiThemes.size();
+            }
+            @Override
+            protected void drawitem(GOut g, String item, int i) {
+                g.aimage(Text.renderstroked(item).tex(), Coord.of(UI.scale(3), g.sz().y / 2), 0.0, 0.5);
+            }
+            @Override
+            public void change(String item) {
+                super.change(item);
+                for (int i = 0; i < uiThemes.size(); i++){
+                    if (item.equals(uiThemes.get(i))){
+                        Utils.setprefi("uiThemeDropBox", i);
+                        Utils.setpref("uiThemeName", uiThemes.get(i));
+                    }
+                }
+            }
+        }, rightColumn.pos("ur").adds(2, 0));
 		rightColumn = add(extendedMouseoverInfoCheckBox = new CheckBox("Extended Mouseover Info (Dev)"){
 			{a = (Utils.getprefb("extendedMouseoverInfo", false));}
 			public void changed(boolean val) {
@@ -4875,7 +4884,6 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[185,185,185]{I really try my best to support this setting, but I can't guarantee everything will work." +
 			"\nUnless you're on a 4K or 8K display, I'd keep this at 1.00x.}", UI.scale(300));
-	private static final Object simplifiedUIThemeCheckBoxTooltip = RichText.render("$col[185,185,185]{A more boring theme for the UI...}", UI.scale(300));
 	private static final Object extendedMouseoverInfoTooltip = RichText.render("Holding Ctrl+Shift shows the Resource Path when mousing over Objects or Tiles. " +
 			"\nThis setting will add a lot of additional information on top of that." +
 			"\n" +

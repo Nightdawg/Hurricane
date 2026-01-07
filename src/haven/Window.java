@@ -36,10 +36,10 @@ public class Window extends Widget {
     public static final Pipe.Op bgblend = FragColor.blend.nil;
     public static final Pipe.Op cblend  = FragColor.blend(new BlendMode(BlendMode.Function.ADD, BlendMode.Factor.SRC_ALPHA, BlendMode.Factor.INV_SRC_ALPHA,
 									BlendMode.Function.ADD, BlendMode.Factor.ONE, BlendMode.Factor.INV_SRC_ALPHA));
-    public static Tex bg = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadtex("gfx/hud/wnd/lg/bg") : Resource.loadtex("customclient/simplifiedUI/wnd/bg"));
+    public static final Tex bg = Resource.loadtex("gfx/hud/wnd/lg/bg");
     public static final Tex bgl = Resource.loadtex("gfx/hud/wnd/lg/bgl");
     public static final Tex bgr = Resource.loadtex("gfx/hud/wnd/lg/bgr");
-    public static Tex cl =  (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadtex("gfx/hud/wnd/lg/cl") : Resource.loadtex("customclient/simplifiedUI/wnd/cl"));
+    public static final Tex cl = Resource.loadtex("gfx/hud/wnd/lg/cl");
     public static final TexI cm = new TexI(Resource.loadsimg("gfx/hud/wnd/lg/cm"));
     public static final Tex cr = Resource.loadtex("gfx/hud/wnd/lg/cr");
     public static final Tex tm = Resource.loadtex("gfx/hud/wnd/lg/tm");
@@ -49,7 +49,7 @@ public class Window extends Widget {
     public static final Tex rm = Resource.loadtex("gfx/hud/wnd/lg/rm");
     public static final Tex bl = Resource.loadtex("gfx/hud/wnd/lg/bl");
     public static final Tex bm = Resource.loadtex("gfx/hud/wnd/lg/bm");
-    public static Tex br = (!Utils.getprefb("simplifiedUITheme", false) ? Resource.loadtex("gfx/hud/wnd/lg/br") : Resource.loadtex("customclient/simplifiedUI/wnd/br"));
+    public static final Tex br = Resource.loadtex("gfx/hud/wnd/lg/br");
     public static final Tex sizer = Resource.loadtex("gfx/hud/wnd/sizer");
     public static final Coord tlm = UI.scale(18, 30);
     public static final Coord brm = UI.scale(13, 22);
