@@ -44,21 +44,25 @@ public class GobFoodWaterInfo extends GobInfo {
 			int rbuf = d.sdt.checkrbuf(0);
 			String key = null;
 			if (resName.equals("gfx/terobjs/chickencoop")) {
-				if (rbuf == 0) {
+                boolean hasWater = (rbuf & 1) != 0;
+                boolean hasFood  = (rbuf & 2) != 0;
+				if (!hasFood && !hasWater) {
 					key = "both";
-				} else if (rbuf == 1) {
+				} else if (!hasFood) {
 					key = "food";
-				} else if (rbuf == 2) {
+				} else if (!hasWater) {
 					key = "water";
 				} else {
 					return null;
 				}
 			} else if (resName.equals("gfx/terobjs/rabbithutch")) {
-				if (rbuf == 65 || rbuf == 66 || rbuf == 73 || rbuf == 74) {
+                boolean hasWater = (rbuf & 4) != 0;
+                boolean hasFood  = (rbuf & 16) != 0;
+				if (!hasWater && !hasFood) {
 					key = "both";
-				} else if (rbuf == 69 || rbuf == 70 || rbuf == 77 || rbuf == 78) {
+				} else if (!hasFood) {
 					key = "food";
-				} else if (rbuf == 121 || rbuf == 122 || rbuf == 89 || rbuf == 90) {
+				} else if (!hasWater) {
 					key = "water";
 				} else {
 					return null;
