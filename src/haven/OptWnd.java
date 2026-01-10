@@ -430,6 +430,7 @@ public class OptWnd extends Window {
 	public static HSlider squeakSoundVolumeSlider;
 	public static HSlider butcherSoundVolumeSlider;
 	public static HSlider whiteDuckCapSoundVolumeSlider;
+    public static HSlider miningSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 	public static HSlider themeSongVolumeSlider;
 
@@ -618,6 +619,16 @@ public class OptWnd extends Window {
 				Utils.setprefi("whiteDuckCapSoundVolume", val);
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
+
+        rightColumn = add(new Label("Mining Sound Volume"), rightColumn.pos("bl").adds(0, 5));
+        rightColumn = add(miningSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("miningSoundVolume", 75)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("miningSoundVolume", val);
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
 
 	    add(new PButton(UI.scale(200), "Back", 27, back, "Options            "), leftColumn.pos("bl").adds(0, 30));
 	    pack();
