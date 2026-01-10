@@ -45,7 +45,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.Future;
 
@@ -431,6 +430,7 @@ public class OptWnd extends Window {
 	public static HSlider squeakSoundVolumeSlider;
 	public static HSlider butcherSoundVolumeSlider;
 	public static HSlider whiteDuckCapSoundVolumeSlider;
+    public static HSlider chippingSoundVolumeSlider;
     public static HSlider miningSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 	public static HSlider themeSongVolumeSlider;
@@ -630,6 +630,16 @@ public class OptWnd extends Window {
 				Utils.setprefi("whiteDuckCapSoundVolume", val);
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
+
+        rightColumn = add(new Label("Chipping Sound Effect Volume"), rightColumn.pos("bl").adds(0, 5));
+        rightColumn = add(chippingSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("chippingSoundVolume", 75)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("chippingSoundVolume", val);
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
 
         rightColumn = add(new Label("Mining Sound Volume"), rightColumn.pos("bl").adds(0, 5));
         rightColumn = add(miningSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("miningSoundVolume", 75)) {

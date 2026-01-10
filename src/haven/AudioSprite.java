@@ -79,6 +79,8 @@ public class AudioSprite {
 			stream = new Audio.VolAdjust(stream, OptWnd.butcherSoundVolumeSlider.val/100d);
 		else if (res.name.equals("sfx/items/hats/quack"))
 			stream = new Audio.VolAdjust(stream, OptWnd.whiteDuckCapSoundVolumeSlider.val/100d);
+        else if (res.name.equals("sfx/chip"))
+            stream = new Audio.VolAdjust(stream, OptWnd.chippingSoundVolumeSlider.val/100d);
         else if (res.name.equals("sfx/items/pickaxe") || res.name.equals("sfx/mineout"))
             stream = new Audio.VolAdjust(stream, OptWnd.miningSoundVolumeSlider.val/100d);
         else if (res.name.equals("sfx/swoosh"))
