@@ -886,8 +886,8 @@ public class OptWnd extends Window {
 
 		Widget rightColumn;
         rightColumn = add(new Label("UI Theme (Req. Restart):"), UI.scale(230, 2));
-        List<String> uiThemes = Arrays.asList("Nightdawg Dark", "Trollex Red");
-        add(new OldDropBox<String>(uiThemes.size(), uiThemes) {
+        List<String> uiThemes = Arrays.asList("Nightdawg Dark", "Trollex Red", "Custom Theme");
+        Widget uiThemesWdg = add(new OldDropBox<String>(uiThemes.size(), uiThemes) {
             {
                 super.change(uiThemes.get(Utils.getprefi("uiThemeDropBox", 0)));
             }
@@ -914,6 +914,9 @@ public class OptWnd extends Window {
                 }
             }
         }, rightColumn.pos("ur").adds(2, 0));
+        uiThemesWdg.tooltip = uiThemeTooltip;
+        rightColumn.tooltip = uiThemeTooltip;
+
 		rightColumn = add(extendedMouseoverInfoCheckBox = new CheckBox("Extended Mouseover Info (Dev)"){
 			{a = (Utils.getprefb("extendedMouseoverInfo", false));}
 			public void changed(boolean val) {
@@ -4918,6 +4921,12 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[185,185,185]{I really try my best to support this setting, but I can't guarantee everything will work." +
 			"\nUnless you're on a 4K or 8K display, I'd keep this at 1.00x.}", UI.scale(300));
+    private static final Object uiThemeTooltip = RichText.render("This sets the overall theme for the User Interface." +
+            "\n" +
+            "\nAdditionally, you can add files to the \"Custom Theme\" folder, to create your own theme (which won't get erased when you update the client). " +
+            "\nThe Custom Theme folder can be found in your $col[218,163,0]{client folder}, under $col[218,163,0]{\\ res \\ customclient \\ uiThemes \\ Custom Theme}" +
+            "\n" +
+            "\n$col[185,185,185]{You don't need to change *everything* for the Custom Theme to work. If it's missing something, it just defaults to whatever the \"Nightdawg Dark\" theme uses.}", UI.scale(300));
 	private static final Object extendedMouseoverInfoTooltip = RichText.render("Holding Ctrl+Shift shows the Resource Path when mousing over Objects or Tiles. " +
 			"\nThis setting will add a lot of additional information on top of that." +
 			"\n" +
