@@ -42,7 +42,7 @@ public abstract class OldDropBox<T> extends OldListWidget<T> {
 	dropc = new Coord(sz.x - drop.sz().x, -2);
     }
 	public OldDropBox(int listh, List<String> values) {
-		this(calcWidth(values) + drop.sz().x + UI.scale(4), listh, calcHeight(values));
+		this(calcWidth(values) + drop.sz().x + UI.scale(6), listh, calcHeight(values));
 	}
 	private static int calcWidth(List<String> names) {
 		if (names.size() == 0)

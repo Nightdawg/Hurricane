@@ -688,8 +688,8 @@ public class Window extends Widget {
 	    });
     }
 
-    public static final Coord guiTopLeftCornerDiff = UI.scale(14, 7); // ND: You'd think gui.c starts in the top left corner of the screen. You'd be wrong. I don't even know how.
-    public static final Coord windowBottomRightCornerDiff = UI.scale(9, 18); // ND: I guess the window size Coord says it's larger than what it actually is, so I gotta correct this too.
+    public static final Coord guiTopLeftCornerDiff = UI.scale(15, 8); // ND: You'd think gui.c starts in the top left corner of the screen. You'd be wrong. I don't even know how.
+    public static final Coord windowBottomRightCornerDiff = UI.scale(10, 19); // ND: I guess the window size Coord says it's larger than what it actually is, so I gotta correct this too.
     public static final Coord dragResizeDiff = UI.scale(51, 72); // ND: I don't even know how to explain this one. Just trust the code.
 
 	public void preventDraggingOutside() { // ND: This code is just straight up spaghetti, I know.

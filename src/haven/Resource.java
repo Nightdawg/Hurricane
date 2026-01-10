@@ -829,6 +829,18 @@ public class Resource implements Serializable {
 	}
 
 	public Resource loadwait(String name, int ver) {
+        if (name.startsWith("gfx/hud/")) {
+            String uiTheme =  Utils.getpref("uiThemeName", "Nightdawg Dark");
+            if (!uiTheme.equals("Nightdawg Dark")) {
+                String result = name.replaceFirst("^gfx/hud", "");
+                String finalString = "customclient/uiThemes/" + uiTheme + result;
+                try {
+                    return(loadwaited(Loading.waitfor(load(finalString, ver, 10))));
+                } catch (Exception ignored){
+                    return(loadwaited(Loading.waitfor(load(name, ver, 10))));
+                }
+            }
+        }
 	    return(loadwaited(Loading.waitfor(load(name, ver, 10))));
 	}
 
@@ -2047,18 +2059,6 @@ public class Resource implements Serializable {
     }
 
     public static Image loadrimg(String name) {
-    if (name.startsWith("gfx/hud/")) {
-        String uiTheme =  Utils.getpref("uiThemeName", "Nightdawg Dark");
-        if (!uiTheme.equals("Nightdawg Dark")) {
-            String result = name.replaceFirst("^gfx/hud", "");
-            String finalString = "customclient/uiThemes/" + uiTheme + result;
-            try {
-                return local().loadwait(finalString).layer(imgc);
-            } catch (Exception ignored){
-                return(local().loadwait(name).layer(imgc));
-            }
-        }
-    }
 	return(local().loadwait(name).layer(imgc));
     }
 

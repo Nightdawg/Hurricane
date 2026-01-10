@@ -720,7 +720,7 @@ public class FightWnd extends Widget {
 	actlist = add(new Actions(UI.scale(296, 208)), UI.scale(new Coord(325, 43)).add(wbox.btloff()));
 	Frame.around(this, Collections.singletonList(actlist));
 
-	acttypes = add(new ActionTypes(this::actionTypeSelected), actlist.pos("ul").adds(75,-28));
+	acttypes = add(new ActionTypes(this::actionTypeSelected), actlist.pos("ul").adds(75,-29));
 	acttypes.setSelectedColor(new Color(100, 100, 100, 128));
 	acttypes.select(0);
 
