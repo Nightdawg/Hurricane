@@ -81,6 +81,8 @@ public class AudioSprite {
 			stream = new Audio.VolAdjust(stream, OptWnd.whiteDuckCapSoundVolumeSlider.val/100d);
         else if (res.name.equals("sfx/items/pickaxe") || res.name.equals("sfx/mineout"))
             stream = new Audio.VolAdjust(stream, OptWnd.miningSoundVolumeSlider.val/100d);
+        else if (res.name.equals("sfx/swoosh"))
+            stream = new Audio.VolAdjust(stream, OptWnd.swooshSoundVolumeSlider.val/100d);
 	    this.clip = new ActAudio.PosClip(new Audio.Monitor(stream) {
 		    protected void eof() {
 			super.eof();

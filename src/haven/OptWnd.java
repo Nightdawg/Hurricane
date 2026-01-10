@@ -426,6 +426,7 @@ public class OptWnd extends Window {
 	public static HSlider instrumentsSoundVolumeSlider;
 	public static HSlider clapSoundVolumeSlider;
 	public static HSlider quernSoundVolumeSlider;
+    public static HSlider swooshSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
 	public static HSlider butcherSoundVolumeSlider;
@@ -589,6 +590,16 @@ public class OptWnd extends Window {
 				Utils.setprefi("quernSoundVolume", val);
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
+
+        leftColumn = add(new Label("Swoosh Sound Effect Volume"), leftColumn.pos("bl").adds(0, 5).x(0));
+        leftColumn = add(swooshSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("swooshSoundVolume", 75)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("quernSoundVolume", val);
+            }
+        }, leftColumn.pos("bl").adds(0, 2));
 
 		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 119));
 		rightColumn = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
