@@ -175,7 +175,7 @@ public class LoginScreen extends Widget {
 	adda(login, bgc.adds(0, 10), 0.5, 0.0).hide();
 	loginSteam = new Steambox();
 	adda(loginSteam, bgc.adds(0, 10), -1.0, 0.0).hide();
-	accounts = add(new AccountList(16));
+	accounts = add(new AccountList(8));
 	try {
 		adda(new StatusLabel(new URI("http", hostname, "/mt/srv-mon", null), 0.5), bgc.x, bg.sz().y, 0.5, 1.4); // ND: This adds the server status and player count
 	} catch(URISyntaxException e) {
