@@ -43,13 +43,17 @@ public class GobBeeskepHarvestInfo extends GobInfo {
 			int rbuf = d.sdt.checkrbuf(0);
 			String key = null;
 
-            // ND: 1st rbuf check is without propolis, 2nd is with propolis.
-            // ND: During winter, the hives have 2 different rbufs (3rd and 4th checks)
-			if (rbuf == 7 || rbuf == 15 || rbuf == 5 || rbuf == 13) {
+            // ND: Today I learned what a bitfield is. Anyway, here are the flags:
+            // Honey = +1, Bees = +2, Wax = +4, Propolis = +8, Royal Jelly = +16
+            // Also, bees are not present during winter.
+            boolean hasHoney = (rbuf & 1) != 0;
+            boolean hasWax   = (rbuf & 4) != 0;
+
+			if (hasHoney && hasWax) {
 				key = "both";
-			} else if (rbuf == 6 || rbuf == 14 || rbuf == 4 || rbuf == 12) {
+            } else if (hasWax) {
 				key = "wax";
-			} else if (rbuf == 3 || rbuf == 11 || rbuf == 1 || rbuf == 9) {
+			} else if (hasHoney) {
 				key = "honey";
 			} else {
 				return null;
