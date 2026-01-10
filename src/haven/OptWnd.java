@@ -651,8 +651,10 @@ public class OptWnd extends Window {
             }
         }, rightColumn.pos("bl").adds(0, 2));
 
-	    add(new PButton(UI.scale(200), "Back", 27, back, "Options            "), leftColumn.pos("bl").adds(0, 30));
-	    pack();
+        Widget backButton;
+        add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Options            "), leftColumn.pos("bl").adds(0, 30).x(0));
+        pack();
+        centerBackButton(backButton, this);
 	}
     }
 
