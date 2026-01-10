@@ -1893,6 +1893,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_peaceCurrentTarget  = KeyBinding.get("peaceCurrentTargetKB",  KeyMatch.forchar('P', KeyMatch.M));
 	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
     public static KeyBinding kb_autoCombatDistance  = KeyBinding.get("AutoCombatDistanceKB",  KeyMatch.forchar('K', 0));
+    public static KeyBinding kb_nearestTarget =  KeyBinding.get("nearestTarget", KeyMatch.forcode(KeyEvent.VK_SPACE, 0));
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
 	    entercmd();
@@ -2112,6 +2113,13 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		return(true);
     } else if(kb_autoCombatDistance.key().match(ev)) {
         this.runActionThread(new Thread(new CombatDistancerLite(this), "CombatDistancerLite"));
+        return(true);
+    } else if(kb_nearestTarget.key().match(ev)) {
+        try {
+            fv.targetNearestFoe();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return(true);
     } else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);

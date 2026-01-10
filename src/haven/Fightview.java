@@ -506,4 +506,45 @@ public class Fightview extends Widget {
 			}
 		}
 	}
+
+    public void targetNearestFoe() {
+        try {
+            Gob closestGob = null;
+            Gob rGob = null;
+            Gob player;
+            synchronized(this.ui.sess.glob.oc) {
+                player = this.ui.sess.glob.oc.getgob(ui.gui.map.plgob);
+            }
+
+            Iterator iter = this.lsrel.iterator();
+
+            while(iter.hasNext()) {
+                Fightview.Relation r = (Fightview.Relation)iter.next();
+                if (r != null) {
+                    synchronized(this.ui.sess.glob.oc) {
+                        rGob = this.ui.sess.glob.oc.getgob(r.gobid);
+                    }
+
+                    if (closestGob == null && rGob != null) {
+                        closestGob = rGob;
+                    }
+
+                    if (closestGob != null && rGob != null) {
+                        double closestDist = (double)player.getc().dist(closestGob.getc());
+                        double rDist = (double)player.getc().dist(rGob.getc());
+                        if (rDist < closestDist) {
+                            closestGob = rGob;
+                        }
+                    }
+                }
+            }
+
+            if (closestGob != null) {
+                this.wdgmsg("bump", new Object[]{(int)closestGob.id});
+            }
+        } catch (NullPointerException npe) {
+            System.out.println(npe.toString());
+        }
+    }
+
 }

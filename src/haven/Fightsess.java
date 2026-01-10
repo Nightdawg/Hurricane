@@ -801,7 +801,7 @@ public class Fightsess extends Widget {
 	KeyBinding.get("fgt/9", KeyMatch.forcode(KeyEvent.VK_F1, 0)),
     };
     public static final KeyBinding kb_relcycle =  KeyBinding.get("fgt-cycle", KeyMatch.forcode(KeyEvent.VK_TAB, 0));
-	public static final KeyBinding kb_nearestTarget =  KeyBinding.get("fgt-nearestTarget", KeyMatch.forcode(KeyEvent.VK_SPACE, 0));
+
 
     /* XXX: This is a bit ugly, but release message do need to be
      * properly sequenced with use messages in some way. */
@@ -858,10 +858,6 @@ public class Fightsess extends Widget {
 		held = n;
 		return(true);
 	    }
-	}
-	if(kb_nearestTarget.key().match(ev)) {
-		targetNearestFoe(getparent(GameUI.class));
-		return (true);
 	}
 	if(kb_relcycle.key().match(ev.awt, KeyMatch.S)) {
 	    if((ev.mods & KeyMatch.S) == 0) {
@@ -1148,38 +1144,6 @@ public class Fightsess extends Widget {
 		g.aimage(myStaminaBarTex, new Coord(sc.x + msz.x / 2, sc.y + msz.y / 2), 0.5, 0.5);
 	}
 
-	private void targetNearestFoe(GameUI gui) {
-		//Select nearest enemy
-		Fightview.Relation cur = fv.current;
-		Fightview.Relation closestRel = fv.current;
-		Gob closest = null;
-		Gob player = gui.map.player();
-		if (player == null) {
-			return;
-		}
-
-		for (Fightview.Relation rel : fv.lsrel) {
-			Gob gob = ui.sess.glob.oc.getgob(rel.gobid);
-			if (gob != null && gob.rc != null) {
-				if (closest == null) {
-					closest = gob;
-					closestRel = rel;
-				} else if (player.rc.dist(gob.rc) < player.rc.dist(closest.rc)) {
-					closest = gob;
-					closestRel = rel;
-				}
-			}
-		}
-
-		if (cur != null) {
-			fv.lsrel.remove(cur);
-			fv.lsrel.addLast(cur);
-		}
-
-		if (closestRel != null) {
-			fv.wdgmsg("bump", (int) closestRel.gobid);
-		}
-	}
 	private void setupOpeningArr(ArrayList<Buff> buffs){
 		try {
 			openingArr = new int[] {0,0,0,0};
