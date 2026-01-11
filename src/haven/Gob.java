@@ -850,21 +850,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 	if (a instanceof Homing) {
-		Homing homing = (Homing) a;
-		if (gobChaseVector == null && homing != null) {
-			gobChaseVector = new Overlay(this, new ChaseVectorSprite(this, homing));
+        if (gobChaseVector == null) {
+			gobChaseVector = new Overlay(this, new ChaseVectorSprite(this));
 			synchronized (ols) {
 				addol(gobChaseVector);
 			}
-		} else if (gobChaseVector != null && homing != null) {
-			gobChaseVector.remove();
-			gobChaseVector = new Overlay(this, new ChaseVectorSprite(this, homing));
-			synchronized (ols) {
-				addol(gobChaseVector);
-			}
-		} else if (gobChaseVector != null) {
-			gobChaseVector.remove();
-			gobChaseVector = null;
 		}
 	}
     }
