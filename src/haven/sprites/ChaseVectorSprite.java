@@ -9,9 +9,9 @@ import java.util.Arrays;
 public class ChaseVectorSprite extends Sprite implements PView.Render2D {
 
 
-    public static Color MYCOLOR = new Color(255, 255, 255, 220);
-    public static Color FOECOLOR = new Color(255, 0, 0, 230);
-    public static Color FRIENDCOLOR = new Color(47, 191, 7, 230);
+    public static Color YOURCOLOR = OptWnd.yourselfVectorColorOptionWidget.currentColor;
+    public static Color FRIENDCOLOR = OptWnd.friendVectorColorOptionWidget.currentColor;
+    public static Color ENEMYCOLOR = OptWnd.enemyVectorColorOptionWidget.currentColor;
     private final Gob gob;
     private final UI ui;
 
@@ -88,18 +88,18 @@ public class ChaseVectorSprite extends Sprite implements PView.Render2D {
                                     }
                                     Color chaserColor;
                                     if (gob.isMe || drawMyColor) {
-                                        chaserColor = MYCOLOR;
+                                        chaserColor = YOURCOLOR;
                                     } else if (gob.isPartyMember() && !gob.isMe) {
                                         chaserColor = FRIENDCOLOR;
                                     } else {
-                                        chaserColor = FOECOLOR;
+                                        chaserColor = ENEMYCOLOR;
                                     }
                                     Coord ChaserCoord = mv.screenxf(gob.getc()).round2();
                                     Coord TargetCoord = mv.screenxf(target.getc()).round2();
                                     g.chcolor(Color.BLACK);
-                                    g.line(ChaserCoord, TargetCoord, 5);
+                                    g.line(ChaserCoord, TargetCoord, 4);
                                     g.chcolor(chaserColor);
-                                    g.line(ChaserCoord, TargetCoord, 3);
+                                    g.line(ChaserCoord, TargetCoord, 2);
                                     g.chcolor();
                                 }
                             }

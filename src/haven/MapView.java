@@ -44,6 +44,7 @@ import haven.MCache.OverlayInfo;
 import haven.render.sl.Uniform;
 import haven.render.sl.Type;
 import haven.res.ui.obj.buddy.Buddy;
+import haven.sprites.ChaseVectorSprite;
 
 public class MapView extends PView implements DTarget, Console.Directory, PFListener {
     public static boolean clickdb = false;
@@ -1843,7 +1844,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 				if (playerc != null && clickc != null) {
 					g.chcolor(Color.BLACK);
 					g.line(playerc, clickc, 4);
-					g.chcolor(Color.WHITE);
+					g.chcolor(ChaseVectorSprite.YOURCOLOR);
 					g.line(playerc, clickc, 2);
 				}
 			}

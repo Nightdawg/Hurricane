@@ -32,6 +32,7 @@ import haven.res.gfx.fx.msrad.MSRad;
 import haven.res.ui.pag.toggle.Toggle;
 import haven.resutil.Ridges;
 import haven.sprites.AggroCircleSprite;
+import haven.sprites.ChaseVectorSprite;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -1248,7 +1249,15 @@ public class OptWnd extends Window {
 	public static HSlider targetSpriteSizeSlider;
 	public static CheckBox drawChaseVectorsCheckBox;
 	public static CheckBox drawYourCurrentPathCheckBox;
-	public static CheckBox showYourCombatRangeCirclesCheckBox;
+
+    public static ColorOptionWidget yourselfVectorColorOptionWidget;
+    public static String[] yourselfVectorColorSetting = Utils.getprefsa("yourselfVector" + "_colorSetting", new String[]{"255", "255", "255", "255"});
+    public static ColorOptionWidget friendVectorColorOptionWidget;
+    public static String[] friendVectorColorSetting = Utils.getprefsa("friendVector" + "_colorSetting", new String[]{"47", "191", "7", "255"});
+    public static ColorOptionWidget enemyVectorColorOptionWidget;
+    public static String[] enemyVectorColorSetting = Utils.getprefsa("enemyVector" + "_colorSetting", new String[]{"255", "0", "0", "255"});
+
+    public static CheckBox showYourCombatRangeCirclesCheckBox;
 	public static boolean refreshMyUnarmedRange = false;
 	public static boolean refreshMyWeaponRange = false;
 	public static ColorOptionWidget unarmedCombatRangeColorOptionWidget;
@@ -1646,6 +1655,32 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
 			drawYourCurrentPathCheckBox.tooltip = drawYourCurrentPathTooltip;
+            rightColumn = add(yourselfVectorColorOptionWidget = new ColorOptionWidget("Yourself (Vector Color):", "yourselfVector", 120, Integer.parseInt(yourselfVectorColorSetting[0]), Integer.parseInt(yourselfVectorColorSetting[1]), Integer.parseInt(yourselfVectorColorSetting[2]), Integer.parseInt(yourselfVectorColorSetting[3]), (Color col) -> {
+                ChaseVectorSprite.YOURCOLOR = col;
+            }){}, rightColumn.pos("bl").adds(6, 2));
+            add(new Button(UI.scale(70), "Reset", false).action(() -> {
+                Utils.setprefsa("yourselfVector" + "_colorSetting", new String[]{"255", "255", "255", "255"});
+                yourselfVectorColorOptionWidget.cb.colorChooser.setColor(yourselfVectorColorOptionWidget.currentColor = new Color(255, 255, 255, 255));
+                ChaseVectorSprite.YOURCOLOR = yourselfVectorColorOptionWidget.currentColor;
+            }), yourselfVectorColorOptionWidget.pos("ur").adds(16, 0)).tooltip = resetButtonTooltip;
+            rightColumn = add(friendVectorColorOptionWidget = new ColorOptionWidget("Friend (Vector Color):", "friendVector", 120, Integer.parseInt(friendVectorColorSetting[0]), Integer.parseInt(friendVectorColorSetting[1]), Integer.parseInt(friendVectorColorSetting[2]), Integer.parseInt(friendVectorColorSetting[3]), (Color col) -> {
+                ChaseVectorSprite.FRIENDCOLOR = col;
+            }){}, rightColumn.pos("bl").adds(0, 4));
+            add(new Button(UI.scale(70), "Reset", false).action(() -> {
+                Utils.setprefsa("friendVector" + "_colorSetting", new String[]{"47", "191", "7", "255"});
+                friendVectorColorOptionWidget.cb.colorChooser.setColor(friendVectorColorOptionWidget.currentColor = new Color(47, 191, 7, 255));
+                ChaseVectorSprite.FRIENDCOLOR = friendVectorColorOptionWidget.currentColor;
+            }), friendVectorColorOptionWidget.pos("ur").adds(16, 0)).tooltip = resetButtonTooltip;
+
+            rightColumn = add(enemyVectorColorOptionWidget = new ColorOptionWidget("Enemy (Vector Color):", "enemyVector", 120, Integer.parseInt(enemyVectorColorSetting[0]), Integer.parseInt(enemyVectorColorSetting[1]), Integer.parseInt(enemyVectorColorSetting[2]), Integer.parseInt(enemyVectorColorSetting[3]), (Color col) -> {
+                ChaseVectorSprite.ENEMYCOLOR = col;
+            }){}, rightColumn.pos("bl").adds(0, 4));
+            add(new Button(UI.scale(70), "Reset", false).action(() -> {
+                Utils.setprefsa("enemyVector" + "_colorSetting", new String[]{"255", "0", "0", "255"});
+                enemyVectorColorOptionWidget.cb.colorChooser.setColor(enemyVectorColorOptionWidget.currentColor = new Color(255, 0, 0, 255));
+                ChaseVectorSprite.ENEMYCOLOR = enemyVectorColorOptionWidget.currentColor;
+            }), enemyVectorColorOptionWidget.pos("ur").adds(16, 0)).tooltip = resetButtonTooltip;
+
 			
 
 			Widget backButton;
