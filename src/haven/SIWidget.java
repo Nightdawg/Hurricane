@@ -62,10 +62,4 @@ public abstract class SIWidget extends Widget {
 	    surf.dispose();
     }
 
-	@Override
-	public void tick(double dt) {
-		if(OptWnd.simpleUIChanged)
-			redraw();
-		super.tick(dt);
-	}
 }

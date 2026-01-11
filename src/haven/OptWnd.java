@@ -52,9 +52,6 @@ public class OptWnd extends Window {
     public final Panel main;
 	public final Panel advancedSettings;
     public Panel current;
-	private static final ScheduledExecutorService simpleUIExecutor = Executors.newSingleThreadScheduledExecutor();
-	private static Future<?> simpleUIFuture;
-	public static boolean simpleUIChanged = false;
 	private static final ScheduledExecutorService skyboxExecutor = Executors.newSingleThreadScheduledExecutor();
 	private static Future<?> skyboxFuture;
 	public static final Color msgGreen = new Color(8, 211, 0);
@@ -4794,8 +4791,6 @@ public class OptWnd extends Window {
 	super(Coord.z, "Options            ", true); // ND: Added a bunch of spaces to the caption(title) in order avoid text cutoff when changing it
 	autoDropManagerWindow = new AutoDropManagerWindow();
 	flowerMenuAutoSelectManagerWindow = new FlowerMenuAutoSelectManagerWindow();
-	if (simpleUIFuture != null)
-		simpleUIFuture.cancel(true);
 	main = add(new Panel());
 	Panel video = add(new VideoPanel(main));
 	Panel audio = add(new AudioPanel(main));
@@ -4902,11 +4897,6 @@ public class OptWnd extends Window {
 	private void centerBackButton(Widget backButton, Widget parent){ // ND: Should only be used at the very end after the panel was already packed once.
 		backButton.move(new Coord(parent.sz.x/2-backButton.sz.x/2, backButton.c.y));
 		pack();
-	}
-
-	private void resetSimpleUIChanged(){
-		simpleUIChanged = false;
-		simpleUIFuture.cancel(true);
 	}
 
 	private void resetSkyboxCheckbox(){
