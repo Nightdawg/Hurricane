@@ -1444,6 +1444,30 @@ public class OptWnd extends Window {
 				}
 			}, leftColumn.pos("ur").adds(6, 0));
 
+            leftColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
+                {a = Utils.getprefb("showYourCombatRangeCircles", false);}
+                public void changed(boolean val) {
+                    Utils.setprefb("showYourCombatRangeCircles", val);
+                }
+            }, leftColumn.pos("bl").adds(0, 12).x(0));
+            showYourCombatRangeCirclesCheckBox.tooltip = showYourCombatRangeCirclesTooltip;
+            leftColumn = add(new Label("Unarmed"), leftColumn.pos("bl").adds(16, 1));
+            add(unarmedCombatRangeColorOptionWidget = new ColorOptionWidget("", "unarmedCombatRange", 0, Integer.parseInt(unarmedCombatRangeColorSetting[0]), Integer.parseInt(unarmedCombatRangeColorSetting[1]), Integer.parseInt(unarmedCombatRangeColorSetting[2]), Integer.parseInt(unarmedCombatRangeColorSetting[3]), (Color col) -> {
+                refreshMyUnarmedRange = true;
+            }){}, leftColumn.pos("bl").adds(12, 0));
+            leftColumn = add(new Label("Weapon"), leftColumn.pos("ur").adds(20, 0));
+            leftColumn = add(weaponCombatRangeColorOptionWidget = new ColorOptionWidget("", "weaponCombatRange", 0, Integer.parseInt(weaponCombatRangeColorSetting[0]), Integer.parseInt(weaponCombatRangeColorSetting[1]), Integer.parseInt(weaponCombatRangeColorSetting[2]), Integer.parseInt(weaponCombatRangeColorSetting[3]), (Color col) -> {
+                refreshMyWeaponRange = true;
+            }){}, leftColumn.pos("bl").adds(10, 0));
+            leftColumn = add(new Button(UI.scale(70), "Reset All", false).action(() -> {
+                Utils.setprefsa("unarmedCombatRange" + "_colorSetting", new String[]{"0", "160", "0", "255"});
+                Utils.setprefsa("weaponCombatRange" + "_colorSetting", new String[]{"130", "0", "172", "255"});
+                unarmedCombatRangeColorOptionWidget.cb.colorChooser.setColor(unarmedCombatRangeColorOptionWidget.currentColor = new Color(0, 160, 0, 255));
+                weaponCombatRangeColorOptionWidget.cb.colorChooser.setColor(weaponCombatRangeColorOptionWidget.currentColor = new Color(130, 0, 172, 255));
+                refreshMyUnarmedRange = true;
+                refreshMyWeaponRange = true;
+            }), leftColumn.pos("ur").adds(46, -2));
+
 			rightColumn = add(showCombatOpeningsAsLettersCheckBox = new CheckBox("Show Combat Openings as Colored Letters"){
 				{a = Utils.getprefb("showCombatOpeningsAsLetters", false);}
 				public void changed(boolean val) {
@@ -1622,29 +1646,6 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
 			drawYourCurrentPathCheckBox.tooltip = drawYourCurrentPathTooltip;
-			rightColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
-				{a = Utils.getprefb("showYourCombatRangeCircles", false);}
-				public void changed(boolean val) {
-					Utils.setprefb("showYourCombatRangeCircles", val);
-				}
-			}, rightColumn.pos("bl").adds(0, 2));
-			showYourCombatRangeCirclesCheckBox.tooltip = showYourCombatRangeCirclesTooltip;
-			rightColumn = add(new Label("Unarmed"), rightColumn.pos("bl").adds(16, 1));
-			add(unarmedCombatRangeColorOptionWidget = new ColorOptionWidget("", "unarmedCombatRange", 0, Integer.parseInt(unarmedCombatRangeColorSetting[0]), Integer.parseInt(unarmedCombatRangeColorSetting[1]), Integer.parseInt(unarmedCombatRangeColorSetting[2]), Integer.parseInt(unarmedCombatRangeColorSetting[3]), (Color col) -> {
-				refreshMyUnarmedRange = true;
-			}){}, rightColumn.pos("bl").adds(12, 0));
-			rightColumn = add(new Label("Weapon"), rightColumn.pos("ur").adds(20, 0));
-			rightColumn = add(weaponCombatRangeColorOptionWidget = new ColorOptionWidget("", "weaponCombatRange", 0, Integer.parseInt(weaponCombatRangeColorSetting[0]), Integer.parseInt(weaponCombatRangeColorSetting[1]), Integer.parseInt(weaponCombatRangeColorSetting[2]), Integer.parseInt(weaponCombatRangeColorSetting[3]), (Color col) -> {
-				refreshMyWeaponRange = true;
-			}){}, rightColumn.pos("bl").adds(10, 0));
-			rightColumn = add(new Button(UI.scale(70), "Reset All", false).action(() -> {
-				Utils.setprefsa("unarmedCombatRange" + "_colorSetting", new String[]{"0", "160", "0", "255"});
-				Utils.setprefsa("weaponCombatRange" + "_colorSetting", new String[]{"130", "0", "172", "255"});
-				unarmedCombatRangeColorOptionWidget.cb.colorChooser.setColor(unarmedCombatRangeColorOptionWidget.currentColor = new Color(0, 160, 0, 255));
-				weaponCombatRangeColorOptionWidget.cb.colorChooser.setColor(weaponCombatRangeColorOptionWidget.currentColor = new Color(130, 0, 172, 255));
-				refreshMyUnarmedRange = true;
-				refreshMyWeaponRange = true;
-			}), rightColumn.pos("ur").adds(46, -2));
 			
 
 			Widget backButton;
