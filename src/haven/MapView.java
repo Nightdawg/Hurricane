@@ -985,7 +985,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 			if (ui.gprefs.rscale.val > 1.99f)
 				w = 3f;
 		}
-		return gridmat = new Material(new BaseColor(255, 255, 255, 96), States.maskdepth, new MapMesh.OLOrder(null),
+		return gridmat = new Material(new BaseColor(255, 255, 255, 48), States.maskdepth, new MapMesh.OLOrder(null),
 				new States.LineWidth(w),
 				Location.xlate(new Coord3f(0, 0, 0.5f))   /* Apparently, there is no depth bias for lines. :P */
 		);
