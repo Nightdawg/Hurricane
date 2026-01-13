@@ -979,7 +979,7 @@ public class OptWnd extends Window {
 		expWindowLocationLabel.tooltip = experienceWindowLocationTooltip;
 
 		rightColumn = add(new Label("Map Window Zoom Speed:"), rightColumn.pos("bl").adds(0, 10).x(UI.scale(230)));
-		rightColumn = add(mapZoomSpeedSlider = new HSlider(UI.scale(110), 10, 30, Utils.getprefi("mapZoomSpeed", 15)) {
+		rightColumn = add(mapZoomSpeedSlider = new HSlider(UI.scale(110), 10, 50, Utils.getprefi("mapZoomSpeed", 15)) {
 			public void changed() {
 				Utils.setprefi("mapZoomSpeed", val);
 			}
