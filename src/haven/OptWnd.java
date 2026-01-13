@@ -1221,6 +1221,7 @@ public class OptWnd extends Window {
 	public static CheckBox drawFloatingCombatDataOnOthersCheckBox;
 	public static CheckBox showCombatManeuverCombatInfoCheckBox;
 	public static CheckBox onlyShowOpeningsAbovePercentageCombatInfoCheckBox;
+    public static CheckBox includeCurrentTargetShowOpeningsAbovePercentageCombatInfoCheckBox;
 	public static CheckBox onlyShowCoinsAbove4CombatInfoCheckBox;
 	public static CheckBox drawFloatingCombatOpeningsAboveYourselfCheckBox;
 	public static TextEntry minimumOpeningTextEntry;
@@ -1402,6 +1403,12 @@ public class OptWnd extends Window {
 					super.changed();
 				}
 			}, leftColumn.pos("ur").adds(10, 0));
+            leftColumn = add(includeCurrentTargetShowOpeningsAbovePercentageCombatInfoCheckBox = new CheckBox("Include Current Target"){
+                {a = Utils.getprefb("includeCurrentTargetShowOpeningsAbovePercentage", false);}
+                public void changed(boolean val) {
+                    Utils.setprefb("includeCurrentTargetShowOpeningsAbovePercentage", val);
+                }
+            }, leftColumn.pos("bl").adds(20, 4));
 			add(new Label(" >"), leftColumn.pos("bl").adds(0, 2).xs(0));
 
 			leftColumn = add(onlyShowCoinsAbove4CombatInfoCheckBox = new CheckBox("Only show coins when higher than 4"){
@@ -1409,7 +1416,7 @@ public class OptWnd extends Window {
 				public void changed(boolean val) {
 					Utils.setprefb("onlyShowCoinsAbove4", val);
 				}
-			}, leftColumn.pos("bl").adds(0, 2));
+			}, leftColumn.pos("bl").adds(0, 2).xs(20));
 
 			leftColumn = add(toggleGobDamageInfoCheckBox = new CheckBox("Display Damage Info:"){
 				{a = Utils.getprefb("GobDamageInfoToggled", true);}

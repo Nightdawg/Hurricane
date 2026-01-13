@@ -38,7 +38,7 @@ public class GobCombatDataInfo extends GobInfo {
                     if (rel == fs.fv.current) {
                         Coord sc = Homo3D.obj2sc(pos, state, Area.sized(g.sz()));
                         if (sc != null)
-                            drawCombatData(g, rel, sc, true, true);
+                            drawCombatData(g, rel, sc, OptWnd.includeCurrentTargetShowOpeningsAbovePercentageCombatInfoCheckBox.a, true);
                     }
                 }
                 if (OptWnd.drawFloatingCombatDataOnOthersCheckBox.a) {
