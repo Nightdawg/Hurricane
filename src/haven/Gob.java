@@ -543,6 +543,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	for(GAttrib a : attr.values()){
 	    a.ctick(dt);
 	}
+    try { // ND: Potentially fixes the crashes related to placing cupboards that have a decal on them (and probably other stuff like that)
 	for(Iterator<Overlay> i = ols.iterator(); i.hasNext();) {
 	    Overlay ol = i.next();
 	    if(ol.slots == null) {
@@ -557,6 +558,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	    }
 	}
+    } catch (ConcurrentModificationException ignored) {}
 	updstate();
 	if(virtual && ols.isEmpty() && (getattr(Drawable.class) == null))
 	    glob.oc.remove(this);
