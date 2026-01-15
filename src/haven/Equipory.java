@@ -462,16 +462,19 @@ public class Equipory extends Widget implements DTarget {
 	}
 
     private void handleWeaponAutoloot(GItem child) {
-        String res = child.getres().name;
+        try {
+            String res = child.getres().name;
 
-        if (isBlacklistedWeapon(res)) {
-            return;
-        }
+            if (isBlacklistedWeapon(res)) {
+                return;
+            }
 
-        Inventory belt = returnBelt();
-        if (belt != null && belt.getFreeSpace() > 0) {
-            child.wdgmsg("take", Coord.z);
-            belt.wdgmsg("drop", belt.isRoom(1, 1));
+            Inventory belt = returnBelt();
+            if (belt != null && belt.getFreeSpace() > 0) {
+                child.wdgmsg("take", Coord.z);
+                belt.wdgmsg("drop", belt.isRoom(1, 1));
+            }
+        } catch (Exception ignored) {
         }
 
         // Fallback: move to inventory
