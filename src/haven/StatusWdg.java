@@ -36,7 +36,7 @@ public class StatusWdg extends Widget {
 
     public StatusWdg() {
         try {
-            this.stat = new HttpStatus(new URI("http", Bootstrap.defserv.get(), "/mt/srv-mon", null));
+            this.stat = new HttpStatus(new URI("http", Bootstrap.authserv.get().host, "/mt/srv-mon", null));
         } catch(URISyntaxException e) {
             throw(new RuntimeException(e));
         }
