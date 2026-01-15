@@ -48,8 +48,8 @@ public class LoginScreen extends Widget {
     public static final Tex bg = Resource.loadtex("gfx/loginscr");
     public static final Position bgc = new Position(UI.scale(533, 250)); // ND: This affects only the login screen username/password location
     public final Widget login;
-	public Widget loginSteam = null;
-    public final String hostname;
+    public final String confname;
+    public Widget loginSteam = null;
     private Text error, progress;
     private Button optbtn;
 	private OptWnd opts = new OptWnd(false); // ND: This needs to be created when the login screen is created, to prevent options nullpointers once we log into a character
@@ -110,19 +110,19 @@ public class LoginScreen extends Widget {
 	private boolean githubVersionChecked = false;
 
     private String getpref(String name, String def) {
-	return(Utils.getpref(name + "@" + hostname, def));
+	return(Utils.getpref(name + "@" + confname, def));
     }
 
-    public LoginScreen(String hostname) {
+    public LoginScreen(String confname) {
 	super(bg(haven.MainFrame.gameDir + "res/customclient/bgsizer.png").sz());
-	if (Utils.getprefi("loginBgIndex", 0) == 0) {
-		Random rand = new Random();
-		bgIndex = rand.nextInt(keys.size()-1) + 1; // Generates 0–2, then add 1
-	} else {
-		bgIndex = Utils.getprefi("loginBgIndex", 0);
-	}
-	this.hostname = hostname;
-	Tex bg = bg(backgrounds.get(bgIndex-1));
+    if (Utils.getprefi("loginBgIndex", 0) == 0) {
+        Random rand = new Random();
+        bgIndex = rand.nextInt(keys.size()-1) + 1; // Generates 0–2, then add 1
+    } else {
+        bgIndex = Utils.getprefi("loginBgIndex", 0);
+    }
+    Tex bg = bg(backgrounds.get(bgIndex-1));
+	this.confname = confname;
 	setfocustab(true);
 	add(backgroundImg = new Img(bg), Coord.z);
 	backgroundDropBox = new OldDropBox<String>(UI.scale(76), 4, UI.scale(17)) {
@@ -279,7 +279,7 @@ public class LoginScreen extends Widget {
 
 	    private UserEntry(int w) {
 		super(w, "");
-//		history.addAll(Utils.getprefsl("saved-tokens@" + hostname, new String[] {}));
+//		history.addAll(Utils.getprefsl("saved-tokens@" + confname, new String[] {}));
 	    }
 
 	    protected void changed() {
@@ -374,7 +374,7 @@ public class LoginScreen extends Widget {
 //		Arrays.fill(this.token, (byte)0);
 //		this.token = null;
 //	    }
-//	    byte[] token = Bootstrap.gettoken(user.text(), hostname);
+//	    byte[] token = Bootstrap.gettoken(user.text(), confname);
 //	    if(token == null) {
 //		tkbox.hide();
 //		pwbox.show();
@@ -384,27 +384,27 @@ public class LoginScreen extends Widget {
 //		this.token = token;
 //	    }
 //	}
-
+//
 //	private void forget() {
 //	    String nm = user.text();
-//	    Bootstrap.settoken(nm, hostname, null);
-//		savetoken.set(false); // ND: commented this, so the "remember me" doesn't untick whenever you click on "forget me".
+//	    Bootstrap.settoken(nm, confname, null);
+//	    savetoken.set(false);
 //	    checktoken();
 //	}
 
-	private void enter() {
-	    if(user.text().equals("")) {
-		setfocus(user);
-	    } else if(pwbox.visible && pass.text().equals("")) {
-		setfocus(pass);
-	    } else {
-		if(saveaccount.state()) {
-			lastUser = user.text();
-			lastPass = pass.text();
-		}
-		LoginScreen.this.wdgmsg("login", creds(), pwbox.visible && saveaccount.state());
-	    }
-	}
+    private void enter() {
+        if(user.text().equals("")) {
+            setfocus(user);
+        } else if(pwbox.visible && pass.text().equals("")) {
+            setfocus(pass);
+        } else {
+            if(saveaccount.state()) {
+                lastUser = user.text();
+                lastPass = pass.text();
+            }
+            LoginScreen.this.wdgmsg("login", creds(), pwbox.visible && saveaccount.state());
+        }
+    }
 
 	private void enter2() {
 		if(user.text().equals("")) {
