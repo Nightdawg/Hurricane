@@ -98,6 +98,9 @@ public class AudioSprite {
             case "sfx/swoosh":
                 stream = new Audio.VolAdjust(stream, OptWnd.swooshSoundVolumeSlider.val / 100d);
                 break;
+            case "sfx/items/bells":
+                stream = new Audio.VolAdjust(stream, OptWnd.doomBellCapSoundVolumeSlider.val / 100d);
+                break;
         }
 	    this.clip = new ActAudio.PosClip(new Audio.Monitor(stream) {
 		    protected void eof() {

@@ -431,6 +431,7 @@ public class OptWnd extends Window {
 	public static HSlider whiteDuckCapSoundVolumeSlider;
     public static HSlider chippingSoundVolumeSlider;
     public static HSlider miningSoundVolumeSlider;
+    public static HSlider doomBellCapSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 	public static HSlider themeSongVolumeSlider;
 
@@ -657,6 +658,16 @@ public class OptWnd extends Window {
             }
             public void changed() {
                 Utils.setprefi("miningSoundVolume", val);
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
+
+        rightColumn = add(new Label("Doom Bell Cap Sound Volume"), rightColumn.pos("bl").adds(0, 5));
+        rightColumn = add(doomBellCapSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("doomBellCapSoundVolume", 75)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("doomBellCapSoundVolume", val);
             }
         }, rightColumn.pos("bl").adds(0, 2));
 
