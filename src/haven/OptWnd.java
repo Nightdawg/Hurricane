@@ -596,7 +596,7 @@ public class OptWnd extends Window {
                 super.attach(ui);
             }
             public void changed() {
-                Utils.setprefi("quernSoundVolume", val);
+                Utils.setprefi("swooshSoundVolume", val);
             }
         }, leftColumn.pos("bl").adds(0, 2));
 
