@@ -549,13 +549,14 @@ public class OptWnd extends Window {
 
 		leftColumn = add(new Label("Other Sound Settings"), leftColumn.pos("bl").adds(177, 20));
 
-		leftColumn = add(new Label("Boiling Cauldron Volume (Requires Reload)"), leftColumn.pos("bl").adds(0, 5).x(0));
+		leftColumn = add(new Label("Boiling Cauldron Volume"), leftColumn.pos("bl").adds(0, 5).x(0));
 		leftColumn = add(cauldronSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("cauldronSoundVolume", 25)) {
 			protected void attach(UI ui) {
 				super.attach(ui);
 			}
 			public void changed() {
 				Utils.setprefi("cauldronSoundVolume", val);
+
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
 

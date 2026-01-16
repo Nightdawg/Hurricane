@@ -240,11 +240,13 @@ public class ActAudio extends State {
     public static class Ambience implements RenderTree.Node {
 	public final Resource res;
 	public final double bvol;
+    public final double bvolOriginal;
 
 	public Ambience(Resource res, double bvol) {
 	    Audio.Clip clip = res.flayer(Audio.clip, "amb");
 	    if(bvol < 0)
 		bvol = clip.bvol();
+        this.bvolOriginal = bvol;
 		if (res.name.equals("sfx/terobjs/cauldron"))
 			bvol = bvol * OptWnd.cauldronSoundVolumeSlider.val/100d;
 	    this.res = res;
@@ -288,6 +290,10 @@ public class ActAudio extends State {
 		for(RenderList.Slot<Ambience> slot : active) {
 		    Coord3f pos = spos(slot.state());
 		    double bvol = slot.obj().bvol;
+            if (slot.obj().res != null) {
+                if (slot.obj().res.name.equals("sfx/terobjs/cauldron"))
+                    bvol = slot.obj().bvolOriginal * OptWnd.cauldronSoundVolumeSlider.val/100d;
+            }
 		    double svol = Math.min(1.0, 50.0 / Math.hypot(pos.x, pos.y));
 		    acc += svol * bvol;
 		}
