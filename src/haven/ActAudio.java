@@ -249,6 +249,8 @@ public class ActAudio extends State {
         this.bvolOriginal = bvol;
 		if (res.name.equals("sfx/terobjs/cauldron"))
 			bvol = bvol * OptWnd.cauldronSoundVolumeSlider.val/100d;
+        if (res.name.equals("sfx/items/hats/bullfest"))
+            bvol = bvol * OptWnd.grammophoneHatSoundVolumeSlider.val/100d;
 	    this.res = res;
 	    this.bvol = bvol;
 	}
@@ -293,6 +295,8 @@ public class ActAudio extends State {
             if (slot.obj().res != null) {
                 if (slot.obj().res.name.equals("sfx/terobjs/cauldron"))
                     bvol = slot.obj().bvolOriginal * OptWnd.cauldronSoundVolumeSlider.val/100d;
+                if (slot.obj().res.name.equals("sfx/items/hats/bullfest"))
+                    bvol = slot.obj().bvolOriginal * OptWnd.grammophoneHatSoundVolumeSlider.val/100d;
             }
 		    double svol = Math.min(1.0, 50.0 / Math.hypot(pos.x, pos.y));
 		    acc += svol * bvol;

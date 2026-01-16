@@ -424,6 +424,7 @@ public class OptWnd extends Window {
 	public static HSlider clapSoundVolumeSlider;
 	public static HSlider quernSoundVolumeSlider;
     public static HSlider swooshSoundVolumeSlider;
+    public static HSlider grammophoneHatSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
 	public static HSlider butcherSoundVolumeSlider;
@@ -597,6 +598,15 @@ public class OptWnd extends Window {
             }
             public void changed() {
                 Utils.setprefi("swooshSoundVolume", val);
+            }
+        }, leftColumn.pos("bl").adds(0, 2));
+        leftColumn = add(new Label("Grammophone Hat Sound Volume"), leftColumn.pos("bl").adds(0, 5).x(0));
+        leftColumn = add(grammophoneHatSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("grammophoneHatSoundVolume", 100)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("grammophoneHatSoundVolume", val);
             }
         }, leftColumn.pos("bl").adds(0, 2));
 
