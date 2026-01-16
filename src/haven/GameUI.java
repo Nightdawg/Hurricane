@@ -423,7 +423,23 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	menupanel.add(new MainMenu(), 0, 0);
 	menubuttons(rbtnimg);
 //	foldbuttons();
-	portrait = ulpanel.add(Frame.with(new Avaview(Avaview.dasz, plid, "avacam"), false), UI.scale(10, 10));
+
+    portrait = ulpanel.add(new Frame(UI.scale(111, 111), true){
+
+        @Override
+        protected void added() {
+            super.added();
+            Widget child = new Avaview(UI.scale(111, 111), plid, "avacam");
+            this.add(child, 0, 0);
+        }
+
+        @Override
+        public void drawframe(GOut g) {
+            g.chcolor(Partyview.myColor);
+            box.draw(g, Coord.z, sz);
+        }
+
+    }, UI.scale(10, 10));
 	buffs = ulpanel.add(new Bufflist(), portrait.c.x + portrait.sz.x + UI.scale(10), portrait.c.y + ((IMeter.fsz.y + UI.scale(2)) * 2) + UI.scale(5 - 2));
 	umpanel.add(new Cal(),UI.scale(new Coord(0, 8)));
 
