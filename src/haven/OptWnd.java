@@ -3066,6 +3066,7 @@ public class OptWnd extends Window {
 	public static CheckBox enableQueuedMovementCheckBox;
     public static CheckBox walkWithPathFinderCheckBox;
     public static CheckBox drawPathfinderRouteCheckBox;
+    public static CheckBox autoRejectBandyCheckBox;
 
 	public class GameplayAutomationSettingsPanel extends Panel {
 
@@ -3308,6 +3309,18 @@ public class OptWnd extends Window {
                     Utils.setprefb("drawPathfinderRoute", val);
                 }
             }, prev.pos("bl").adds(12, 2));
+
+            prev = add(autoRejectBandyCheckBox = new CheckBox("Auto-Reject Bandy"){
+                {a = Utils.getprefb("autoRejectBandy", false);}
+                public void set(boolean val) {
+                    Utils.setprefb("autoRejectBandy", val);
+                    a = val;
+                    if (ui != null && ui.gui != null) {
+                        ui.gui.optionInfoMsg("Auto-Reject Bandy is now " + (val ? "ENABLED" : "DISABLED") + ".", (val ? msgGreen : msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+                    }
+                }
+            }, prev.pos("bl").adds(0, 12).x(0));
+            autoRejectBandyCheckBox.tooltip = autoRejectBandyTooltip;
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18));
@@ -5207,6 +5220,11 @@ public class OptWnd extends Window {
     private static final Object walkWithPathfinderTooltip = RichText.render("You can use this to walk and avoid possible obstacles, for example, in your base. It's not perfect, and doesn't work with cliffs though." +
             "\n" +
             "\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(300));
+    private static final Object autoRejectBandyTooltip = RichText.render("Use this to instantly close the Bandy Window the moment it's created." +
+            "\n$col[185,185,185]{This saves you from Bandy Critter Bomb Scripts.}" +
+            "\n" +
+            "\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(300));
+
 
 	// Altered Gameplay Settings Tooltips
 	private static final Object overrideCursorItemWhenHoldingAltTooltip = RichText.render("Holding Alt while having an item on your cursor will allow you to left click to walk, or right click to interact with objects, rather than drop it on the ground." +
