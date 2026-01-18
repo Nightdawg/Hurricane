@@ -98,15 +98,13 @@ public abstract class OldListBox<T> extends OldListWidget<T> {
     }
 
     public boolean mousedown(MouseDownEvent ev) {
-	if(super.mousedown(ev))
-	    return(true);
 	int idx = idxat(ev.c);
 	T item = (idx >= listitems()) ? null : listitem(idx);
 	if((item == null) && (ev.b == 1))
 	    change(null);
-	else if(item != null)
+	else if(item != null && ev.c.x < sb.c.x)
 	    itemclick(item, ev.c.sub(idxc(idx)), ev.b);
-	return(true);
+    return(super.mousedown(ev));
     }
 
     public void display(int idx) {
