@@ -132,8 +132,9 @@ public class Partyview extends Widget {
 	}
 	for(Map.Entry<Member, MemberView> e : avs.entrySet())
 	    e.getValue().color = e.getKey().col;
-    if (party.memb.size() == 1)
+    if (party.memb.size() == 1) {
         myColor = Color.WHITE;
+    }
     }
 
     public void tick(double dt) {
@@ -189,8 +190,9 @@ public class Partyview extends Widget {
 		    c = ((Coord)args[a++]).mul(OCache.posres);
 		if((a < args.length) && (args[a] instanceof Color)){
 		    m.col = (Color)args[a++];
-            if (m.gobid == ui.gui.plid)
+            if (m.gobid == ui.gui.plid && party.memb.size() > 1) {
                 myColor = m.col;
+            }
         }
 		m.setc(c);
 	    }
