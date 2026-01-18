@@ -97,6 +97,6 @@ public class NoteOverlay extends Sprite implements Sprite.CUpd {
 		eof();
 	    }
 	}
-	clip.vol = ev;
+	clip.vol = ev*OptWnd.instrumentsSoundVolumeSlider.val/100d;;
     }
 }
