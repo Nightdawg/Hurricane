@@ -17,7 +17,7 @@ public class QuestHelper extends Window {
     public static CheckBox ignoreBeginningOfQuestsCheckBox;
 
     public QuestHelper() {
-        super(UI.scale(300, 380), "Quest Helper", false);
+        super(UI.scale(320, 380), "Quest Helper", false);
         add(new PButton(160, "Refresh List", questList), UI.scale(20, 10));
         add(ignoreBeginningOfQuestsCheckBox = new CheckBox("Ignore \"Beginning of...\" Quests"){
             {a = (Utils.getprefb("ignoreBeginningOfQuests", true));}
