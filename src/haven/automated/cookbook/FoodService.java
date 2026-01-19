@@ -261,6 +261,10 @@ public class FoodService {
             return itemName;
         }
 
+        public String getGenus() {
+            return genus;
+        }
+
         public String getResourceName() {
             return resourceName;
         }
