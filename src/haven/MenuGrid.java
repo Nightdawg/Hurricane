@@ -771,7 +771,6 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Toggles/QueuedMovementWindow");
 		makeLocal("customclient/menugrid/Toggles/AutoDrop");
 		makeLocal("customclient/menugrid/Toggles/FlowerMenuAutoSelect");
-        makeLocal("customclient/menugrid/Toggles/AutoRejectBandy");
 
 		// Category: Bots
 		makeLocal("customclient/menugrid/Bots/OceanScoutBot");
@@ -881,9 +880,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.set(!FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.a);
 			} else if (ad[2].equals("PathfinderWalking")) {
                 OptWnd.walkWithPathFinderCheckBox.set(!OptWnd.walkWithPathFinderCheckBox.a);
-            } else if (ad[2].equals("AutoRejectBandy")) {
-                OptWnd.autoRejectBandyCheckBox.set(!OptWnd.autoRejectBandyCheckBox.a);
-            }
+			}
 		} else if (ad[1].equals("Bots")) { // Category: Toggles
 			if (ad[2].equals("OceanScoutBot")) {
 				if (gui.OceanScoutBot == null && gui.oceanScoutBotThread == null) {

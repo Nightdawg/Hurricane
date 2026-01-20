@@ -27,7 +27,6 @@
 package haven;
 
 import haven.render.*;
-import haven.res.ui.pag.toggle.Toggle;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -123,12 +122,6 @@ public class Window extends Widget {
 
     protected void added() {
 	super.added();
-    if (OptWnd.autoRejectBandyCheckBox != null && OptWnd.autoRejectBandyCheckBox.a && cap != null && cap.equals("Bandy")){
-        reqclose();
-        if (ui != null && ui.gui != null) {
-            ui.gui.optionInfoMsg("Auto-Reject Bandy is ENABLED. Closing Bandy Window.", OptWnd.msgRed, UI.ErrorMessage.sfx);
-        }
-    }
 	if(visible())
 	    parent.setfocus(this);
 	initanim();
