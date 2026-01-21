@@ -120,6 +120,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public String currentWeapon = "";
     public boolean combatInfoAdded = false;
     private Overlay partyMarkOverlay;
+    private Overlay partyCircleOverlay;
 
     public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
@@ -1282,6 +1283,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
 		HitBoxes.addHitBox(this);
+        updatePartyCircleOverlay();
+        updatePartyHighlightOverlay();
         if (glob.party != null) {
             synchronized (glob.party.targetMarkers) {
                 for (Map.Entry<Party.TargetMark, Long> entry : glob.party.targetMarkers.entrySet()) {
@@ -2629,6 +2632,71 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
             if (resDrawable != null) {
                 setattr(new ResDrawable(this, resDrawable.res, resDrawable.sdt, true));
             }
+        }
+    }
+
+    public void updatePartyCircleOverlay() {
+        if (OptWnd.showCirclesUnderPartyMembersCheckBox.a) {
+            if (partyCircleOverlay != null) {
+                removeOl(partyCircleOverlay);
+                partyCircleOverlay = null;
+            }
+            Party party = glob.party;
+            if (party != null && party.memb.size() > 1) {
+                synchronized (party.memb) {
+                    for (Party.Member m : party.memb.values()) {
+                        if (m.gobid == id) {
+                            if (m == party.leader) {
+                                partyCircleOverlay = new Overlay(this, new PartyCircleSprite(this, PartyCircleSprite.LEADER_OL_COLOR));
+                                break;
+                            } else if (isMe != null && isMe) {
+                                partyCircleOverlay = new Overlay(this, new PartyCircleSprite(this, PartyCircleSprite.YOURSELF_OL_COLOR));
+                                break;
+                            } else {
+                                partyCircleOverlay = new Overlay(this, new PartyCircleSprite(this, PartyCircleSprite.MEMBER_OL_COLOR));
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (partyCircleOverlay != null) {
+                    synchronized (ols) {
+                        addol(partyCircleOverlay);
+                    }
+                }
+            }
+        } else if (partyCircleOverlay != null) {
+            removeOl(partyCircleOverlay);
+            partyCircleOverlay = null;
+        }
+    }
+
+    public void updatePartyHighlightOverlay() {
+        if (OptWnd.highlightPartyMembersCheckBox.a) {
+            if (getattr(GobPartyHighlight.class) != null) {
+                delattr(GobPartyHighlight.class);
+            }
+            Party party = glob.party;
+            if (party != null && party.memb.size() > 1) {
+                synchronized (party.memb) {
+                    for (Party.Member m : party.memb.values()) {
+                        if (m.gobid == id) {
+                            if (m == party.leader) {
+                                setattr(GobPartyHighlight.class, new GobPartyHighlight(this, GobPartyHighlight.LEADER_OL_COLOR));
+                                break;
+                            } else if (isMe != null && isMe) {
+                                setattr(GobPartyHighlight.class, new GobPartyHighlight(this, GobPartyHighlight.YOURSELF_OL_COLOR));
+                                break;
+                            } else {
+                                setattr(GobPartyHighlight.class, new GobPartyHighlight(this, GobPartyHighlight.MEMBER_OL_COLOR));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (getattr(GobPartyHighlight.class) != null) {
+            delattr(GobPartyHighlight.class);
         }
     }
 

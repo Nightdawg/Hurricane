@@ -129,6 +129,10 @@ public class Partyview extends Widget {
 	    this.avs = avs;
 	    if(leave.show(!avs.isEmpty()))
 		pack();
+        if (ui != null && ui.gui != null) {
+            ui.sess.glob.oc.gobAction(Gob::updatePartyCircleOverlay);
+            ui.sess.glob.oc.gobAction(Gob::updatePartyHighlightOverlay);
+        }
 	}
 	for(Map.Entry<Member, MemberView> e : avs.entrySet())
 	    e.getValue().color = e.getKey().col;
@@ -181,6 +185,10 @@ public class Partyview extends Widget {
 	    updsteam();
 	} else if(msg == "ldr") {
 	    party.leader = party.memb.get(Utils.uiv(args[0]));
+        if (ui != null && ui.gui != null) {
+            ui.sess.glob.oc.gobAction(Gob::updatePartyCircleOverlay);
+            ui.sess.glob.oc.gobAction(Gob::updatePartyHighlightOverlay);
+        }
 	} else if(msg == "m") {
 	    int a = 0;
 	    Member m = party.memb.get(Utils.uiv(args[a++]));
@@ -209,6 +217,10 @@ public class Partyview extends Widget {
 	 * until then, at least clear it when logging out. */
 	party.memb = Collections.emptyMap();
 	party.leader = null;
+        if (ui != null && ui.gui != null) {
+            ui.sess.glob.oc.gobAction(Gob::updatePartyCircleOverlay);
+            ui.sess.glob.oc.gobAction(Gob::updatePartyHighlightOverlay);
+        }
 	super.dispose();
     }
 }

@@ -70,8 +70,6 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	private Collection<DelayedB> delayedB = new LinkedList<DelayedB>();
 	public CheckpointManager checkpointManager;
 	public Thread checkpointManagerThread;
-	public final PartyHighlight partyHighlight;
-	public final PartyCircles partyCircles;
 	public Pathfinder pf;
 	public Thread pfthread;
 	private static final int MAX_TILE_RANGE = 40;
@@ -611,8 +609,6 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	if (OptWnd.showContainerFullnessCheckBox.a) updatePlobContainerHighlight();
 	updatePlobCustomSizeAndRotation();
 	if (OptWnd.showWorkstationProgressCheckBox.a) updatePlobWorkstationProgressHighlight();
-	this.partyHighlight = new PartyHighlight(glob.party, plgob);
-	this.partyCircles = new PartyCircles(glob.party, plgob);
 	this.gobPathLastClick = null;
     }
     
@@ -1903,8 +1899,6 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		ob.ctick(dt);
 	    }
 	}
-	partyHighlight.update();
-	partyCircles.update();
     }
     
     public void resize(Coord sz) {
