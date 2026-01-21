@@ -55,8 +55,15 @@ public class HidingBox extends SlottedNode implements Rendered {
 	}
 
 	public void updateState() {
-		if (this.state != null)
-			this.state = filled ? SOLID_FILLED : SOLID_HOLLOW;
+		if (this.state != null) {
+            if (gob.getres() != null) {
+                if (gob.getres().name.equals("gfx/terobjs/stockpile-hide")){
+                    this.state = Pipe.Op.compose(filled ? SOLID_FILLED : SOLID_HOLLOW, Location.scale(2f, 2f, 2f));
+                } else
+                    this.state = filled ? SOLID_FILLED : SOLID_HOLLOW;
+            } else
+                this.state = filled ? SOLID_FILLED : SOLID_HOLLOW;
+        }
 		if(model != null && slots != null) {
 			try {
 				Model m = getModel(gob, filled);

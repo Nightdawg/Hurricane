@@ -50,12 +50,16 @@ public class CollisionBox extends SlottedNode implements Rendered {
 
 	public void updateState() {
 		this.state = SOLID_HOLLOW;
-		if (gob.getres() != null && gob.getres().name.equals("gfx/terobjs/cupboard")) {
-			model = getModel(gob);
-			if (OptWnd.flatCupboardsCheckBox.a)
-				this.state = Pipe.Op.compose(SOLID_HOLLOW, Location.rot(new Coord3f(0, 1, 0), 4.712f), Location.scale(1.615f, 1, 1), Location.xlate(new Coord3f(5.45f, 0, 4.7f)));
-			else
-				this.state = SOLID_HOLLOW;
+		if (gob.getres() != null) {
+            if (gob.getres().name.equals("gfx/terobjs/cupboard")) {
+                model = getModel(gob);
+                if (OptWnd.flatCupboardsCheckBox.a)
+                    this.state = Pipe.Op.compose(SOLID_HOLLOW, Location.rot(new Coord3f(0, 1, 0), 4.712f), Location.scale(1.615f, 1, 1), Location.xlate(new Coord3f(5.45f, 0, 4.7f)));
+                else
+                    this.state = SOLID_HOLLOW;
+            } else if (gob.getres().name.equals("gfx/terobjs/stockpile-hide")){
+                this.state = Pipe.Op.compose(SOLID_HOLLOW, Location.scale(2f, 2f, 2f));
+            }
 		}
 		if(model != null && slots != null) {
 			try {

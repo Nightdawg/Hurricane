@@ -30,6 +30,8 @@ public class GobCustomSizeAndRotation implements Gob.SetupMod {
             return Pipe.Op.compose(Location.rot(new Coord3f(0, 1, 0), 4.712f), Location.scale(0.2f, 1, 0.62f), Location.xlate(new Coord3f(6,0,-8.8f)));
         else if ((resName.startsWith("gfx/terobjs/arch/palisade") || resName.startsWith("gfx/terobjs/arch/brickwall")) && !resName.contains("gate"))
             return Pipe.Op.compose(Location.scale(1, 1, OptWnd.palisadesAndBrickWallsScaleSlider.val/100f));
+        else if (resName.equals("gfx/terobjs/stockpile-hide"))
+            return Pipe.Op.compose(Location.scale(0.5f, 0.5f, 0.5f));
         else
             return null;
     } else
