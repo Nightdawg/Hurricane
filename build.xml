@@ -187,6 +187,7 @@
     <copy file="etc/ansgar-config.properties" tofile="bin/haven-config.properties" />
     <copy file="Play.bat" todir="bin"/>
     <copy file="Play_Linux.sh" todir="bin"/>
+    <copy file="Play_WithSteam.bat" todir="bin"/>
     <copy file="workshop-client.properties" todir="bin"/>
     <copy file="steamicon.png" todir="bin"/>
     <copy file="steam_appid.txt" todir="bin"/>
