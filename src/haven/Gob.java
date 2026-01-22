@@ -101,7 +101,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private static Future<?> gobDeathFuture;
 	private Overlay gobChaseVector = null;
 	public static final HashSet<Long> alarmPlayed = new HashSet<Long>();
-	private Overlay miningSafeTilesOverlay = null;
 	public Overlay combatFoeCircleOverlay = null;
 	public static Set<Long> permanentHighlightList = new HashSet<>();
 	private GobDamageInfo damage;
@@ -1281,7 +1280,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateBeeSkepRadius();
 		updateMoundBedsRadius();
 		updateMineLadderRadius();
-		updateSupportOverlays();
 		initPermanentHighlightOverlay();
 		HitBoxes.addHitBox(this);
         updatePartyCircleOverlay();
@@ -2347,37 +2345,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 	}
-
-	public void updateSupportOverlays(){
-		if (getres() != null) {
-			if (getres().name.equals("gfx/terobjs/map/naturalminesupport") ){
-				setMiningSafeTilesOverlay(OptWnd.showMineSupportSafeTilesCheckBox.a, (float) a, 0);
-			} else if (getres().name.equals("gfx/terobjs/ladder") || getres().name.equals("gfx/terobjs/minesupport") ){
-				setMiningSafeTilesOverlay(OptWnd.showMineSupportSafeTilesCheckBox.a, (float) a, 1);
-			} else if (getres().name.equals("gfx/terobjs/column")){
-				setMiningSafeTilesOverlay(OptWnd.showMineSupportSafeTilesCheckBox.a, (float) a, 2);
-			} else if (getres().name.equals("gfx/terobjs/minebeam")){
-				setMiningSafeTilesOverlay(OptWnd.showMineSupportSafeTilesCheckBox.a, (float) a, 3);
-			}
-		}
-	}
-
-	public void setMiningSafeTilesOverlay(boolean enabled, float angle, int size) {
-		if (enabled) {
-            if (miningSafeTilesOverlay != null) {
-                removeOl(miningSafeTilesOverlay);
-                miningSafeTilesOverlay = null;
-            }
-			miningSafeTilesOverlay = new Overlay(this, new MiningSafeTilesSprite(this, angle, size));
-			synchronized (ols) {
-				addol(miningSafeTilesOverlay);
-			}
-		} else if (miningSafeTilesOverlay != null) {
-			removeOl(miningSafeTilesOverlay);
-			miningSafeTilesOverlay = null;
-		}
-	}
-
 
 	public void setCombatFoeCircleOverlay() {
 		if (OptWnd.showCirclesUnderCombatFoesCheckBox.a && combatFoeCircleOverlay == null) {

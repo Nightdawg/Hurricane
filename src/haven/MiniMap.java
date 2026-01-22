@@ -83,10 +83,19 @@ public class MiniMap extends Widget {
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
 	private String biome;
 	private Tex biometex;
-	public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
+    public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
 	public static boolean highlightMapTiles = Utils.getprefb("highlightMapTiles", false);
 	private final List<MapSprite> mapSprites = new LinkedList<>();
+	private Coord2d lastMineSupportUpdatePos = null;
+	private static final double MINE_SUPPORT_UPDATE_THRESHOLD = 11.0 * 5; // 5 tiles, same as fog of war
+
+	// Track mine support gobs for overlay updates
+	private final Set<Long> mineSupportGobIds = Collections.synchronizedSet(new HashSet<>());
+	private volatile boolean pendingMineSupportUpdate = false;
+	private long lastMineSupportUpdateTime = 0;
+	private static final long MIN_UPDATE_INTERVAL_MS = 100; // Minimum time between updates (debouncing)
+	private OCache.ChangeCallback mineSupportCallback = null;
 
     public MiniMap(Coord sz, MapFile file) {
 	super(sz);
@@ -104,6 +113,11 @@ public class MiniMap extends Widget {
 		iconconf = gui.iconconf;
 	}
 	super.attached();
+    }
+
+    public void destroy() {
+	cleanupMineSupportCallback();
+	super.destroy();
     }
 
     public static class Location {
@@ -773,10 +787,119 @@ public class MiniMap extends Widget {
 	}
     }
 
+    private void updateMineSupportOverlays() {
+        try {
+            if (OptWnd.showMineSupportCoverageCheckBox == null || !OptWnd.showMineSupportCoverageCheckBox.a) {
+                return;
+            }
+            GameUI gui = getparent(GameUI.class);
+            if (gui == null || gui.map == null || ui == null || ui.sess == null || ui.sess.glob == null) {
+                return;
+            }
+
+            Gob player = gui.map.player();
+            if (player == null) {
+                return;
+            }
+
+            Coord2d playerPos = player.rc;
+
+            if (lastMineSupportUpdatePos != null) {
+                double dist = playerPos.dist(lastMineSupportUpdatePos);
+                if (dist < MINE_SUPPORT_UPDATE_THRESHOLD) {
+                    return;
+                }
+            }
+
+            lastMineSupportUpdatePos = playerPos;
+            performMineSupportUpdate();
+        } catch (Exception ignored) {}
+    }
+
+    private static boolean isMineSupport(Gob gob) {
+        return gob.msRadSize > 0;
+    }
+
+    private void performMineSupportUpdate() {
+        if (ui == null || ui.sess == null || ui.sess.glob == null) {
+            return;
+        }
+
+        if (OptWnd.showMineSupportCoverageCheckBox == null || !OptWnd.showMineSupportCoverageCheckBox.a) {
+            return;
+        }
+
+        GroundSupportOverlay overlay = GroundSupportOverlay.getInstance();
+        overlay.setMap(ui.sess.glob.map);
+        overlay.clear();
+        mineSupportGobIds.clear();
+
+        ui.sess.glob.oc.gobAction(gob -> {
+            if (isMineSupport(gob)) {
+                overlay.addTilesInRadius(gob.rc, gob.msRadSize);
+                mineSupportGobIds.add(gob.id);
+            }
+        });
+    }
+
+    private void requestMineSupportUpdate() {
+        pendingMineSupportUpdate = true;
+    }
+
+    private void processMineSupportUpdates() {
+        if (!pendingMineSupportUpdate) {
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastMineSupportUpdateTime < MIN_UPDATE_INTERVAL_MS) {
+            return;
+        }
+
+        pendingMineSupportUpdate = false;
+        lastMineSupportUpdateTime = currentTime;
+        performMineSupportUpdate();
+    }
+
+    private void setupMineSupportCallback() {
+        if (mineSupportCallback != null || ui == null || ui.sess == null || ui.sess.glob == null) {
+            return;
+        }
+
+        mineSupportCallback = new OCache.ChangeCallback() {
+            @Override
+            public void added(Gob gob) {
+                if (OptWnd.showMineSupportCoverageCheckBox != null && OptWnd.showMineSupportCoverageCheckBox.a && isMineSupport(gob)) {
+                    requestMineSupportUpdate();
+                }
+            }
+
+            @Override
+            public void removed(Gob gob) {
+                if (OptWnd.showMineSupportCoverageCheckBox != null && OptWnd.showMineSupportCoverageCheckBox.a && mineSupportGobIds.remove(gob.id)) {
+                    requestMineSupportUpdate();
+                }
+            }
+        };
+
+        ui.sess.glob.oc.callback(mineSupportCallback);
+    }
+
+    private void cleanupMineSupportCallback() {
+        if (mineSupportCallback != null && ui != null && ui.sess != null && ui.sess.glob != null) {
+            ui.sess.glob.oc.uncallback(mineSupportCallback);
+            mineSupportCallback = null;
+        }
+        mineSupportGobIds.clear();
+    }
+
     public void drawparts(GOut g){
 	drawmap(g);
 	drawmarkers(g);
 	drawmovequeue(g);
+	setupMineSupportCallback();
+	processMineSupportUpdates();
+	updateMineSupportOverlays();
 	if(showMapViewRange) {drawview(g);}
 	if(showMapGridLines && dlvl <= 6) {drawgridlines(g);}
 	if(dlvl <= 3)

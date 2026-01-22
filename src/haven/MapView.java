@@ -2936,6 +2936,20 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 			glob.oc.getgob(plgob).delattr(Buddy.class); // ND: This is only needed for Valhalla.
 			glob.oc.getgob(plgob).isMe = null;
 		} catch (NullPointerException ignored){}
+
+        if (glob != null){
+            GroundSupportOverlay.getInstance().clear();
+            disol(GroundSupportOverlay.TAG);
+            if (OptWnd.showMineSupportCoverageCheckBox.a) {
+                GroundSupportOverlay.getInstance().setMap(glob.map);
+                enol(GroundSupportOverlay.TAG);
+                glob.oc.gobAction(gob -> {
+                    if (gob.msRadSize > 0) {
+                        GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                    }
+                });
+            }
+        }
 	}
 
 	public void addCheckpoint(Coord2d coord){

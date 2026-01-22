@@ -861,7 +861,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("MineSupportRadii")) {
 				OptWnd.showMineSupportRadiiCheckBox.set(!OptWnd.showMineSupportRadiiCheckBox.a);
 			} else if (ad[2].equals("MineSupportSafeTiles")) {
-				OptWnd.showMineSupportSafeTilesCheckBox.set(!OptWnd.showMineSupportSafeTilesCheckBox.a);
+				OptWnd.showMineSupportCoverageCheckBox.set(!OptWnd.showMineSupportCoverageCheckBox.a);
 			} else if (ad[2].equals("MineSweeper")) {
 				OptWnd.enableMineSweeperCheckBox.set(!OptWnd.enableMineSweeperCheckBox.a);
 			} else if (ad[2].equals("ClearAllCombatDamage")) {

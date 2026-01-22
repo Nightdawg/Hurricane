@@ -34,7 +34,6 @@ import haven.res.ui.pag.toggle.Toggle;
 import haven.resutil.Ridges;
 import haven.sprites.AggroCircleSprite;
 import haven.sprites.ChaseVectorSprite;
-import haven.sprites.MiningSafeTilesSprite;
 import haven.sprites.PartyCircleSprite;
 
 import javax.sound.sampled.AudioFormat;
@@ -2007,9 +2006,9 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget showWorkstationProgressUnpreparedColorOptionWidget;
 	public static String[] workstationProgressUnpreparedColorSetting = Utils.getprefsa("workstationProgressUnprepared" + "_colorSetting", new String[]{"20", "20", "20", "180"});
 	public static CheckBox showMineSupportRadiiCheckBox;
-	public static CheckBox showMineSupportSafeTilesCheckBox;
+    public static CheckBox showMineSupportCoverageCheckBox;
     public static ColorOptionWidget safeTilesColorOptionWidget;
-    public static String[] safeTilesColorSetting = Utils.getprefsa("safeTiles" + "_colorSetting", new String[]{"0", "105", "210", "125"});
+    public static String[] coveredTilesColorSetting = Utils.getprefsa("coveredTiles" + "_colorSetting", new String[]{"0", "105", "210", "60"});
 	public static CheckBox enableMineSweeperCheckBox;
 	public static OldDropBox<Integer> sweeperDurationDropbox;
 	public static final List<Integer> sweeperDurations = Arrays.asList(5, 10, 15, 30, 45, 60, 120);
@@ -2318,31 +2317,76 @@ public class OptWnd extends Window {
 				}
 			}, leftColumn.pos("bl").adds(0, 12).x(0));
 			showMineSupportRadiiCheckBox.tooltip = showMineSupportRadiiTooltip;
-			leftColumn = add(showMineSupportSafeTilesCheckBox = new CheckBox("Show Mine Support Safe Tiles"){
-				{a = (Utils.getprefb("showMineSupportTiles", false));}
+
+			leftColumn = add(showMineSupportCoverageCheckBox = new CheckBox("Show Mine Support Coverage"){
+                {a = (Utils.getprefb("showMineSupportTiles", false));}
 				public void set(boolean val) {
-					Utils.setprefb("showMineSupportTiles", val);
-					a = val;
-					if (ui != null && ui.gui != null){
-						ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
-						ui.gui.optionInfoMsg("Mine Support Safe Tiles are now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
-					}
+                    Utils.setprefb("showMineSupportTiles", val);
+                    a = val;
+                    if (ui != null && ui.gui != null && ui.gui.map != null && ui.sess != null && ui.sess.glob != null){
+                        if (val) {
+                            GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
+                            ui.gui.map.enol(GroundSupportOverlay.TAG);
+                            ui.sess.glob.oc.gobAction(gob -> {
+                                if (gob.msRadSize > 0) {
+                                    GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                                }
+                            });
+                        } else {
+                            GroundSupportOverlay.getInstance().clear();
+                            ui.gui.map.disol(GroundSupportOverlay.TAG);
+                        }
+                        ui.sess.glob.oc.gobAction(Gob::updateMineLadderRadius);
+                        ui.gui.optionInfoMsg("Mine Support Coverage is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+                    }
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
-			showMineSupportSafeTilesCheckBox.tooltip = showMineSupportSafeTilesTooltip;
+            showMineSupportCoverageCheckBox.tooltip = showMineSupportCoverageTooltip;
 
-            leftColumn = add(safeTilesColorOptionWidget = new ColorOptionWidget("Safe Tiles Color:", "safeTiles", 115, Integer.parseInt(safeTilesColorSetting[0]), Integer.parseInt(safeTilesColorSetting[1]), Integer.parseInt(safeTilesColorSetting[2]), Integer.parseInt(safeTilesColorSetting[3]), (Color col) -> {
-                MiningSafeTilesSprite.color = col;
-                if (ui != null && ui.gui != null){
-                    ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
+            leftColumn = add(safeTilesColorOptionWidget = new ColorOptionWidget("Safe Tiles Color:", "coveredTiles", 115, Integer.parseInt(coveredTilesColorSetting[0]), Integer.parseInt(coveredTilesColorSetting[1]), Integer.parseInt(coveredTilesColorSetting[2]), Integer.parseInt(coveredTilesColorSetting[3]), (Color col) -> {
+                GroundSupportOverlay.material = new Material(new BaseColor(col),
+                        new States.Depthtest(States.Depthtest.Test.LE));
+                GroundSupportOverlay.outlineMaterial = new Material(new BaseColor(new Color(col.getRed(), col.getGreen(), col.getBlue(), 255)),
+                        States.Depthtest.none, States.maskdepth);
+                if (ui != null && ui.gui != null && ui.gui.map != null && ui.sess != null && ui.sess.glob != null){
+                    GroundSupportOverlay.getInstance().clear();
+                    ui.gui.map.disol(GroundSupportOverlay.TAG);
+                    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+                    scheduler.schedule(() -> {
+                        if (OptWnd.showMineSupportCoverageCheckBox.a) {
+                            GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
+                            ui.gui.map.enol(GroundSupportOverlay.TAG);
+                            ui.sess.glob.oc.gobAction(gob -> {
+                                if (gob.msRadSize > 0) {
+                                    GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                                }
+                            });
+                        }
+                    }, 200, TimeUnit.MILLISECONDS);
                 }
             }){}, leftColumn.pos("bl").adds(1, 0));
             add(new Button(UI.scale(70), "Reset", false).action(() -> {
-                Utils.setprefsa("safeTiles" + "_colorSetting", new String[]{"0", "105", "210", "125"});
-                safeTilesColorOptionWidget.cb.colorChooser.setColor(safeTilesColorOptionWidget.currentColor = new Color(0, 105, 210, 125));
-                MiningSafeTilesSprite.color = safeTilesColorOptionWidget.currentColor;
-                if (ui != null && ui.gui != null){
-                    ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
+                Utils.setprefsa("coveredTiles" + "_colorSetting", new String[]{"0", "105", "210", "60"});
+                safeTilesColorOptionWidget.cb.colorChooser.setColor(safeTilesColorOptionWidget.currentColor = new Color(0, 105, 210, 60));
+                GroundSupportOverlay.material = new Material(new BaseColor(safeTilesColorOptionWidget.currentColor),
+                        new States.Depthtest(States.Depthtest.Test.LE));
+                GroundSupportOverlay.outlineMaterial = new Material(new BaseColor(new Color(safeTilesColorOptionWidget.currentColor.getRed(), safeTilesColorOptionWidget.currentColor.getGreen(), safeTilesColorOptionWidget.currentColor.getBlue(), 255)),
+                        States.Depthtest.none, States.maskdepth);
+                if (ui != null && ui.gui != null && ui.gui.map != null && ui.sess != null && ui.sess.glob != null){
+                    GroundSupportOverlay.getInstance().clear();
+                    ui.gui.map.disol(GroundSupportOverlay.TAG);
+                    ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+                    scheduler.schedule(() -> {
+                        if (OptWnd.showMineSupportCoverageCheckBox.a) {
+                            GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
+                            ui.gui.map.enol(GroundSupportOverlay.TAG);
+                            ui.sess.glob.oc.gobAction(gob -> {
+                                if (gob.msRadSize > 0) {
+                                    GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                                }
+                            });
+                        }
+                    }, 200, TimeUnit.MILLISECONDS);
                 }
             }), safeTilesColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
 
@@ -5204,7 +5248,7 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
 	private static final Object showMineSupportRadiiTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
-	private static final Object showMineSupportSafeTilesTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
+	private static final Object showMineSupportCoverageTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private static final Object enableMineSweeperTooltip = RichText.render("This will cause cave dust tiles to show the number of potential cave-ins surrounding them, just like in Minesweeper." +
 			"\n$col[218,163,0]{Note:} $col[185,185,185]{If a cave-in has been mined out, the tiles surrounding it will still drop cave dust, and they will still show a number on the ground. The cave dust tiles are pre-generated with the world. That's just how Loftar coded it.}" +
 			"\n$col[218,163,0]{Note:} $col[185,185,185]{You can still pick up the cave dust item off the ground. The numbers are affected only by the duration of the falling dust particles effect (aka dust rain), which can be set below}" +

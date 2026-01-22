@@ -429,6 +429,17 @@ public class MCache implements MapSource {
 	}
 
 	public void getol(OverlayInfo id, Area a, boolean[] buf) {
+	    if (id instanceof GroundSupportOverlay) {
+	        GroundSupportOverlay tto = (GroundSupportOverlay) id;
+	        int o = 0;
+
+	        for (Coord c : a) {
+	            Coord worldTile = c.add(this.ul);
+	            buf[o++] = tto.isTileHighlighted(worldTile);
+	        }
+	        return;
+	    }
+
 	    for(int i = 0; i < ols.length; i++) {
 		if(ols[i].get().layer(ResOverlay.class) == id) {
 		    int o = 0;
@@ -982,6 +993,12 @@ public class MCache implements MapSource {
 	    if((lol.a.overlap(a) != null) && !ret.contains(lol.id))
 		ret.add(lol.id);
 	}
+
+	GroundSupportOverlay tto = GroundSupportOverlay.getInstance();
+	if (tto.getTileCount() > 0 && !ret.contains(tto)) {
+	    ret.add(tto);
+	}
+
 	return(ret);
     }
 
