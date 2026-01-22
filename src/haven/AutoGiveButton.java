@@ -27,16 +27,11 @@
 package haven;
 
 public class AutoGiveButton extends Widget {
-    public static Tex bg = Resource.loadtex("gfx/hud/combat/knapp/knapp");
-    public static Tex ol = Resource.loadtex("gfx/hud/combat/knapp/ol");
-    public static Tex or = Resource.loadtex("gfx/hud/combat/knapp/or");
-    public static Tex sl = Resource.loadtex("gfx/hud/combat/knapp/sl");
-    public static Tex sr = Resource.loadtex("gfx/hud/combat/knapp/sr");
     public int state;
     private Fightview.Relation rel;
 
     public AutoGiveButton(Fightview.Relation rel, long gobid) {
-        super(bg.sz());
+        super(GiveButton.bg.sz());
         this.rel = rel;
         if (gobid > 0 && this.rel.gobid == gobid) {
             this.state = 1;
@@ -51,16 +46,16 @@ public class AutoGiveButton extends Widget {
             g.chcolor(200, 200, 200, 255);
         else if(state == 1)
             g.chcolor(0, 255, 0, 255);
-        g.image(bg, Coord.z, sz);
+        g.image(GiveButton.bg, Coord.z, sz);
         g.chcolor();
         if((state & 1) != 0)
-            g.image(ol, Coord.z, sz);
+            g.image(GiveButton.ol, Coord.z, sz);
         else
-            g.image(sl, Coord.z, sz);
+            g.image(GiveButton.sl, Coord.z, sz);
         if((state & 2) != 0)
-            g.image(or, Coord.z, sz);
+            g.image(GiveButton.or, Coord.z, sz);
         else
-            g.image(sr, Coord.z, sz);
+            g.image(GiveButton.sr, Coord.z, sz);
     }
 
     @Override
