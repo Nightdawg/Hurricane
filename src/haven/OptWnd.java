@@ -1993,6 +1993,7 @@ public class OptWnd extends Window {
 	public static String[] workstationProgressUnpreparedColorSetting = Utils.getprefsa("workstationProgressUnprepared" + "_colorSetting", new String[]{"20", "20", "20", "180"});
 	public static CheckBox showMineSupportRadiiCheckBox;
 	public static CheckBox showMineSupportSafeTilesCheckBox;
+	public static CheckBox showGroundSupportOverlayCheckBox;
 	public static CheckBox enableMineSweeperCheckBox;
 	public static OldDropBox<Integer> sweeperDurationDropbox;
 	public static final List<Integer> sweeperDurations = Arrays.asList(5, 10, 15, 30, 45, 60, 120);
@@ -2313,6 +2314,55 @@ public class OptWnd extends Window {
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
 			showMineSupportSafeTilesCheckBox.tooltip = showMineSupportSafeTilesTooltip;
+			leftColumn = add(showGroundSupportOverlayCheckBox = new CheckBox("Show Ground Support Coverage"){
+				{a = false;}
+				public void set(boolean val) {
+					if (val) {
+						if (ui != null && ui.gui != null && ui.gui.map != null){
+							GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
+							ui.gui.map.enol(GroundSupportOverlay.TAG);
+							// Trigger immediate update of all support tiles
+							if (ui.sess != null && ui.sess.glob != null) {
+								ui.sess.glob.oc.gobAction(gob -> {
+									try {
+										Resource res = gob.getres();
+										if (res != null) {
+											String resName = res.name;
+											if (resName.equals("gfx/terobjs/map/naturalminesupport") ||
+												resName.equals("gfx/terobjs/ladder") ||
+												resName.equals("gfx/terobjs/minesupport") ||
+												resName.equals("gfx/terobjs/column") ||
+												resName.equals("gfx/terobjs/minebeam")) {
+
+												int radius = 0;
+												switch (resName) {
+													case "gfx/terobjs/map/naturalminesupport": radius = 92; break;
+													case "gfx/terobjs/ladder": radius = 100; break;
+													case "gfx/terobjs/minesupport": radius = 100; break;
+													case "gfx/terobjs/column": radius = 125; break;
+													case "gfx/terobjs/minebeam": radius = 150; break;
+												}
+												GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, radius);
+											}
+										}
+									} catch (Loading ignored) {}
+								});
+							}
+							ui.gui.msg("Ground support coverage overlay enabled!", Color.GREEN);
+							a = true;
+						} else {
+							a = false;
+						}
+					} else {
+						GroundSupportOverlay.getInstance().clear();
+						if (ui != null && ui.gui != null && ui.gui.map != null) {
+							ui.gui.map.disol(GroundSupportOverlay.TAG);
+							ui.gui.msg("Ground support coverage overlay disabled!", Color.WHITE);
+						}
+						a = false;
+					}
+				}
+			}, leftColumn.pos("bl").adds(0, 2));
 			leftColumn = add(enableMineSweeperCheckBox = new CheckBox("Enable Mine Sweeper"){
 				{a = (Utils.getprefb("enableMineSweeper", true));}
 				public void set(boolean val) {
