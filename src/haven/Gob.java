@@ -1301,7 +1301,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		Iterator<String> iter = poses.iterator();
 		while (iter.hasNext()) { // ND: Some animals have stupid names for the knock or dead pose, like "chicken-knock". Doing it this way is easier than manually adding every single one.
 			String s = iter.next();
-			if (s.contains("knock") || s.contains("dead") || s.contains("waterdead") || s.contains("banzai")) {
+			if (s.contains("knock") || s.contains("dead") || s.contains("waterdead") || s.contains("banzai") || s.contains("carried")) {
 				knocked = true;
 				break;
 			} else {
