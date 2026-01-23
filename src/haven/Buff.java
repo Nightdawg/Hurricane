@@ -38,6 +38,7 @@ public class Buff extends Widget implements ItemInfo.ResOwner, Bufflist.Managed 
     public static final Tex ameter = Resource.loadtex("gfx/hud/buffs/cframe-m");
     public static final Coord imgoff = UI.scale(3, 3);
     public static final int ameterx1 = UI.scale(3), ameterx2 = UI.scale(35); /* XXX: Detect? */
+    public static final Coord ametersz = UI.scale(new Coord(32, 3)); // ND: old variable that loftar removed, but I still use in Fightsess for the combat UI
     public static final int textw = UI.scale(200);
     public Indir<Resource> res;
     protected int a = 255;
