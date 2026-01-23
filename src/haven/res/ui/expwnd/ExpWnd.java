@@ -27,7 +27,7 @@ public class ExpWnd extends Window {
 
     protected void added() {
 	if(c.equals(0, 0))
-	    c = new Coord((parent.sz.x - sz.x) / 2, ((parent.sz.y / 2) - sz.y) / 2);
+	    c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
 	Audio.play(sfx);
 	super.added();
     }
@@ -53,7 +53,7 @@ public class ExpWnd extends Window {
 	    Coord csz = contentsz();
 	    this.close = adda(new Button(UI.scale(100), "Okay!"), csz.x / 2, csz.y + UI.scale(25), 0.5, 0);
 	    resize(contentsz());
-	    this.c = new Coord((parent.sz.x - sz.x) / 2, ((parent.sz.y / 2) - sz.y) / 2);
+	    this.c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
 	}
 	super.tick(dt);
     }
