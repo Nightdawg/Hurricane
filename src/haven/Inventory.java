@@ -229,7 +229,10 @@ public class Inventory extends Widget implements DTarget {
 	@Override
 	public void wdgmsg(Widget sender, String msg, Object... args) {
 		if(msg.equals("transfer-ordered")){
-			processTransfer(getSame((GItem) args[0], (Boolean) args[1]));
+            try {
+                processTransfer(getSame((GItem) args[0], (Boolean) args[1]));
+            } catch (RuntimeException ignored) {
+            }
 		} else {
 			super.wdgmsg(sender, msg, args);
 		}
