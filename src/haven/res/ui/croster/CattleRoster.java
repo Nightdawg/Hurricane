@@ -9,7 +9,7 @@ import haven.MenuGrid.Pagina;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/croster", version = 76)
+@haven.FromResource(name = "ui/croster", version = 77)
 public abstract class CattleRoster <T extends Entry> extends Widget {
     public static final int WIDTH = UI.scale(900);
     public static final Comparator<Entry> namecmp = (a, b) -> a.name.compareTo(b.name);
@@ -198,8 +198,8 @@ public abstract class CattleRoster <T extends Entry> extends Widget {
 	} else if(msg == "rm") {
 	    delentry((UID)args[0]);
 	} else if(msg == "addto") {
-	    GameUI gui = (GameUI)ui.getwidget((Integer)args[0]);
-	    Pagina pag = gui.menu.paginafor(ui.sess.getres((Integer)args[1]));
+	    GameUI gui = (GameUI)ui.getwidget(Utils.iv(args[0]));
+	    Pagina pag = gui.menu.paginafor(ui.sess.getresv(args[1]));
 	    RosterButton btn = (RosterButton)Loading.waitfor(pag::button);
 	    btn.add(this);
 	} else {
