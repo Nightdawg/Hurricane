@@ -28,6 +28,7 @@ public class CombatDistanceTool extends Window implements Runnable {
             Map.entry("gfx/kritter/lynx/lynx", 20.0),
             Map.entry("gfx/kritter/mammoth/mammoth", 30.3),
             Map.entry("gfx/kritter/moose/moose", 25.0),
+            Map.entry("gfx/kritter/narwhal/narwhal", 32.0),
             Map.entry("gfx/kritter/orca/orca", 49.25),
             Map.entry("gfx/kritter/reddeer/reddeer", 25.0),
             Map.entry("gfx/kritter/roedeer/roedeer", 22.0),
