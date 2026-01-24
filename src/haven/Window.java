@@ -26,10 +26,16 @@
 
 package haven;
 
+import haven.automated.StackAllItems;
+import haven.automated.UnstackAllItems;
+import haven.automated.mapper.MappingClient;
 import haven.render.*;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+
 import static haven.PUtils.*;
 
 public class Window extends Widget {
@@ -77,6 +83,14 @@ public class Window extends Widget {
 	Resource.loadsimg("gfx/hud/wnd/lg/cbtnu"),
 	Resource.loadsimg("gfx/hud/wnd/lg/cbtnd"),
 	Resource.loadsimg("gfx/hud/wnd/lg/cbtnh")};
+    private static final BufferedImage[] stackbtni = new BufferedImage[] {
+    Resource.loadsimg("gfx/hud/wnd/lg/stackbtnu"),
+    Resource.loadsimg("gfx/hud/wnd/lg/stackbtnd"),
+    Resource.loadsimg("gfx/hud/wnd/lg/stackbtnh")};
+    private static final BufferedImage[] unstackbtni = new BufferedImage[] {
+    Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnu"),
+    Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnd"),
+    Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnh")};
     public Deco deco;
     public String cap;
     public TexRaw gbuf = null;
@@ -132,6 +146,15 @@ public class Window extends Widget {
                  this.c = loc;
          }
      }
+
+    if (deco instanceof DefaultDeco) {
+        if (cap != null && Arrays.stream(Config.EXCLUDED_INVENTORY_WINDOWS).noneMatch(cap::equals))
+            if (((DefaultDeco)deco).stackbtn != null)
+                ((DefaultDeco)deco).stackbtn.show();
+        if (((DefaultDeco)deco).unstackbtn != null)
+            ((DefaultDeco)deco).unstackbtn.show();
+    }
+
     }
 
     public void chcap(String cap) {
@@ -187,6 +210,7 @@ public class Window extends Widget {
     public static class DefaultDeco extends DragDeco {
 	public final boolean lg;
 	public final IButton cbtn;
+    public IButton stackbtn, unstackbtn;
 	public boolean dragsize, cfocus;
 	public Area aa, ca;
 	public Coord cptl = Coord.z, cpsz = Coord.z;
@@ -214,6 +238,10 @@ public class Window extends Widget {
 	    ca = Area.sized(tlm, csz);
 	    aa = Area.sized(ca.ul.add(mrgn), asz);
 		cbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(9), - UI.scale(10)); // ND: UI Window close button location
+        if (stackbtn != null)
+            stackbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(40), - UI.scale(10));
+        if (unstackbtn != null)
+            unstackbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(59), - UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
@@ -329,6 +357,31 @@ public class Window extends Widget {
 	    Coord cpc = c.sub(cptl);
 	    return(ca.contains(c) || (c.isect(cptl, cpsz) && (cm.back.getRaster().getSample(cpc.x % cm.back.getWidth(), cpc.y, 3) >= 128)));
 	}
+
+    public void addStackBtn() {
+        stackbtn = add(new IButton(stackbtni[0], stackbtni[1], stackbtni[2])).action(() -> {
+            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
+                if (wdg instanceof Inventory) {
+                    new Thread(new StackAllItems(this.ui.gui, (Inventory) wdg)).start();
+                }
+            }
+        });
+        stackbtn.settip("Stack All");
+        stackbtn.hide();
+    }
+
+    public void addUnstackBtn() {
+        unstackbtn = add(new IButton(unstackbtni[0], unstackbtni[1], unstackbtni[2])).action(() -> {
+            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
+                if (wdg instanceof Inventory) {
+                    new Thread(new UnstackAllItems(this.ui.gui, (Inventory) wdg)).start();
+                }
+            }
+        });
+        unstackbtn.settip("Unstack All");
+        unstackbtn.hide();
+    }
+
     }
 
     public void cdraw(GOut g) {
@@ -727,5 +780,25 @@ public class Window extends Widget {
         super.dispose();
         if (this.cap != null)
             Utils.setprefc("wndc-" + this.cap, this.c);
+    }
+
+    @Override
+    public <T extends Widget> T add(T child) {
+        super.add(child);
+        enhanceWidgets(child);
+        return(child);
+    }
+
+    private <T extends Widget> void enhanceWidgets(T child) {
+        try {
+            if (child instanceof Inventory) {
+                if (deco instanceof DefaultDeco) {
+                    ((DefaultDeco)deco).addStackBtn();
+                    ((DefaultDeco)deco).addUnstackBtn();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

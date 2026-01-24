@@ -1142,4 +1142,33 @@ public class Config {
 		put("boarspear", 20f);
 	}};
 
+    public static final String[] EXCLUDED_INVENTORY_WINDOWS = new String[]{
+
+            "Character Sheet",
+            "Belt",
+            "Pouch",
+            "Purse",
+
+            "Cauldron",
+            "Chicken Coop",
+            "Fine Study Desk",
+            "Finery Forge",
+            "Fireplace",
+            "Frame",
+            "Herbalist Table",
+            "Kiln",
+            "Ore Smelter",
+            "Smith's Smelter",
+            "Oven",
+            "Pane mold",
+            "Rabbit Hutch",
+            "Rack",
+            "Smoke shed",
+            "Stack Furnace",
+            "Steelbox",
+            "Study Desk",
+            "Table",
+            "Tub"
+    };
+
 }
