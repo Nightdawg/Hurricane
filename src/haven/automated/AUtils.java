@@ -57,6 +57,7 @@ public class AUtils {
         add("gfx/kritter/woodgrouse/woodgrouse-m");
         add("gfx/kritter/garefowl/garefowl");
         add("gfx/kritter/goshawk/goshawk");
+        add("gfx/kritter/narwhal/narwhal");
 
         add("gfx/kritter/ants/queenant");
         add("gfx/kritter/ants/royalguardant");
