@@ -29,6 +29,7 @@ package haven;
 import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
+import haven.res.sfx.ambient.weather.wsound.WeatherSound;
 import haven.res.ui.pag.toggle.Toggle;
 import haven.resutil.Ridges;
 import haven.sprites.AggroCircleSprite;
@@ -436,6 +437,7 @@ public class OptWnd extends Window {
     public static HSlider doomBellCapSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 	public static HSlider themeSongVolumeSlider;
+    public static HSlider weatherSoundVolumeSlider;
 
     public class AudioPanel extends Panel {
 	public AudioPanel(Panel back) {
@@ -531,7 +533,18 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
 
-	    leftColumn = add(new Label("Audio latency"), leftColumn.pos("bl").adds(195, 15));
+        rightColumn = add(new Label("Weather Sound Volume"), rightColumn.pos("bl").adds(0, 5));
+        rightColumn = add(weatherSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("weatherSoundVolume", 30)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("weatherSoundVolume", val);
+                WeatherSound.volumeUpdated = true;
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
+
+	    leftColumn = add(new Label("Audio latency"), leftColumn.pos("bl").adds(195, 20));
 		leftColumn.tooltip = audioLatencyTooltip;
 	    {
 		Label dpy = new Label("");
@@ -613,7 +626,7 @@ public class OptWnd extends Window {
             }
         }, leftColumn.pos("bl").adds(0, 2));
 
-		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 119));
+		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 83));
 		rightColumn = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
 			protected void attach(UI ui) {
 				super.attach(ui);

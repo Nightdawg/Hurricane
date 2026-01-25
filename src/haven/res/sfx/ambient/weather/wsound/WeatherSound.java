@@ -13,6 +13,7 @@ public class WeatherSound implements Glob.Weather, RenderTree.Node {
     public static final Pipe.Op nopos = Pipe.Op.compose(Homo3D.cam.nil, Location.xlate(Coord3f.of(0, 0, -10)));
     public final RenderTree.Node spr;
     public final Volume vol;
+    public static boolean volumeUpdated = false;
 
     public interface Volume {
 	public void setvol(double vol);
@@ -40,10 +41,14 @@ public class WeatherSound implements Glob.Weather, RenderTree.Node {
 	double vol = 1.0;
 	if(args.length > 0)
 	    vol = ((Number)args[0]).doubleValue() * 0.01;
-	this.vol.setvol(vol);
+	this.vol.setvol(vol * OptWnd.weatherSoundVolumeSlider.val/100d);
     }
 
     public boolean tick(double dt) {
+    if (volumeUpdated){
+        this.vol.setvol(OptWnd.weatherSoundVolumeSlider.val/100d);
+        volumeUpdated = false;
+    }
 	return(false);
     }
 
