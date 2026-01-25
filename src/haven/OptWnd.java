@@ -33,6 +33,7 @@ import haven.res.ui.pag.toggle.Toggle;
 import haven.resutil.Ridges;
 import haven.sprites.AggroCircleSprite;
 import haven.sprites.ChaseVectorSprite;
+import haven.sprites.MiningSafeTilesSprite;
 import haven.sprites.PartyCircleSprite;
 
 import javax.sound.sampled.AudioFormat;
@@ -1993,6 +1994,8 @@ public class OptWnd extends Window {
 	public static String[] workstationProgressUnpreparedColorSetting = Utils.getprefsa("workstationProgressUnprepared" + "_colorSetting", new String[]{"20", "20", "20", "180"});
 	public static CheckBox showMineSupportRadiiCheckBox;
 	public static CheckBox showMineSupportSafeTilesCheckBox;
+    public static ColorOptionWidget safeTilesColorOptionWidget;
+    public static String[] safeTilesColorSetting = Utils.getprefsa("safeTiles" + "_colorSetting", new String[]{"0", "105", "210", "125"});
 	public static CheckBox enableMineSweeperCheckBox;
 	public static OldDropBox<Integer> sweeperDurationDropbox;
 	public static final List<Integer> sweeperDurations = Arrays.asList(5, 10, 15, 30, 45, 60, 120);
@@ -2313,6 +2316,22 @@ public class OptWnd extends Window {
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
 			showMineSupportSafeTilesCheckBox.tooltip = showMineSupportSafeTilesTooltip;
+
+            leftColumn = add(safeTilesColorOptionWidget = new ColorOptionWidget("Safe Tiles Color:", "safeTiles", 115, Integer.parseInt(safeTilesColorSetting[0]), Integer.parseInt(safeTilesColorSetting[1]), Integer.parseInt(safeTilesColorSetting[2]), Integer.parseInt(safeTilesColorSetting[3]), (Color col) -> {
+                MiningSafeTilesSprite.color = col;
+                if (ui != null && ui.gui != null){
+                    ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
+                }
+            }){}, leftColumn.pos("bl").adds(1, 0));
+            add(new Button(UI.scale(70), "Reset", false).action(() -> {
+                Utils.setprefsa("safeTiles" + "_colorSetting", new String[]{"0", "105", "210", "125"});
+                safeTilesColorOptionWidget.cb.colorChooser.setColor(safeTilesColorOptionWidget.currentColor = new Color(0, 105, 210, 125));
+                MiningSafeTilesSprite.color = safeTilesColorOptionWidget.currentColor;
+                if (ui != null && ui.gui != null){
+                    ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
+                }
+            }), safeTilesColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+
 			leftColumn = add(enableMineSweeperCheckBox = new CheckBox("Enable Mine Sweeper"){
 				{a = (Utils.getprefb("enableMineSweeper", true));}
 				public void set(boolean val) {

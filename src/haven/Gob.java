@@ -2363,12 +2363,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void setMiningSafeTilesOverlay(boolean enabled, float angle, int size) {
 		if (enabled) {
-			List<Overlay> olsSnapshot = new ArrayList<>(ols);
-			for (Overlay ol : olsSnapshot) {
-				if (ol.spr instanceof MiningSafeTilesSprite) {
-					return;
-				}
-			}
+            if (miningSafeTilesOverlay != null) {
+                removeOl(miningSafeTilesOverlay);
+                miningSafeTilesOverlay = null;
+            }
 			miningSafeTilesOverlay = new Overlay(this, new MiningSafeTilesSprite(this, angle, size));
 			synchronized (ols) {
 				addol(miningSafeTilesOverlay);
