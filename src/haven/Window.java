@@ -148,11 +148,12 @@ public class Window extends Widget {
      }
 
     if (deco instanceof DefaultDeco) {
-        if (cap != null && Arrays.stream(Config.EXCLUDED_INVENTORY_WINDOWS).noneMatch(cap::equals))
-            if (((DefaultDeco)deco).stackbtn != null)
-                ((DefaultDeco)deco).stackbtn.show();
-        if (((DefaultDeco)deco).unstackbtn != null)
-            ((DefaultDeco)deco).unstackbtn.show();
+        if (cap != null && Arrays.stream(Config.EXCLUDED_INVENTORY_WINDOWS).noneMatch(cap::equals)) {
+            if (((DefaultDeco) deco).stackbtn != null)
+                ((DefaultDeco) deco).stackbtn.show();
+            if (((DefaultDeco) deco).unstackbtn != null)
+                ((DefaultDeco) deco).unstackbtn.show();
+        }
     }
 
     }
