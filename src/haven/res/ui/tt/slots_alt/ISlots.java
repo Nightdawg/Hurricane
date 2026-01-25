@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /* >tt: Fac */
-@haven.FromResource(name = "ui/tt/slots-alt", version = 2)
+@haven.FromResource(name = "ui/tt/slots-alt", version = 3)
 public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
     public static final Text ch = Text.render("Gilding list:");
     public static final Color fcol = new Color(0, 169, 224), scol = new Color(255, 192, 64);

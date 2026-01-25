@@ -1076,7 +1076,7 @@ public class UI {
 
 	private void processWindowContent(Window pwdg, Widget wdg) {
 		String cap = pwdg.cap;
-		if (wdg instanceof Inventory && cap.equals("Study Desk")) {
+		if (wdg instanceof Inventory && (cap.equals("Study Desk") || cap.equals("Fine Study Desk"))) {
 			initStudydeskUi(pwdg, (Inventory) wdg);
 		}
 		if (wdg instanceof Inventory && cap.equals("Table")) {

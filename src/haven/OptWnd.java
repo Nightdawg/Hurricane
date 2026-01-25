@@ -29,10 +29,12 @@ package haven;
 import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
+import haven.res.sfx.ambient.weather.wsound.WeatherSound;
 import haven.res.ui.pag.toggle.Toggle;
 import haven.resutil.Ridges;
 import haven.sprites.AggroCircleSprite;
 import haven.sprites.ChaseVectorSprite;
+import haven.sprites.MiningSafeTilesSprite;
 import haven.sprites.PartyCircleSprite;
 
 import javax.sound.sampled.AudioFormat;
@@ -435,6 +437,7 @@ public class OptWnd extends Window {
     public static HSlider doomBellCapSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 	public static HSlider themeSongVolumeSlider;
+    public static HSlider weatherSoundVolumeSlider;
 
     public class AudioPanel extends Panel {
 	public AudioPanel(Panel back) {
@@ -530,7 +533,18 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
 
-	    leftColumn = add(new Label("Audio latency"), leftColumn.pos("bl").adds(195, 15));
+        rightColumn = add(new Label("Weather Sound Volume"), rightColumn.pos("bl").adds(0, 5));
+        rightColumn = add(weatherSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("weatherSoundVolume", 30)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("weatherSoundVolume", val);
+                WeatherSound.volumeUpdated = true;
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
+
+	    leftColumn = add(new Label("Audio latency"), leftColumn.pos("bl").adds(195, 20));
 		leftColumn.tooltip = audioLatencyTooltip;
 	    {
 		Label dpy = new Label("");
@@ -612,7 +626,7 @@ public class OptWnd extends Window {
             }
         }, leftColumn.pos("bl").adds(0, 2));
 
-		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 119));
+		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 83));
 		rightColumn = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
 			protected void attach(UI ui) {
 				super.attach(ui);
@@ -1945,6 +1959,7 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget collisionBoxColorOptionWidget;
 	public static String[] collisionBoxColorSetting = Utils.getprefsa("collisionBox" + "_colorSetting", new String[]{"255", "255", "255", "210"});
 	public static CheckBox displayObjectDurabilityPercentageCheckBox;
+    public static CheckBox showDurabilityCrackTextureCheckBox;
 	public static CheckBox displayObjectQualityOnInspectionCheckBox;
 	public static CheckBox displayGrowthInfoCheckBox;
 	public static CheckBox alsoShowOversizedTreesAbovePercentageCheckBox;
@@ -1994,6 +2009,8 @@ public class OptWnd extends Window {
 	public static CheckBox showMineSupportRadiiCheckBox;
 	public static CheckBox showMineSupportSafeTilesCheckBox;
 	public static CheckBox showGroundSupportOverlayCheckBox;
+    public static ColorOptionWidget safeTilesColorOptionWidget;
+    public static String[] safeTilesColorSetting = Utils.getprefsa("safeTiles" + "_colorSetting", new String[]{"0", "105", "210", "125"});
 	public static CheckBox enableMineSweeperCheckBox;
 	public static OldDropBox<Integer> sweeperDurationDropbox;
 	public static final List<Integer> sweeperDurations = Arrays.asList(5, 10, 15, 30, 45, 60, 120);
@@ -2314,6 +2331,22 @@ public class OptWnd extends Window {
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
 			showMineSupportSafeTilesCheckBox.tooltip = showMineSupportSafeTilesTooltip;
+
+            leftColumn = add(safeTilesColorOptionWidget = new ColorOptionWidget("Safe Tiles Color:", "safeTiles", 115, Integer.parseInt(safeTilesColorSetting[0]), Integer.parseInt(safeTilesColorSetting[1]), Integer.parseInt(safeTilesColorSetting[2]), Integer.parseInt(safeTilesColorSetting[3]), (Color col) -> {
+                MiningSafeTilesSprite.color = col;
+                if (ui != null && ui.gui != null){
+                    ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
+                }
+            }){}, leftColumn.pos("bl").adds(1, 0));
+            add(new Button(UI.scale(70), "Reset", false).action(() -> {
+                Utils.setprefsa("safeTiles" + "_colorSetting", new String[]{"0", "105", "210", "125"});
+                safeTilesColorOptionWidget.cb.colorChooser.setColor(safeTilesColorOptionWidget.currentColor = new Color(0, 105, 210, 125));
+                MiningSafeTilesSprite.color = safeTilesColorOptionWidget.currentColor;
+                if (ui != null && ui.gui != null){
+                    ui.sess.glob.oc.gobAction(Gob::updateSupportOverlays);
+                }
+            }), safeTilesColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+
 			leftColumn = add(showGroundSupportOverlayCheckBox = new CheckBox("Show Ground Support Coverage"){
 				{a = false;}
 				public void set(boolean val) {
@@ -2448,12 +2481,22 @@ public class OptWnd extends Window {
 				}
 			}, middleColumn.pos("bl").adds(0, -6).x(UI.scale(240)));
 			displayObjectDurabilityPercentageCheckBox.tooltip = displayObjectDurabilityPercentageTooltip;
+            middleColumn = add(showDurabilityCrackTextureCheckBox = new CheckBox("Show Durability Crack Texture"){
+                {a = (Utils.getprefb("showDurabilityCrackTexture", true));}
+                public void changed(boolean val) {
+                    Utils.setprefb("showDurabilityCrackTexture", val);
+                    if (ui != null && ui.gui != null) {
+                        ui.sess.glob.oc.gobAction(Gob::refreshGobHealthAttribute);
+                    }
+                }
+            }, middleColumn.pos("bl").adds(0, 2));
+            showDurabilityCrackTextureCheckBox.tooltip = showDurabilityCrackTextureTooltip;
 			middleColumn = add(displayObjectQualityOnInspectionCheckBox = new CheckBox("Display Object Quality on Inspection"){
 				{a = (Utils.getprefb("displayObjectQualityOnInspection", true));}
 				public void changed(boolean val) {
 					Utils.setprefb("displayObjectQualityOnInspection", val);
 				}
-			}, middleColumn.pos("bl").adds(0, 2));
+			}, middleColumn.pos("bl").adds(0, 23));
 			displayObjectQualityOnInspectionCheckBox.tooltip = displayObjectQualityOnInspectionTooltip;
 
 			middleColumn = add(showCritterAurasCheckBox = new CheckBox("Show Critter Circle Auras (Clickable)"){
@@ -5175,7 +5218,8 @@ public class OptWnd extends Window {
 	private static final Object showObjectCollisionBoxesTooltip = RichText.render("This shows the collision boundaries of objects in the world by outlining each edge with a line." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
-	private static final Object displayObjectDurabilityPercentageTooltip = RichText.render("This makes objects that took decay hits also show a percentage number, on top of the cracked texture overlay.", UI.scale(300));
+	private static final Object displayObjectDurabilityPercentageTooltip = RichText.render("This makes objects that took decay hits show a percentage number.", UI.scale(300));
+    private static final Object showDurabilityCrackTextureTooltip = RichText.render("This makes objects that took decay hits have a cracked texture.", UI.scale(300));
 	private static final Object displayObjectQualityOnInspectionTooltip = RichText.render("This makes objects that have been inspected show their quality number on top, until unload them.", UI.scale(300));
 	private static final Object showCritterAurasTooltip = RichText.render("This will draw clickable circles under all critters, which makes it easier to spot them, and right-click to chase them." +
 			"\n" +

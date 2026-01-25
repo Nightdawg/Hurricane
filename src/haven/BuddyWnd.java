@@ -624,6 +624,9 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	    if((info != null) && (info.buddy == b))
 		info.update();
 	    serial++;
+        if (ui.gui.buddies != null && Utils.getpref("buddysort", "").equals("status")) {
+            ui.gui.buddies.setcmp(statuscmp);
+        }
 	} else if(msg == "sel") {
 	    int id = Utils.iv(args[0]);
 	    Window p = getparent(Window.class);

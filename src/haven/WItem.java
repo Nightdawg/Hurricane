@@ -156,7 +156,7 @@ public class WItem extends Widget implements DTarget {
 	}
     }
 
-    private List<ItemInfo> info() {return(item.info());}
+    public List<ItemInfo> info() {return(item.info());}
     public final AttrCache<Pipe.Op> rstate = new AttrCache<>(this::info, info -> {
 	    ArrayList<GItem.RStateInfo> ols = new ArrayList<>();
 	    for(ItemInfo inf : info) {

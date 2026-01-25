@@ -12,7 +12,7 @@ import java.awt.image.BufferedImage;
 import static haven.PUtils.blurmask2;
 import static haven.PUtils.rasterimg;
 
-@haven.FromResource(name = "ui/croster", version = 76)
+@haven.FromResource(name = "ui/croster", version = 77)
 public class CattleId extends GAttrib implements RenderTree.Node, PView.Render2D {
     public final UID id;
 	public static final Text.Foundry fnd = new Text.Foundry(Text.dfont, 12);

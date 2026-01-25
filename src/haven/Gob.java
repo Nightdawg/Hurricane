@@ -121,6 +121,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public boolean combatInfoAdded = false;
     private Overlay partyMarkOverlay;
     private Overlay partyCircleOverlay;
+    public float msRadSize = 0;
 
     public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
@@ -1301,7 +1302,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		Iterator<String> iter = poses.iterator();
 		while (iter.hasNext()) { // ND: Some animals have stupid names for the knock or dead pose, like "chicken-knock". Doing it this way is easier than manually adding every single one.
 			String s = iter.next();
-			if (s.contains("knock") || s.contains("dead") || s.contains("waterdead") || s.contains("banzai")) {
+			if (s.contains("knock") || s.contains("dead") || s.contains("waterdead") || s.contains("banzai") || s.contains("carried")) {
 				knocked = true;
 				break;
 			} else {
@@ -1439,11 +1440,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					long plgobid = glob.sess.ui.gui.map.plgob;
 					if (plgobid != -1 && plgobid != id) {
 						if (isLoftar)
-							setattr(new Buddy(this, -1, "Loftar", Color.WHITE));
+							setattr(new Buddy(this, -1, "Loftar", Color.WHITE, -1));
 						else if ((getattr(Vilmate.class) != null))
-							setattr(new Buddy(this, -1, "Village/Realm Member", Color.WHITE));
+							setattr(new Buddy(this, -1, "Village/Realm Member", Color.WHITE, 0));
 						else {
-							setattr(new Buddy(this, -1, "Unknown", Color.GRAY));
+							setattr(new Buddy(this, -1, "Unknown", Color.GRAY, 0));
 						}
 					}
 				}
@@ -1531,7 +1532,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			} else if (OptWnd.hideStockpilesCheckbox.a && resName.startsWith("gfx/terobjs/stockpile")) {
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideCropsCheckbox.a && resName.startsWith("gfx/terobjs/plants") && !resName.endsWith("trellis")) {
+			} else if (OptWnd.hideCropsCheckbox.a && resName.startsWith("gfx/terobjs/plants") && !resName.endsWith("trellis") && !resName.endsWith("giantturnip")) {
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = false; // ND: You can walk through them anyway, so it doesn't matter. Their resource doesn't have an actual hitbox layer and we'll have an endless lag loop of trying to draw one.
 			} else if (OptWnd.hideTrellisCheckbox.a && resName.endsWith("trellis")) {
@@ -2279,6 +2280,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if (!alarmPlayed.contains(id)){
 			Composite c = getattr(Composite.class);
 			if (c == null || c.comp.cmod.isEmpty()) return;
+            if (playerGender.equals("unknown")) {
+                updPose(c.poses); // ND: Gotta force this here again, because it doesn't update on a fresh login
+                return;
+            }
 			if (getres() != null) {
 				if (isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton){
 					if (getres().name.equals("gfx/borka/body")) {
@@ -2286,8 +2291,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						boolean isVillager = getattr(Vilmate.class) != null;
 						haven.res.ui.obj.buddy_n.Named namedInfo = getattr(haven.res.ui.obj.buddy_n.Named.class);
 						if (!isMe) {
-							if (buddyInfo != null) {
-								if ((buddyInfo.customName != null && buddyInfo.customName.equals("Unknown"))) {
+							if (buddyInfo != null && buddyInfo.rgrp != -1) {
+								if ((buddyInfo.customName != null && buddyInfo.customName.equals("Unknown")) || buddyInfo.rgrp == 0 && !isVillager) {
 									playPlayerColorAlarm(OptWnd.whitePlayerAlarmEnabledCheckbox.a, OptWnd.whitePlayerAlarmFilename.buf.line(), OptWnd.whitePlayerAlarmVolumeSlider.val);
 								} else if ((buddyInfo.customName != null && buddyInfo.customName.equals("Village/Realm Member") && isVillager)) {
 									playPlayerColorAlarm(OptWnd.whiteVillageOrRealmPlayerAlarmEnabledCheckbox.a, OptWnd.whiteVillageOrRealmPlayerAlarmFilename.buf.line(), OptWnd.whiteVillageOrRealmPlayerAlarmVolumeSlider.val);
@@ -2359,12 +2364,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void setMiningSafeTilesOverlay(boolean enabled, float angle, int size) {
 		if (enabled) {
-			List<Overlay> olsSnapshot = new ArrayList<>(ols);
-			for (Overlay ol : olsSnapshot) {
-				if (ol.spr instanceof MiningSafeTilesSprite) {
-					return;
-				}
-			}
+            if (miningSafeTilesOverlay != null) {
+                removeOl(miningSafeTilesOverlay);
+                miningSafeTilesOverlay = null;
+            }
 			miningSafeTilesOverlay = new Overlay(this, new MiningSafeTilesSprite(this, angle, size));
 			synchronized (ols) {
 				addol(miningSafeTilesOverlay);
@@ -2459,7 +2462,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 		Buddy buddyInfo = getattr(Buddy.class);
-		if (buddyInfo != null) {
+		if (buddyInfo != null && buddyInfo.rgrp != -1) {
 			if (buddyInfo.customName != null && buddyInfo.customName.equals("Unknown")) return false;
 			if (buddyInfo.rgrp == 1 && OptWnd.excludeGreenBuddyFromAggroCheckBox.a) return true;
 			if (buddyInfo.rgrp == 2 && OptWnd.excludeRedBuddyFromAggroCheckBox.a) return true;
@@ -2698,6 +2701,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
         } else if (getattr(GobPartyHighlight.class) != null) {
             delattr(GobPartyHighlight.class);
         }
+    }
+
+    public void refreshGobHealthAttribute() {
+            GobHealth gobHealth = getattr(GobHealth.class);
+            if (gobHealth != null) {
+                setattr(new GobHealth(this, gobHealth.hp));
+            }
     }
 
 

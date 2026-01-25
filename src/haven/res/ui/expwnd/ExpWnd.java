@@ -1,8 +1,10 @@
 /* Preprocessed source code */
+package haven.res.ui.expwnd;
+
 import haven.*;
 
 /* >wdg: ExpWnd */
-@haven.FromResource(name = "ui/expwnd", version = 22)
+@haven.FromResource(name = "ui/expwnd", version = 23)
 public class ExpWnd extends Window {
     public static Resource sfx = Loading.waitfor(Resource.classres(ExpWnd.class).pool.load("sfx/exp", 1));
     public static final RichText.Foundry fnd = new RichText.Foundry();
@@ -12,8 +14,8 @@ public class ExpWnd extends Window {
     private Img img, text;
 
     public static Widget mkwidget(UI ui, Object... args) {
-	Indir<Resource> res = ui.sess.getres((Integer)args[0]);
-	int ep = (args.length > 1)?((Integer)args[1]):0;
+	Indir<Resource> res = ui.sess.getresv(args[0]);
+	int ep = (args.length > 1) ? Utils.iv(args[1]) : 0;
 	return(new ExpWnd(res, ep));
     }
 
@@ -25,7 +27,7 @@ public class ExpWnd extends Window {
 
     protected void added() {
 	if(c.equals(0, 0))
-		c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
+	    c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
 	Audio.play(sfx);
 	super.added();
     }
@@ -51,7 +53,7 @@ public class ExpWnd extends Window {
 	    Coord csz = contentsz();
 	    this.close = adda(new Button(UI.scale(100), "Okay!"), csz.x / 2, csz.y + UI.scale(25), 0.5, 0);
 	    resize(contentsz());
-		this.c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
+	    this.c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
 	}
 	super.tick(dt);
     }

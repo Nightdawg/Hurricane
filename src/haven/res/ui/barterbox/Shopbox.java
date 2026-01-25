@@ -11,7 +11,7 @@ import java.util.*;
 import java.awt.Color;
 
 /* >wdg: haven.res.ui.barterbox.Shopbox */
-@haven.FromResource(name = "ui/barterbox", version = 75)
+@haven.FromResource(name = "ui/barterbox", version = 76)
 public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Owner {
     public static final Text qlbl = Text.render("Quality:");
     public static final Text any = Text.render("Any");
@@ -58,7 +58,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     public abstract class AttrCache<T> {
 	private List<ItemInfo> forinfo = null;
 	private T save = null;
-	
+
 	public T get() {
 	    try {
 		List<ItemInfo> info = info();
@@ -71,7 +71,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    }
 	    return(save);
 	}
-	
+
 	protected abstract T find(List<ItemInfo> info);
     }
 
@@ -276,7 +276,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    this.res = null;
 	    this.spr = null;
 	    if(args.length > 0) {
-		ResData res = new ResData(ui.sess.getres((Integer)args[0]), Message.nil);
+		ResData res = new ResData(ui.sess.getresv((Integer)args[0]), Message.nil);
 		if(args.length > 1)
 		    res.sdt = new MessageBuf((byte[])args[1]);
 		this.res = res;
@@ -287,7 +287,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    cinfo = null;
 	    longtip = null;
 	} else if(name == "n") {
-	    int num = (Integer)args[0];
+	    int num = Utils.iv(args[0]);
 	    this.num = Text.render(String.format("%d left", num));
 	} else if(name == "price") {
 	    int a = 0;
@@ -295,7 +295,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 		a++;
 		price = null;
 	    } else {
-		Indir<Resource> res = ui.sess.getres((Integer)args[a++]);
+		Indir<Resource> res = ui.sess.getresv(args[a++]);
 		Message sdt = Message.nil;
 		if(args[a] instanceof byte[])
 		    sdt = new MessageBuf((byte[])args[a++]);
@@ -308,8 +308,8 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 		price = new ItemSpec(uictx.curry(ui), new ResData(res, sdt), info);
 	    }
 	    pricetip = null;
-	    pnum = (Integer)args[a++];
-	    pq = (Integer)args[a++];
+	    pnum = Utils.iv(args[a++]);
+	    pq = Utils.iv(args[a++]);
 	    if(!admin) {
 		pnumt = rnum("\u00d7%d", pnum);
 		pqt = (pq > 0)?rnum("%d+", pq):any;

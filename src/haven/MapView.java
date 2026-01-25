@@ -2871,9 +2871,12 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
 	public void switchToBunnySlippers(){
 		WItem eqboots = ui.gui.getequipory().slots[15];
+        if (eqboots != null && eqboots.item.getname().equals("Bunny Slippers")) { // ND: Don't need to do anything if we have Bunny Slippers equipped
+            return;
+        }
 		List<WItem> invboots = ui.gui.maininv.getItemsExact("Bunny Slippers");
 		if (!invboots.isEmpty()) {
-			if (eqboots != null && !eqboots.item.getname().equals("Bunny Slippers")) {
+			if (eqboots != null) {
 				eqboots.item.wdgmsg("transfer", new Coord(eqboots.sz.x / 2, eqboots.sz.y / 2));
 			}
 			WItem slipper = invboots.get(0);
@@ -2883,9 +2886,12 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
 	public void switchToPlateBoots(){
 		WItem eqboots = ui.gui.getequipory().slots[15];
+        if (eqboots != null && eqboots.item.getname().equals("Plate Boots")) { // ND: Don't need to do anything if we have Plate Boots equipped
+            return;
+        }
 		List<WItem> invboots = ui.gui.maininv.getItemsExact("Plate Boots");
 		if (!invboots.isEmpty()) {
-			if (eqboots != null && !eqboots.item.getname().equals("Plate Boots")) {
+			if (eqboots != null) {
 				eqboots.item.wdgmsg("transfer", new Coord(eqboots.sz.x / 2, eqboots.sz.y / 2));
 			}
 			WItem boots = invboots.get(0);

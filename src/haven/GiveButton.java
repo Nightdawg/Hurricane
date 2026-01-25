@@ -27,11 +27,11 @@
 package haven;
 
 public class GiveButton extends Widget {
-    public static Tex bg = Resource.loadtex("gfx/hud/combat/knapp/knapp");
-    public static Tex ol = Resource.loadtex("gfx/hud/combat/knapp/ol");
-    public static Tex or = Resource.loadtex("gfx/hud/combat/knapp/or");
-    public static Tex sl = Resource.loadtex("gfx/hud/combat/knapp/sl");
-    public static Tex sr = Resource.loadtex("gfx/hud/combat/knapp/sr");
+    public static Tex bg = Resource.remote().loadwait("gfx/hud/combat/knapp/knapp").layer(Resource.imgc).tex();
+    public static Tex ol = Resource.remote().loadwait("gfx/hud/combat/knapp/ol").layer(Resource.imgc).tex();
+    public static Tex or = Resource.remote().loadwait("gfx/hud/combat/knapp/or").layer(Resource.imgc).tex();
+    public static Tex sl = Resource.remote().loadwait("gfx/hud/combat/knapp/sl").layer(Resource.imgc).tex();
+    public static Tex sr = Resource.remote().loadwait("gfx/hud/combat/knapp/sr").layer(Resource.imgc).tex();
     int state;
     
     @RName("give")
