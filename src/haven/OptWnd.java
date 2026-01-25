@@ -1946,6 +1946,7 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget collisionBoxColorOptionWidget;
 	public static String[] collisionBoxColorSetting = Utils.getprefsa("collisionBox" + "_colorSetting", new String[]{"255", "255", "255", "210"});
 	public static CheckBox displayObjectDurabilityPercentageCheckBox;
+    public static CheckBox showDurabilityCrackTextureCheckBox;
 	public static CheckBox displayObjectQualityOnInspectionCheckBox;
 	public static CheckBox displayGrowthInfoCheckBox;
 	public static CheckBox alsoShowOversizedTreesAbovePercentageCheckBox;
@@ -2417,12 +2418,22 @@ public class OptWnd extends Window {
 				}
 			}, middleColumn.pos("bl").adds(0, -6).x(UI.scale(240)));
 			displayObjectDurabilityPercentageCheckBox.tooltip = displayObjectDurabilityPercentageTooltip;
+            middleColumn = add(showDurabilityCrackTextureCheckBox = new CheckBox("Show Durability Crack Texture"){
+                {a = (Utils.getprefb("showDurabilityCrackTexture", true));}
+                public void changed(boolean val) {
+                    Utils.setprefb("showDurabilityCrackTexture", val);
+                    if (ui != null && ui.gui != null) {
+                        ui.sess.glob.oc.gobAction(Gob::refreshGobHealthAttribute);
+                    }
+                }
+            }, middleColumn.pos("bl").adds(0, 2));
+            showDurabilityCrackTextureCheckBox.tooltip = showDurabilityCrackTextureTooltip;
 			middleColumn = add(displayObjectQualityOnInspectionCheckBox = new CheckBox("Display Object Quality on Inspection"){
 				{a = (Utils.getprefb("displayObjectQualityOnInspection", true));}
 				public void changed(boolean val) {
 					Utils.setprefb("displayObjectQualityOnInspection", val);
 				}
-			}, middleColumn.pos("bl").adds(0, 2));
+			}, middleColumn.pos("bl").adds(0, 23));
 			displayObjectQualityOnInspectionCheckBox.tooltip = displayObjectQualityOnInspectionTooltip;
 
 			middleColumn = add(showCritterAurasCheckBox = new CheckBox("Show Critter Circle Auras (Clickable)"){
@@ -5144,7 +5155,8 @@ public class OptWnd extends Window {
 	private static final Object showObjectCollisionBoxesTooltip = RichText.render("This shows the collision boundaries of objects in the world by outlining each edge with a line." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
-	private static final Object displayObjectDurabilityPercentageTooltip = RichText.render("This makes objects that took decay hits also show a percentage number, on top of the cracked texture overlay.", UI.scale(300));
+	private static final Object displayObjectDurabilityPercentageTooltip = RichText.render("This makes objects that took decay hits show a percentage number.", UI.scale(300));
+    private static final Object showDurabilityCrackTextureTooltip = RichText.render("This makes objects that took decay hits have a cracked texture.", UI.scale(300));
 	private static final Object displayObjectQualityOnInspectionTooltip = RichText.render("This makes objects that have been inspected show their quality number on top, until unload them.", UI.scale(300));
 	private static final Object showCritterAurasTooltip = RichText.render("This will draw clickable circles under all critters, which makes it easier to spot them, and right-click to chase them." +
 			"\n" +
