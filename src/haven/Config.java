@@ -1151,6 +1151,7 @@ public class Config {
 
             "Cauldron",
             "Chicken Coop",
+            "Extraction Press",
             "Fine Study Desk",
             "Finery Forge",
             "Fireplace",
