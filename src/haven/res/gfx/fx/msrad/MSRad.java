@@ -21,7 +21,11 @@ public class MSRad extends Sprite {
 
     public MSRad(Owner owner, Resource res, Message sdt) {
 	super(owner, res);
-	fx = new BPRad(owner, res, Utils.hfdec((short)sdt.int16()) * 11);
+    float rad = Utils.hfdec((short)sdt.int16()) * 11;
+	fx = new BPRad(owner, res, rad);
+    if (owner instanceof Gob.Overlay) {
+        ((Gob.Overlay) owner).gob.msRadSize = rad;
+    }
     }
 
     public static void show(boolean show) {

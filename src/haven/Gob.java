@@ -121,6 +121,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public boolean combatInfoAdded = false;
     private Overlay partyMarkOverlay;
     private Overlay partyCircleOverlay;
+    public float msRadSize = 0;
 
     public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
