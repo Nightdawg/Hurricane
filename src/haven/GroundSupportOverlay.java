@@ -35,9 +35,8 @@ public class GroundSupportOverlay implements MCache.OverlayInfo {
     public Material mat() {
         if (material == null) {
             material = new Material(
-                new BaseColor(new Color(128, 128, 128, 100)),
-                States.Depthtest.none,
-                States.maskdepth
+                new BaseColor(new Color(91, 177, 157, 70)),
+                new States.Depthtest(States.Depthtest.Test.LE)
             );
         }
         return material;
@@ -47,7 +46,7 @@ public class GroundSupportOverlay implements MCache.OverlayInfo {
     public Material omat() {
         if (outlineMaterial == null) {
             outlineMaterial = new Material(
-                new BaseColor(new Color(200, 200, 200, 180)),
+                new BaseColor(new Color(213, 46, 46, 120)),
                 States.Depthtest.none,
                 States.maskdepth
             );
