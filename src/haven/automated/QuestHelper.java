@@ -13,167 +13,262 @@ import java.util.regex.Pattern;
 public class QuestHelper extends Window {
     public boolean active = false;
     public QuestList questList;
-    public HashMap<String, Coord2d> questGiverLocations = new HashMap<>();
+    public static HashMap<String, Coord2d> questGiverLocations = new HashMap<>();
     public static CheckBox ignoreBeginningOfQuestsCheckBox;
 
+    private static final Set<String> TUTORIAL_QUESTS = new HashSet<>(Arrays.asList(
+            "something to eat & drink",
+            "shifting gear",
+            "ways in the wild"
+    ));
+
     public QuestHelper() {
-        super(UI.scale(320, 380), "Quest Helper", false);
-        add(new PButton(160, "Refresh List", questList), UI.scale(20, 10));
-        add(ignoreBeginningOfQuestsCheckBox = new CheckBox("Ignore \"Beginning of...\" Quests"){
-            {a = (Utils.getprefb("ignoreBeginningOfQuests", true));}
+        super(UI.scale(300, 380), "Quest Helper", false);
+        questList = new QuestList(UI.scale(280), 12, this);
+        add(new PButton(160, "Refresh List", this), UI.scale(20, 10));
+        add(ignoreBeginningOfQuestsCheckBox = new CheckBox("Ignore Tutorial Quests"){
+            {a = Utils.getprefb("ignoreBeginningOfQuests", true);}
             public void changed(boolean val) {
                 Utils.setprefb("ignoreBeginningOfQuests", val);
                 refresh();
             }
         }, UI.scale(20, 50));
-        questList = new QuestList(UI.scale(290), 13,this);
-        add(questList, UI.scale(16, 75));
+        add(questList, UI.scale(10, 80));
+    }
+
+    public boolean shouldIgnore(String title) {
+        if (ignoreBeginningOfQuestsCheckBox == null || !ignoreBeginningOfQuestsCheckBox.a)
+            return false;
+        String lowerTitle = title.toLowerCase();
+        return lowerTitle.contains("beginning") || TUTORIAL_QUESTS.contains(lowerTitle);
+    }
+
+    @Override
+    public void show() {
+        super.show();
+        this.active = true;
+        refresh();
     }
 
     @Override
     public void wdgmsg(Widget sender, String msg, Object... args) {
         if ((sender == this) && (Objects.equals(msg, "close"))) {
-            questList.resetLocation();
+            this.active = false;
+            questList.reset();
             hide();
-            disable();
             Utils.setprefc("wndc-questHelperWindow", this.c);
-        } else
+        } else {
             super.wdgmsg(sender, msg, args);
-    }
-
-    @Override
-    public boolean globtype(GlobKeyEvent ev) {
-        if (ev.awt.getKeyCode() == 27) {
-            hide();
-            disable();
-            return true;
         }
-        return super.globtype(ev);
     }
 
     public void addConds(List<QuestWnd.Quest.Condition> ncond, int id) {
-        if (!active)
-            return;
-        boolean alltrue = true;
-        for (int i = 0; i < ncond.size(); i++) {
-            QuestListItem qitem = new QuestListItem(ncond.get(i).desc, ncond.get(i).done, id);
-            if (alltrue && i == ncond.size() - 1) {
-                qitem = new QuestListItem("\u2605 " + ncond.get(i).desc, 2, id);
-            } else if (ncond.get(i).done == 1) {
-                qitem = new QuestListItem("\u2713 " + ncond.get(i).desc, ncond.get(i).done, id);
-            } else {
-                alltrue = false;
-            }
-            boolean dontadd = false;
+        if (!active) return;
 
-            for (QuestListItem item : questList.quests) {
-                if (qitem.name.equals(item.name) && qitem.parentid == item.parentid) {
-                    dontadd = true;
+        GameUI gui = ui.gui;
+        if (gui != null && gui.chrwdg != null && gui.chrwdg.quest != null) {
+            for (QuestWnd.Quest q : gui.chrwdg.quest.cqst.quests) {
+                if (q.id == id) {
+                    try {
+                        if (shouldIgnore(q.title())) return;
+                    } catch (Exception e) {
+                        return;
+                    }
+                    break;
                 }
             }
-            if (dontadd == false) {
-                qitem.coord = questGiverLocations.get(qitem.questGiver);
-                questList.quests.add(qitem);
+        }
+
+        synchronized (questList.quests) {
+            boolean changed = false;
+            boolean allOthersDone = true;
+            for (QuestWnd.Quest.Condition c : ncond) {
+                if (!c.desc.toLowerCase().contains("tell") && c.done == 0) {
+                    allOthersDone = false;
+                    break;
+                }
+            }
+
+            for (QuestWnd.Quest.Condition c : ncond) {
+                String baseDesc = c.desc.replace("\u2605 ", "").replace("\u2713 ", "");
+                String prefix = (c.done == 1) ? "\u2713 " : "";
+                int status = (c.done == 0 && baseDesc.toLowerCase().contains("tell") && allOthersDone) ? 2 : c.done;
+
+                boolean exists = false;
+                for (QuestListItem item : questList.quests) {
+                    if (item.parentid == id && item.name.contains(baseDesc)) {
+                        if (item.status != status || !item.name.equals(prefix + baseDesc)) {
+                            item.status = status;
+                            item.name = prefix + baseDesc;
+                            changed = true;
+                        }
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists) {
+                    QuestListItem newItem = new QuestListItem(prefix + baseDesc, status, id);
+                    newItem.coord = questGiverLocations.get(newItem.questGiver);
+                    questList.quests.add(newItem);
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                questList.quests.sort(questList.comp);
             }
         }
-        questList.quests.sort(questList.comp);
-    }
-
-    private void disable() {
-        active = false;
     }
 
     public void refresh() {
-        if (!active)
-            return;
-        questList.quests.clear();
-        questList.refresh = true;
-        questList.quests.sort(questList.comp);
+        this.active = true;
+        questList.startRefresh();
     }
 
     private class PButton extends Button {
-        public final QuestList tgt;
+        private final QuestHelper parent;
 
-        public PButton(int w, String title, QuestList tgt) {
+        public PButton(int w, String title, QuestHelper parent) {
             super(w, title);
-            this.tgt = tgt;
+            this.parent = parent;
         }
 
         @Override
         public void click() {
-            refresh();
+            parent.refresh();
         }
     }
 
     private static class QuestList extends OldListBox<QuestListItem> {
         private static final Coord nameoff = new Coord(0, 5);
-        public List<QuestListItem> quests = new ArrayList<>(50);
-        public boolean refresh = true;
-        private long lastUpdateTime = System.currentTimeMillis();
-        private final Comparator<QuestListItem> comp = Comparator.comparing(a -> a.name);
-        private Coord2d playerPos = null;
-        public Coord2d knownLocation = null;
-        public Coord2d knownLocationRc = null;
-        private QuestHelper questHelper;
+        public final List<QuestListItem> quests = Collections.synchronizedList(new ArrayList<>());
+        public boolean refreshPending = false;
+        private long lastReq = 0;
+        private final QuestHelper qh;
+        public final Comparator<QuestListItem> comp = Comparator.comparing(a -> a.name);
 
-        public QuestList(int w, int h, QuestHelper questHelper) {
+        public QuestList(int w, int h, QuestHelper qh) {
             super(w, h, UI.scale(24));
-            this.questHelper = questHelper;
+            this.qh = qh;
+        }
+
+        public void startRefresh() {
+            synchronized (quests) {
+                quests.clear();
+            }
+            this.refreshPending = true;
+        }
+
+        public void reset() {
+            this.refreshPending = false;
+            synchronized (quests) {
+                quests.clear();
+            }
         }
 
         @Override
         public void tick(double dt) {
+            if (!qh.active) return;
+            long now = System.currentTimeMillis();
+
             GameUI gui = ui.gui;
-            if (gui == null || gui.menu == null)
-                return;
+            if (gui == null || gui.chrwdg == null || gui.chrwdg.quest == null) return;
 
-            if (questHelper.active) {
-                long timesincelastupdate = System.currentTimeMillis() - lastUpdateTime;
-                if (timesincelastupdate < 1000) {
-                    refresh = false;
+            List<QuestWnd.Quest> gameQuests = gui.chrwdg.quest.cqst.quests;
+
+            synchronized (quests) {
+                Iterator<QuestListItem> it = quests.iterator();
+                while (it.hasNext()) {
+                    QuestListItem item = it.next();
+                    boolean stillExists = false;
+                    for (QuestWnd.Quest q : gameQuests) {
+                        if (q.id == item.parentid) {
+                            stillExists = true;
+                            break;
+                        }
+                    }
+                    if (!stillExists) it.remove();
                 }
+            }
 
-                if (ui != null && (refresh)) {
-                    refresh = false;
-                    lastUpdateTime = System.currentTimeMillis();
+            for (Widget w : gui.chrwdg.quest.questbox.children()) {
+                if (w instanceof QuestWnd.Quest.Box) {
+                    QuestWnd.Quest.Box box = (QuestWnd.Quest.Box) w;
 
-                    quests.clear();
                     try {
-                        for (QuestWnd.Quest quest : ui.gui.chrwdg.quest.cqst.quests) {
-                            if (quest.id != ui.gui.chrwdg.skill.credos.pqid) {
-                                if (!quest.title().startsWith("Beginning of") || !ignoreBeginningOfQuestsCheckBox.a)
-                                    ui.gui.chrwdg.wdgmsg("qsel", quest.id);
+                        if (qh.shouldIgnore(box.title())) {
+                            continue;
+                        }
+
+                        boolean alreadyInList = false;
+                        synchronized (quests) {
+                            for (QuestListItem item : quests) {
+                                if (item.parentid == box.id) {
+                                    alreadyInList = true;
+                                    break;
+                                }
                             }
                         }
-                    } catch (NullPointerException e) {
-                        e.printStackTrace();
-                    } catch (Loading e) {
-                        refresh = true;
+
+                        if (!alreadyInList && box.cond != null && box.cond.length > 0) {
+                            qh.addConds(Arrays.asList(box.cond), box.id);
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            if (refreshPending) {
+                if (now - lastReq > 1000) {
+                    lastReq = now;
+                    boolean allFound = true;
+
+                    int credoId = (gui.chrwdg.skill != null && gui.chrwdg.skill.credos != null)
+                            ? gui.chrwdg.skill.credos.pqid : -1;
+
+                    for (QuestWnd.Quest q : gameQuests) {
+                        if (q.id == credoId) continue;
+
+                        try {
+                            if (qh.shouldIgnore(q.title())) continue;
+
+                            boolean hasData = false;
+                            synchronized (quests) {
+                                for (QuestListItem item : quests) {
+                                    if (item.parentid == q.id) {
+                                        hasData = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!hasData) {
+                                gui.chrwdg.wdgmsg("qsel", q.id);
+                                allFound = false;
+                            }
+                        } catch (Exception e) {
+                            allFound = false;
+                        }
                     }
 
-                    Collections.sort(quests);
-                    if (quests.size() > 0)
-                        change(quests.get(0));
+                    if (allFound) {
+                        refreshPending = false;
+                    }
                 }
             }
         }
 
-        private void resetLocation() {
-            knownLocation = null;
-            knownLocationRc = null;
-            playerPos = null;
-        }
-
         @Override
         protected QuestListItem listitem(int idx) {
-            return quests.get(idx);
+            synchronized (quests) {
+                return (idx >= 0 && idx < quests.size()) ? quests.get(idx) : null;
+            }
         }
 
         @Override
         protected int listitems() {
             return quests.size();
         }
-
 
         @Override
         protected void drawbg(GOut g) {
@@ -184,20 +279,26 @@ public class QuestHelper extends Window {
 
         @Override
         protected void drawitem(GOut g, QuestListItem item, int idx) {
+            if (item == null) return;
+
             try {
                 if (item.status == 2) {
-                    g.chcolor(new Color(0, 255, 0));
+                    g.chcolor(Color.YELLOW);
                 } else if (item.status == 1) {
-                    g.chcolor(new Color(0, 255, 255));
+                    g.chcolor(Color.CYAN);
                 } else {
-                    g.chcolor(new Color(255, 255, 255));
-                }
-                if (item.coord != null && playerPos != null) {
-                    g.text(item.name + " d: (" + (int) (item.coord.dist(playerPos) * 100) + ")", nameoff);
-                } else {
-                    g.text(item.name, nameoff);
+                    g.chcolor(Color.WHITE);
                 }
 
+                String text = item.name;
+                GameUI gui = ui.gui;
+
+                if (item.coord != null && gui != null && gui.map != null && gui.map.player() != null) {
+                    int distInTiles = (int) Math.ceil(item.coord.dist(gui.map.player().rc) / 11.0);
+                    text += " (" + distInTiles + "t)";
+                }
+
+                g.text(text, nameoff);
                 g.chcolor();
             } catch (Loading e) {
             }
@@ -207,33 +308,33 @@ public class QuestHelper extends Window {
         public void change(QuestListItem item) {
             if (item != null) {
                 super.change(item);
-                ui.gui.chrwdg.wdgmsg("qsel", item.parentid);
+                if (ui.gui != null) {
+                    ui.gui.chrwdg.wdgmsg("qsel", item.parentid);
+                }
             }
         }
     }
 
     public static class QuestListItem implements Comparable<QuestListItem> {
         public String name;
+        public String questGiver = "";
         public int status;
         public int parentid;
         public Coord2d coord;
-        public String questGiver;
 
-        public QuestListItem(final String name, final int status, final int parentid) {
-            this.coord = null;
-            this.questGiver = "";
+        public QuestListItem(String name, int status, int parentid) {
             this.name = name;
             this.status = status;
             this.parentid = parentid;
-            final Pattern p = Pattern.compile("[A-Z].*?([A-Z].*?)\\b.*?");
-            final Matcher m = p.matcher(name);
+
+            Matcher m = Pattern.compile("([A-Z][a-z]+)").matcher(name);
             if (m.find()) {
                 this.questGiver = m.group(1);
             }
         }
 
         @Override
-        public int compareTo(final QuestListItem o) {
+        public int compareTo(QuestListItem o) {
             return this.name.compareTo(o.name);
         }
     }
