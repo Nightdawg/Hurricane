@@ -30,6 +30,12 @@ public class StackAllItems implements Runnable {
             Map<String, List<WItem>> itemsExisting = new HashMap<>();
             for (WItem wItem : inventory.getAllItems()) {
                 String name = wItem.item.getname(); // ND: Matias was using the res name, but stuff like different types of meat use the same res path
+
+                // ND: If you try to click while the script is running, you MIGHT drop the last item you have on your cursor on the floor.
+                // The only valuable "double" item you can hold in your inventory is usually just a pair of rings. I can't think of anything else right now.
+                if (name.contains("Ring")) continue;
+
+
                 if (name.endsWith(stackOfSuffixForRemoval)) { // ND: remove the ", stack of" part, so stacks and unstacked items are considered the same item type
                     name = name.substring(0, name.length() - stackOfSuffixForRemoval.length());
                 }
