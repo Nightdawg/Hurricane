@@ -271,7 +271,7 @@ public class MappingClient {
 		    t.type = "white";
 		    if(gob != null) {
 			Buddy bud = gob.getattr(Buddy.class);
-			if(bud != null) {
+			if(bud != null && bud.rgrp != -1) {
 			    t.name = bud.rnm;
 			    t.type = Integer.toHexString(BuddyWnd.gc[bud.rgrp].getRGB());
 			}

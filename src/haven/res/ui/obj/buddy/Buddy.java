@@ -16,7 +16,7 @@ public class Buddy extends GAttrib implements InfoPart {
     private int bseq = -1;
     private BuddyWnd bw = null;
     public BuddyWnd.Buddy b = null;
-    public int rgrp;
+    public int rgrp = -1;
     public String rnm;
 	public String customName = null;
 	private Color customNameColor = Color.WHITE;
@@ -27,13 +27,13 @@ public class Buddy extends GAttrib implements InfoPart {
 	info = Info.add(gob, this);
     }
 
-	public Buddy(Gob gob, int id, String customName, Color customNameColor) {
+	public Buddy(Gob gob, int id, String customName, Color customNameColor, int rgrp) {
 		super(gob);
 		this.id = id;
 		info = Info.add(gob, this);
 		this.customName = customName;
 		this.customNameColor = customNameColor;
-		this.rgrp = 0;
+        this.rgrp = rgrp;
 	}
 
     public static void parse(Gob gob, Message dat) {
