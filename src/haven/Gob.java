@@ -2278,15 +2278,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void playPlayerAlarm() {
 		if (!alarmPlayed.contains(id)){
-			Composite c = getattr(Composite.class);
-			if (c == null || c.comp.cmod.isEmpty()) return;
-            if (playerGender.equals("unknown")) {
-                updPose(c.poses); // ND: Gotta force this here again, because it doesn't update on a fresh login
-                return;
-            }
 			if (getres() != null) {
 				if (isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton){
 					if (getres().name.equals("gfx/borka/body")) {
+                        Composite c = getattr(Composite.class);
+                        if (c == null || c.comp.cmod.isEmpty()) return;
+                        if (playerGender.equals("unknown")) {
+                            updPose(c.poses); // ND: Gotta force this here again, because it doesn't update on a fresh login
+                            return;
+                        }
 						Buddy buddyInfo = getattr(Buddy.class);
 						boolean isVillager = getattr(Vilmate.class) != null;
 						haven.res.ui.obj.buddy_n.Named namedInfo = getattr(haven.res.ui.obj.buddy_n.Named.class);
