@@ -817,28 +817,7 @@ public class MiniMap extends Widget {
     }
 
     private static boolean isMineSupport(Gob gob) {
-        try {
-            Resource res = gob.getres();
-            if (res == null) return false;
-            String resName = res.name;
-            return resName.equals("gfx/terobjs/map/naturalminesupport") ||
-                   resName.equals("gfx/terobjs/ladder") ||
-                   resName.equals("gfx/terobjs/minesupport") ||
-                   resName.equals("gfx/terobjs/column") ||
-                   resName.equals("gfx/terobjs/minebeam");
-        } catch (Loading l) {
-            return false;
-        }
-    }
-
-    private static int getSupportRadius(String resName) {
-        return switch (resName) {
-            case "gfx/terobjs/map/naturalminesupport" -> 92;
-            case "gfx/terobjs/ladder", "gfx/terobjs/minesupport" -> 100;
-            case "gfx/terobjs/column" -> 125;
-            case "gfx/terobjs/minebeam" -> 150;
-            default -> 0;
-        };
+        return gob.msRadSize > 0;
     }
 
     private void performMineSupportUpdate() {
@@ -857,15 +836,8 @@ public class MiniMap extends Widget {
 
         ui.sess.glob.oc.gobAction(gob -> {
             if (isMineSupport(gob)) {
-                try {
-                    Resource res = gob.getres();
-                    if (res != null) {
-                        int radius = getSupportRadius(res.name);
-                        overlay.addTilesInRadius(gob.rc, radius);
-                        mineSupportGobIds.add(gob.id);
-                    }
-                } catch (Loading ignored) {
-                }
+                overlay.addTilesInRadius(gob.rc, gob.msRadSize);
+                mineSupportGobIds.add(gob.id);
             }
         });
     }

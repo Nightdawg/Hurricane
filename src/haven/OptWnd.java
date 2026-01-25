@@ -2354,31 +2354,11 @@ public class OptWnd extends Window {
 						if (ui != null && ui.gui != null && ui.gui.map != null){
 							GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
 							ui.gui.map.enol(GroundSupportOverlay.TAG);
-							// Trigger immediate update of all support tiles
 							if (ui.sess != null && ui.sess.glob != null) {
 								ui.sess.glob.oc.gobAction(gob -> {
-									try {
-										Resource res = gob.getres();
-										if (res != null) {
-											String resName = res.name;
-											if (resName.equals("gfx/terobjs/map/naturalminesupport") ||
-												resName.equals("gfx/terobjs/ladder") ||
-												resName.equals("gfx/terobjs/minesupport") ||
-												resName.equals("gfx/terobjs/column") ||
-												resName.equals("gfx/terobjs/minebeam")) {
-
-												int radius = 0;
-												switch (resName) {
-													case "gfx/terobjs/map/naturalminesupport": radius = 92; break;
-													case "gfx/terobjs/ladder": radius = 100; break;
-													case "gfx/terobjs/minesupport": radius = 100; break;
-													case "gfx/terobjs/column": radius = 125; break;
-													case "gfx/terobjs/minebeam": radius = 150; break;
-												}
-												GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, radius);
-											}
-										}
-									} catch (Loading ignored) {}
+									if (gob.msRadSize > 0) {
+										GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+									}
 								});
 							}
 							ui.gui.msg("Ground support coverage overlay enabled!", Color.GREEN);
