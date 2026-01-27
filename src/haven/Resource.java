@@ -40,6 +40,8 @@ import java.nio.file.*;
 import javax.imageio.*;
 import java.awt.image.BufferedImage;
 
+import static haven.AlarmManager.defaultSettings;
+
 public class Resource implements Serializable {
     public static final Config.Variable<URI> resurl = Config.Variable.propu("haven.resurl", "");
     public static final Config.Variable<Path> resdir = Config.Variable.propp("haven.resdir", System.getenv("HAFEN_RESDIR"));
@@ -634,6 +636,17 @@ public class Resource implements Serializable {
 	}
 
 	public Named load(String name, int ver, int prio) {
+        if (name.startsWith("gfx/hud/")) {
+            String uiTheme =  Utils.getpref("uiThemeName", "Nightdawg Dark");
+            if (!uiTheme.equals("Nightdawg Dark")) {
+                String result = name.replaceFirst("^gfx/hud", "");
+                String finalString = "customclient/uiThemes/" + uiTheme + result;
+                File customHudFile = new File(haven.MainFrame.gameDir + "res/" + finalString +".res");
+                if(customHudFile.exists()) {
+                    name = finalString;
+                }
+            }
+        }
 	    Queued ret;
 	    synchronized(cache) {
 		Resource cur = cache.get(name);
@@ -829,18 +842,6 @@ public class Resource implements Serializable {
 	}
 
 	public Resource loadwait(String name, int ver) {
-        if (name.startsWith("gfx/hud/")) {
-            String uiTheme =  Utils.getpref("uiThemeName", "Nightdawg Dark");
-            if (!uiTheme.equals("Nightdawg Dark")) {
-                String result = name.replaceFirst("^gfx/hud", "");
-                String finalString = "customclient/uiThemes/" + uiTheme + result;
-                try {
-                    return(loadwaited(Loading.waitfor(load(finalString, ver, 10))));
-                } catch (Exception ignored){
-                    return(loadwaited(Loading.waitfor(load(name, ver, 10))));
-                }
-            }
-        }
 	    return(loadwaited(Loading.waitfor(load(name, ver, 10))));
 	}
 
