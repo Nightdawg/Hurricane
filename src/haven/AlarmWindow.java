@@ -245,7 +245,7 @@ public class AlarmWindow extends Window {
 			int row = ev.c.y / rowHeight + sb.val;
 			if(row >= items.size())
 				return super.mousedown(ev);
-			if(items.get(row).mousedown(new MouseDownEvent(ev.c.sub(UI.scale(15), ev.c.y / rowHeight * rowHeight), ev.b)))
+			if(items.get(row).mousedown(new MouseDownEvent(ev.c.sub(0, ev.c.y / rowHeight * rowHeight), ev.b)))
 				return true;
 			return super.mousedown(ev);
 		}
@@ -255,7 +255,7 @@ public class AlarmWindow extends Window {
 			int row = ev.c.y / rowHeight + sb.val;
 			if(row >= items.size())
 				return super.mouseup(ev);
-			if(items.get(row).mouseup(new MouseUpEvent(ev.c.sub(UI.scale(15), ev.c.y / rowHeight * rowHeight), ev.b)))
+			if(items.get(row).mouseup(new MouseUpEvent(ev.c.sub(0, ev.c.y / rowHeight * rowHeight), ev.b)))
 				return true;
 			return super.mouseup(ev);
 		}
@@ -266,7 +266,7 @@ public class AlarmWindow extends Window {
 			for(int i=0; i<rows; i++) {
 				if(i+sb.val >= items.size())
 					break;
-				GOut ig = g.reclip(new Coord(UI.scale(15), i*rowHeight), UI.scale(w-UI.scale(15), rowHeight));
+				GOut ig = g.reclip(new Coord(0, i*rowHeight), UI.scale(w, rowHeight));
 				items.get(i+sb.val).draw(ig);
 			}
 			super.draw(g);
@@ -300,7 +300,7 @@ public class AlarmWindow extends Window {
 					AlarmManager.save();
 					super.changed(val);
 				}
-			}, UI.scale(10,2));
+			}, UI.scale(27,6));
 			this.alarmName = new TextEntry(UI.scale(120), alarmName){
 				@Override
 				protected void changed() {
@@ -430,13 +430,13 @@ public class AlarmWindow extends Window {
 			super.draw(g);
 		}
 
-		@Override
-		public void mousemove(MouseMoveEvent ev) {
-			if(ev.c.x > 470)
-				super.mousemove(new MouseMoveEvent(ev.c.sub(UI.scale(15), 0)));
-			else
-				super.mousemove(ev);
-		}
+//		@Override
+//		public void mousemove(MouseMoveEvent ev) {
+//			if(ev.c.x > 470)
+//				super.mousemove(new MouseMoveEvent(ev.c.sub(UI.scale(15), 0)));
+//			else
+//				super.mousemove(ev);
+//		}
 
 		@Override
 		public boolean mousedown(MouseDownEvent ev) {
