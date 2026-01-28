@@ -12,7 +12,7 @@ gfx/kritter/goldeneagle/goldeneagle;true;Golden Eagle;ND_Eagle;50;false
 gfx/kritter/lynx/lynx;true;Lynx;ND_Lynx;50;false
 gfx/kritter/mammoth/mammoth;true;Mammoth;ND_Mammoth;50;false
 gfx/kritter/moose/moose;true;Moose;ND_Moose;50;false
-gfx/kritter/narwhal/narwhal;true;Narwhal;ND_Narwhal;20;false
+gfx/kritter/narwhal/narwhal;true;Narwhal;ND_Narwhal;10;false
 gfx/kritter/nidbane/nidbane;true;Nidbane;ND_Nidbane;60;false
 gfx/kritter/orca/orca;true;Orca;ND_Orca;20;false
 gfx/kritter/troll/troll;true;Troll;ND_Troll;50;false
