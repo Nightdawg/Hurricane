@@ -20,6 +20,7 @@ public class StackAllItems implements Runnable {
 
     @Override
     public void run() {
+        // TODO: ND: Gotta make this crap ignore "quantity" items, like Seeds, Flour, Coins, etc.
         try {
             if (gui.vhand != null) {
                 gui.error("Can't stack items with an occupied cursor!");
@@ -72,14 +73,10 @@ public class StackAllItems implements Runnable {
                 //now stack lowest on top of nextlowest
                 lowestStack.item.wdgmsg("take", Coord.z);
                 nextLowest.item.wdgmsg("itemact", 3);
-                Thread.sleep(10);
-            }
-            Integer ping = GameUI.getPingValue();
-            Thread.sleep(ping != null ? ping : 50);
-            if (gui.vhand != null) { //if gui hand is not null, then we have to place it back into inventory
-                int xsize = gui.vhand.sz.x / Inventory.sqsz.x;
-                int ysize = gui.vhand.sz.y / Inventory.sqsz.y;
+                int xsize = lowestStack.sz.x / Inventory.sqsz.x;
+                int ysize = lowestStack.sz.y / Inventory.sqsz.y;
                 inventory.wdgmsg("drop", inventory.isRoom(xsize, ysize));
+                Thread.sleep(10);
             }
         } catch (InterruptedException e) {
             gui.error("Stack items script interrupted");
