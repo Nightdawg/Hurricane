@@ -32,6 +32,9 @@ public class LandSurvey extends Window {
 	Widget prev = add(new Label(String.format("Area: %d m\u00b2", area.area())), 0, 0);
 	add(lockSurveyPointsCheckBox = new CheckBox("Lock Survey Points"){
 		{a = Utils.getprefb("lockSurveyPoints", false);}
+        public void changed(boolean val) {
+            Utils.setprefb("lockSurveyPoints", val);
+        }
 	}, UI.scale(136, 0));
 	zdlbl = add(new Label("..."), prev.pos("bl").adds(0, 1));
 	wlbl = add(new Label("..."), zdlbl.pos("bl").adds(0, 1));
