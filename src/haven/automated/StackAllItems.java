@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static haven.Inventory.sqsz;
+
 public class StackAllItems implements Runnable {
     private GameUI gui;
     private final Inventory inventory;
@@ -73,9 +75,7 @@ public class StackAllItems implements Runnable {
                 //now stack lowest on top of nextlowest
                 lowestStack.item.wdgmsg("take", Coord.z);
                 nextLowest.item.wdgmsg("itemact", 3);
-                int xsize = lowestStack.sz.x / Inventory.sqsz.x;
-                int ysize = lowestStack.sz.y / Inventory.sqsz.y;
-                inventory.wdgmsg("drop", inventory.isRoom(xsize, ysize));
+                inventory.wdgmsg("drop", new Coord (lowestStack.c.x/sqsz.x, lowestStack.c.y/sqsz.y));
                 Thread.sleep(10);
             }
         } catch (InterruptedException e) {
