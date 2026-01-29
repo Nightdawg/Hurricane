@@ -466,7 +466,7 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	new Button(sbw2, "Group" ).action(() -> { setcmp(groupcmp); }),
 	new Button(sbw2, "Name"  ).action(() -> { setcmp(alphacmp); })
 	      );
-	String sort = Utils.getpref("buddysort", "");
+	String sort = Utils.getpref("buddysort", "status");
 	if(sort.equals("")) {
 	    bcmp = statuscmp;
 	} else {
