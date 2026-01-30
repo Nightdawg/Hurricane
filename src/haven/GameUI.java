@@ -514,7 +514,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	questhelper = new QuestHelper();
 	questhelper.hide();
 	add(questhelper, Utils.getprefc("wndc-autoDropManagerWindow", UI.unscale(new Coord(187, 50))));
-	quickslots = add(new QuickSlotsWdg(), Utils.getprefc("wndc-quickslots", UI.scale(new Coord(426, 10))));
+	quickslots = add(new QuickSlotsWdg(), Utils.getprefc("wndc-quickslots", UI.scale(new Coord(247, 43))));
 	if (!OptWnd.showQuickSlotsCheckBox.a) {
 		quickslots.hide();
 	}
