@@ -94,27 +94,10 @@ public class GobDamageInfo extends GobInfo {
         return gobDamage.containsKey(gob.id);
     }
 
-    private static void clearDamage(Gob gob, long id) {
-        if(gob != null) {
-            gob.clearDmg();
-        }
-        gobDamage.remove(id);
-    }
-
-    public static void clearPlayerDamage(GameUI gui) {
-        clearDamage(gui.ui.sess.glob.oc.getgob(gui.plid), gui.plid);
-    }
-
     public static void clearAllDamage(GameUI gui) {
-        try {
-            ArrayList<Long> gobIds = new ArrayList<>(gobDamage.keySet());
-            for (Long id : gobIds) {
-                if (id == null) {
-                    continue;
-                }
-                clearDamage(gui.ui.sess.glob.oc.getgob(id), id);
-            }
-        } catch (ArrayIndexOutOfBoundsException ignored){}
+        if (gui != null)
+            gui.ui.sess.glob.oc.gobAction(Gob::clearDmg);
+        gobDamage.clear();
     }
 
     private static class DamageVO {
