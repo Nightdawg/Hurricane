@@ -92,6 +92,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private Overlay skyboxOverlay;
 	public static Boolean batWingCapeEquipped = false; // ND: Check for Bat Wing Cape
 	public static Boolean nightQueenDefeated = false; // ND: Check for Bat Dungeon Experience (Defeated Bat Queen)
+    public static Boolean caveHermitAcquired = false; // ND: Check for Cave Hermit Credo
 	public String playerGender = "unknown";
 	public Boolean isDeadPlayer = false;
 	public int playerPoseUpdatedCounter = 0;
@@ -2013,7 +2014,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						} else {
 							setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
 						}
-					} else {
+					} else if (resourceName.endsWith("/troll")) {
+                        if (caveHermitAcquired) {
+                            setRadiusOverlay(false, null, 0f);
+                        } else {
+                            setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
+                        }
+                    } else {
 						setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
 					}
 				}

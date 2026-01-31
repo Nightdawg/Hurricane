@@ -201,6 +201,7 @@ public class LoginScreen extends Widget {
 	MenuGrid.loginTogglesNeedUpdate = true;
 	Gob.batWingCapeEquipped = false;
 	Gob.nightQueenDefeated = false;
+    Gob.caveHermitAcquired = false;
 	Gob.alarmPlayed.clear();
 	updateWindow = new Window(Coord.z, "Update Available!", true) {
 		{

@@ -67,6 +67,7 @@ public class Charlist extends Widget {
 	resize(new Coord(bsz.x, sad.c.y + sad.sz.y));
 	Gob.batWingCapeEquipped = false;
 	Gob.nightQueenDefeated = false;
+    Gob.caveHermitAcquired = false;
 	Gob.alarmPlayed.clear();
 	GameUI.stopAllThemes();
     Config.setPlayerName(null);

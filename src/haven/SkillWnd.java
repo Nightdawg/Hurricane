@@ -353,6 +353,12 @@ public class SkillWnd extends Widget {
 	public void ccr(List<Credo> cr) {
 	    this.ccr = cr;
 	    loading = true;
+        for (Credo c : cr) {
+            if (c.nm.equals("cavehermit")){
+                Gob.caveHermitAcquired = true;
+                break;
+            }
+        }
 	}
 
 	public boolean mousedown(MouseDownEvent ev) {
