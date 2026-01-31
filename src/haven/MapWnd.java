@@ -847,29 +847,30 @@ public class MapWnd extends Window implements Console.Directory {
 
 	public void fixAndSavePos(boolean compact) { // ND: Replaces preventDraggingOutside() and preventResizingOutside() from Window
         Coord guiSize = ui.gui.sz;
-        Coord windowSize = this.csz();
+        Coord windowcsz = this.csz();
+        Coord windowsz = this.sz;
         if (compact) {
 			// ND: This prevents us from resizing it larger than the game window size
-			if(windowSize.x > ui.gui.sz.x){ this.resize(ui.gui.sz.x, windowSize.y); windowSize = this.csz();}
-			if(windowSize.y > ui.gui.sz.y){ this.resize(windowSize.x, ui.gui.sz.y); windowSize = this.csz();}
+			if(windowcsz.x > ui.gui.sz.x){ this.resize(ui.gui.sz.x, windowcsz.y); windowcsz = this.csz();}
+			if(windowcsz.y > ui.gui.sz.y){ this.resize(windowcsz.x, ui.gui.sz.y); windowcsz = this.csz();}
 			// ND: This prevents us from dragging it outside at all
 			if (this.c.x < 0) this.c.x = 0;
 			if (this.c.y < 0) this.c.y = 0;
-			if (this.c.x > (ui.gui.sz.x - windowSize.x)) this.c.x = ui.gui.sz.x - windowSize.x;
-			if (this.c.y > (ui.gui.sz.y - windowSize.y)) this.c.y = ui.gui.sz.y - windowSize.y;
+			if (this.c.x > (ui.gui.sz.x - windowcsz.x)) this.c.x = ui.gui.sz.x - windowcsz.x;
+			if (this.c.y > (ui.gui.sz.y - windowcsz.y)) this.c.y = ui.gui.sz.y - windowcsz.y;
 			smallmapc = this.c;
 			smallmapsz = this.csz();
 			Utils.setprefc("smallmapc", smallmapc);
 			Utils.setprefc("smallmapsz", smallmapsz);
 		} else {
 			// ND: This prevents us from resizing it larger than the game window size
-            if(windowSize.x > guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x)) {this.resize(guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x), windowSize.y - dragResizeDiff.y); windowSize = this.sz;}
-            if(windowSize.y > guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)) {this.resize(windowSize.x - dragResizeDiff.x, guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)); windowSize = this.sz;}
+            if(windowcsz.x > guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x)) {this.resize(guiSize.x - (dragResizeDiff.x - guiTopLeftCornerDiff.x - windowBottomRightCornerDiff.x), windowcsz.y - dragResizeDiff.y); windowcsz = this.sz;}
+            if(windowcsz.y > guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)) {this.resize(windowcsz.x - dragResizeDiff.x, guiSize.y - (dragResizeDiff.y - guiTopLeftCornerDiff.y - windowBottomRightCornerDiff.y)); windowcsz = this.sz;}
 			// ND: This prevents us from dragging it outside at all
             if (this.c.x < - guiTopLeftCornerDiff.x) this.c.x = - guiTopLeftCornerDiff.x;
             if (this.c.y < - guiTopLeftCornerDiff.y) this.c.y = - guiTopLeftCornerDiff.y;
-            if (this.c.x > (guiSize.x - windowSize.x + windowBottomRightCornerDiff.x)) this.c.x = guiSize.x - windowSize.x + windowBottomRightCornerDiff.x;
-            if (this.c.y > (guiSize.y - windowSize.y + windowBottomRightCornerDiff.y)) this.c.y = guiSize.y - windowSize.y + windowBottomRightCornerDiff.y;
+            if (this.c.x > (guiSize.x - windowsz.x + windowBottomRightCornerDiff.x)) this.c.x = guiSize.x - windowsz.x + windowBottomRightCornerDiff.x;
+            if (this.c.y > (guiSize.y - windowsz.y + windowBottomRightCornerDiff.y)) this.c.y = guiSize.y - windowsz.y + windowBottomRightCornerDiff.y;
 			bigmapc = this.c;
 			bigmapsz = this.csz();
 			Utils.setprefc("bigmapc", bigmapc);
