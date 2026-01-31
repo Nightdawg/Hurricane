@@ -2992,6 +2992,7 @@ public class OptWnd extends Window {
 	    y = cont.adda(new Label("Main menu"), cont.sz.x / 2, y, 0.5, 0.0).pos("bl").adds(0, 5).y;
 	    y = addbtn(cont, "Inventory", GameUI.kb_inv, y);
 	    y = addbtn(cont, "Equipment", GameUI.kb_equ, y);
+        y = addbtn(cont, "Belt", GameUI.kb_blt, y);
 	    y = addbtn(cont, "Character sheet", GameUI.kb_chr, y);
 	    y = addbtn(cont, "Map window", GameUI.kb_map, y);
 	    y = addbtn(cont, "Kith & Kin", GameUI.kb_bud, y);

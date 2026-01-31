@@ -1910,6 +1910,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
     public static KeyBinding kb_autoCombatDistance  = KeyBinding.get("AutoCombatDistanceKB",  KeyMatch.forchar('K', 0));
     public static KeyBinding kb_nearestTarget =  KeyBinding.get("nearestTarget", KeyMatch.forcode(KeyEvent.VK_SPACE, 0));
+    public static KeyBinding kb_blt = KeyBinding.get("blt", KeyMatch.forchar('R', KeyMatch.M));
+
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
 	    entercmd();
@@ -2135,6 +2137,15 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
             fv.targetNearestFoe();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        return(true);
+    } else if(kb_blt.key().match(ev)) {
+        Equipory e = getequipory();
+        if (e != null){
+            WItem wItem = e.slots[5];
+            if (wItem != null) {
+                wItem.mousedown(new MouseDownEvent(new Coord(wItem.sz.x / 2, wItem.sz.y / 2), 3));
+            }
         }
         return(true);
     } else if((ev.c == 27) && (map != null) && !map.hasfocus) {
