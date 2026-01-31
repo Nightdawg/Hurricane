@@ -471,6 +471,7 @@ public class MapWnd extends Window implements Console.Directory {
 		public void tick(double dt) {
 			super.tick(dt);
 			highlighterDynamicAlpha = Math.sin(Math.PI * ((System.currentTimeMillis() % 1000) / 1000.0));
+            handleMineSupportOverlays();
 		}
 
     }

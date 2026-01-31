@@ -893,13 +893,16 @@ public class MiniMap extends Widget {
         mineSupportGobIds.clear();
     }
 
+    public void handleMineSupportOverlays() {
+        setupMineSupportCallback();
+        processMineSupportUpdates();
+        updateMineSupportOverlays();
+    }
+
     public void drawparts(GOut g){
 	drawmap(g);
 	drawmarkers(g);
 	drawmovequeue(g);
-	setupMineSupportCallback();
-	processMineSupportUpdates();
-	updateMineSupportOverlays();
 	if(showMapViewRange) {drawview(g);}
 	if(showMapGridLines && dlvl <= 6) {drawgridlines(g);}
 	if(dlvl <= 3)
