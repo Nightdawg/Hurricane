@@ -138,10 +138,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	static public final Resource feastingThemeLegacy = Resource.local().loadwait("customclient/sfx/feastingtheme_legacy");
 	static public Audio.CS feastingThemeClip = null;
 	public StatusWdg statusWdg = null;
-	private Tex myHealthBarTex = null;
-	private String myLastHealthBarText = "";
-	private Tex myStaminaBarTex = null;
-	private String myLastStaminaBarText = "";
+    public Tex myHealthBarTex = null;
+    public String myLastHealthBarText = "";
+    public Tex myStaminaBarTex = null;
+	public String myLastStaminaBarText = "";
     private static final Tex mapperWarning = PUtils.strokeTex(Text.renderstroked("You need to relog for the Webmap Integration to send data!", Color.RED, Color.BLACK, Text.num12boldFnd));
     private static final Tex mapperWarning2 = PUtils.strokeTex(Text.renderstroked("(This happens on newly created characters, or if you changed your endpoint)", Color.RED, Color.BLACK, Text.num12boldFnd));
     public static float gameTimeSpeedMultiplier = 3.29f;
@@ -149,6 +149,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
         put("b7c199a4557503a8", 4.93f); // W16.1
         put("c646473983afec09", 3.29f); // W16
     }};
+    private Widget combatBarsWdg;
 
 	// Script Threads
 	public Thread autoRepeatFlowerMenuScriptThread;
@@ -539,6 +540,30 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 
     Float timeSpeed = GAMETIME_SPEEDS.get(genus);
     gameTimeSpeedMultiplier = timeSpeed != null ? timeSpeed : 3.29f;
+    add(combatBarsWdg = new Widget(){
+        @Override
+        public void draw(GOut g) {
+            int x = (int) (GameUI.this.sz.x / 2.0);
+            int y = (int) (GameUI.this.sz.y - ((GameUI.this.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
+            int bottom = (int) (GameUI.this.sz.y - ((GameUI.this.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+            if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
+                IMeter.Meter stam = getmeter("stam", 0);
+                if (stam != null) {
+                    Coord msz = UI.scale(new Coord(234, 22));
+                    Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x / 2, y + UI.scale(70)) : new Coord(x - msz.x / 2, bottom - UI.scale(68));
+                    drawStamMeterBar(g, stam, sc, msz);
+                }
+            }
+            if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
+                IMeter.Meter hp = getmeter("hp", 0);
+                if (hp != null) {
+                    Coord msz = UI.scale(new Coord(234, 22));
+                    Coord sc = new Coord(x - msz.x / 2, y + UI.scale(44));
+                    drawHealthMeterBar(g, hp, sc, msz);
+                }
+            }
+        }
+    });
     }
 
     protected void attached() {
@@ -1453,25 +1478,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    chat.drawsmall(g, new Coord(chatWnd.c.x + UI.scale(10), by), UI.scale(100));
 	}
 
-	int x = (int)(this.sz.x / 2.0);
-	int y = (int)(this.sz.y - ((this.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
-	int bottom = (int)(this.sz.y - ((this.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
-	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
-		IMeter.Meter stam = getmeter("stam", 0);
-		if (stam != null) {
-			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
-			drawStamMeterBar(g, stam, sc, msz);
-		}
-	}
-	if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
-		IMeter.Meter hp = getmeter("hp", 0);
-		if (hp != null) {
-			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
-			drawHealthMeterBar(g, hp, sc, msz);
-		}
-	}
     if (statusWdg != null && !OptWnd.webmapEndpointTextEntry.text().isEmpty() && !MappingClient.initialized()) {
         g.image(mapperWarning, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y));
         g.image(mapperWarning2, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning2.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y + mapperWarning2.sz().y));
@@ -2206,6 +2212,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 				wnd.preventDraggingOutside();
 			}
 		}
+    combatBarsWdg.resize(sz);
     }
     
     public void presize() {
