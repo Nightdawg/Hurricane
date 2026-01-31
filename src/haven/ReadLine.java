@@ -328,6 +328,15 @@ public interface ReadLine {
 		    clipset(java.awt.Toolkit.getDefaultToolkit().getSystemClipboard());
 		else
 		    return(false);
+        } else if((c == 'x') && (mod == C)) { // ND: Used to cut text
+        if(mark >= 0) {
+            clipset(java.awt.Toolkit.getDefaultToolkit().getSystemClipboard());
+            rmsel();
+        } else
+            return(false);
+        } else if((c == 'a') && (mod == C)) {
+            mark = 0;
+            point = length;
 	    } else {
 		return(false);
 	    }
