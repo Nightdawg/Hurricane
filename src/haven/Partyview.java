@@ -177,8 +177,16 @@ public class Partyview extends Widget {
 	    for(int a = 0; a < args.length; a++) {
 		long id = Utils.uiv(args[a]);
 		Member m = cmemb.get(id);
-		if(m == null)
-		    m = party.new Member(id);
+		if(m == null) {
+            m = party.new Member(id);
+            if (party.leader != null && party.leader.gobid == ui.gui.map.plgob) {
+                Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
+                if (chats.get("Party") != null) {
+                    chats.get("Party").send(party.encodeMarkerListMessage());
+                }
+            }
+
+        }
 		nmemb.put(id, m);
 	    }
 	    party.memb = nmemb;

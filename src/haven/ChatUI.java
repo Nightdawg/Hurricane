@@ -1078,9 +1078,15 @@ public class ChatUI extends Widget {
 				}
 			}
 			catch (NumberFormatException ignored) {}
-		} else if (name.equals("Party") && Party.isTargetMarkerMessage(msg)) {
-            ui.sess.glob.party.handleMarkerMessage(msg);
-            return false;
+		} else if (name.equals("Party")) {
+            if (Party.isTargetMarkerMessage(msg)) {
+                ui.sess.glob.party.handleMarkerMessage(msg);
+                return false;
+            } else if (Party.isTargetMarkerListMessage(msg)) {
+                ui.sess.glob.party.handleMarkerListMessage(msg);
+                return false;
+            }
+
         }
 		return true;
 	}

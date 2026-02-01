@@ -179,4 +179,28 @@ public class Party {
         return message;
     }
 
+    // Detects a marker-list message. Format: "L:<payload>" where <payload> matches the existing targetMarkerPattern.
+    // Example payload: "1,1:123422,2:-1,3:-1,4:-1,5:-1"
+    public static boolean isTargetMarkerListMessage(String message) {
+        if (message == null) return false;
+        if (!message.startsWith("L:")) return false;
+        String payload = message.substring(2);
+        return targetMarkerPattern.matcher(payload).matches();
+    }
+
+    // Handles a marker-list message prefixed with "L:". This delegates to the existing handleMarkerMessage
+    // after stripping the "L:" prefix so the same decode logic and visual updates are reused.
+    public void handleMarkerListMessage(String message) {
+        if (message == null) return;
+        if (!isTargetMarkerListMessage(message)) return;
+        String payload = message.substring(2);
+        handleMarkerMessage(payload);
+    }
+
+    // Convenience: encode the current targetMarkers map and nextMark into the list message format used above.
+    // Callers can send the returned String via party chat so new members receive the whole map.
+    public String encodeMarkerListMessage() {
+        return "L:" + encodeMessage(this.targetMarkers, this.nextMark);
+    }
+
 }
