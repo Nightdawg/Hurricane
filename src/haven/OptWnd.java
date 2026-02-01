@@ -920,7 +920,7 @@ public class OptWnd extends Window {
 
 		Widget rightColumn;
         rightColumn = add(new Label("UI Theme (Req. Restart):"), UI.scale(230, 2));
-        List<String> uiThemes = Arrays.asList("Nightdawg Dark", "Trollex Red", "Custom Theme");
+        List<String> uiThemes = Arrays.asList("Nightdawg Dark", "Trollex Red", "Trollex Blue", "Custom Theme");
         Widget uiThemesWdg = add(new OldDropBox<String>(uiThemes.size(), uiThemes) {
             {
                 super.change(uiThemes.get(Utils.getprefi("uiThemeDropBox", 0)));
