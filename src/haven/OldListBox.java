@@ -102,7 +102,7 @@ public abstract class OldListBox<T> extends OldListWidget<T> {
 	T item = (idx >= listitems()) ? null : listitem(idx);
         if((item == null) && (ev.b == 1))
             change(null);
-        else if(item != null) {
+        else if(item != null && ev.c.x < sb.c.x) {
             if(item instanceof Widget) {
                 Widget wdg = (Widget) item;
                 if(wdg.visible) {
