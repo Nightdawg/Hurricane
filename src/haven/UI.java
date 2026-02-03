@@ -880,6 +880,8 @@ public class UI {
 	setmods(ev);
 	mc = c;
 	dispatch(root, new Widget.MouseUpEvent(c, button));
+	if (button == 1)
+		MapView.holdingLeftClick = false; // ND: Need to do this here in case mouseup is outside of MapView (when mousing over UI elements)
     }
 	
     public void mousemove(MouseEvent ev, Coord c) {

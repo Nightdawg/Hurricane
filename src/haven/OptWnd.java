@@ -3439,6 +3439,7 @@ public class OptWnd extends Window {
 	public static CheckBox useImprovedInventoryTransferControlsCheckBox;
 	public static CheckBox tileCenteringCheckBox;
 	public static CheckBox clickThroughContainerDecalCheckBox;
+	public static CheckBox continuousWalkingCheckBox;
 
 	public class AlteredGameplaySettingsPanel extends Panel {
 
@@ -3533,6 +3534,13 @@ public class OptWnd extends Window {
 				{a = Utils.getprefb("clickThroughContainerDecal", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("clickThroughContainerDecal", val);
+				}
+			}, prev.pos("bl").adds(0, 12));
+
+			prev = add(continuousWalkingCheckBox = new CheckBox("Continuous Walking when holding down Left Click"){
+				{a = Utils.getprefb("continuousWalking", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("continuousWalking", val);
 				}
 			}, prev.pos("bl").adds(0, 12));
 

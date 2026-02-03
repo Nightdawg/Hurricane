@@ -77,6 +77,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	public boolean areaSelect = false;
 	public Coord currentCursorLocation;
 	public Coord3f gobPathLastClick;
+	public static boolean holdingLeftClick = false;
+	long lastContinuousClick = System.currentTimeMillis();
 
     public interface Delayed {
 	public void run(GOut g);
@@ -1899,6 +1901,27 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		ob.ctick(dt);
 	    }
 	}
+
+	if (OptWnd.continuousWalkingCheckBox.a && holdingLeftClick) {
+		long now = System.currentTimeMillis();
+		if ((now - lastContinuousClick) > 100) {
+			lastContinuousClick = System.currentTimeMillis();
+			if (currentCursorLocation.x >= 0 && currentCursorLocation.y >= 0 && currentCursorLocation.x < ui.gui.sz.x && currentCursorLocation.y < ui.gui.sz.y
+					&& !ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper){
+				new Click(currentCursorLocation, 1).run();
+
+				// ND: I think this Hittest stuff is the same as the Click one above?
+				// I'll leave it commented for future reference I guess.
+
+//				new Hittest(currentCursorLocation) {
+//					@Override
+//					protected void hit(Coord pc, Coord2d mc, ClickData inf) {
+//						wdgmsg("click", currentCursorLocation, mc.floor(posres), 1, 0);
+//					}
+//				}.run();
+			}
+		}
+	}
     }
     
     public void resize(Coord sz) {
@@ -2334,6 +2357,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		}
 	} else if((grab != null) && grab.mmousedown(ev.c, ev.b)) {
 	} else {
+		if (ev.b == 1 && !ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper)
+			holdingLeftClick = true;
 	    new Click(ev.c, ev.b).run();
 	}
 	return(true);
@@ -2488,6 +2513,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	} else if(grab != null) {
 	    grab.mmouseup(ev.c, ev.b);
 	}
+	if (ev.b == 1)
+		holdingLeftClick = false;
 	return(true);
     }
 
