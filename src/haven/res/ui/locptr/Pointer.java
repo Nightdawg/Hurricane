@@ -19,6 +19,9 @@ public class Pointer extends Widget {
 	private Text.Line tt = null;
 	private int dist;
 
+	private Tex cachedDistText = null;
+	private int cachedDist = -1;
+
     public Pointer(Indir<Resource> icon) {
 	super(Coord.z);
 	this.icon = icon;
@@ -75,7 +78,17 @@ public class Pointer extends Widget {
 		if(licon == null)
 		    licon = icon.get().layer(Resource.imgc).tex();
 		g.aimage(licon, sc.add(ad), 0.5, 0.5);
-		g.aimage(Text.renderstroked(dist + "", Color.WHITE, Color.BLACK, Text.num12boldFnd).tex(), sc.add(ad), 0.5, 0.5);
+		if (cachedDist != dist) {
+		    if (cachedDistText != null) {
+		        cachedDistText.dispose();
+		    }
+		    cachedDistText = Text.renderstroked(dist + "", Color.WHITE, Color.BLACK, Text.num12boldFnd).tex();
+		    cachedDist = dist;
+		}
+
+		if (cachedDistText != null) {
+		    g.aimage(cachedDistText, sc.add(ad), 0.5, 0.5);
+		}
 	    } catch(Loading l) {
 	    }
 	}
