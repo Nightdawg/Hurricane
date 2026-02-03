@@ -34,6 +34,7 @@ public class KeyBinding {
     public final KeyMatch defkey;
     public final int modign;
     public KeyMatch key;
+    private static final List<Runnable> changeListeners = new ArrayList<>();
 
     private KeyBinding(String id, KeyMatch defkey, int modign) {
 	this.id = id;
@@ -44,6 +45,22 @@ public class KeyBinding {
     public void set(KeyMatch key) {
 	Utils.setpref("keybind/" + id, KeyMatch.reduce(key));
 	this.key = key;
+	// Notify listeners that keybinding changed
+	synchronized(changeListeners) {
+	    for(Runnable listener : changeListeners) {
+		try {
+		    listener.run();
+		} catch(Exception e) {
+		    e.printStackTrace();
+		}
+	    }
+	}
+    }
+
+    public static void addChangeListener(Runnable listener) {
+	synchronized(changeListeners) {
+	    changeListeners.add(listener);
+	}
     }
 
     public boolean set() {

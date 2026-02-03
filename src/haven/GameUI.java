@@ -2568,6 +2568,15 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		private Coord dc;
 		private final String horizontalSettingName;
 
+		//cache
+		private Tex[] cachedKeybindTextures = null;
+		private Coord[] cachedSlotCoords = null;
+		private int lastCurbelt = -1;
+
+		public void invalidateKeybindCache() {
+			cachedKeybindTextures = null;
+		}
+
 		public ActionBar(KeyBinding[] keybindings, int beltNumber, String horizontalSettingName) {
 			super(UI.scale(Utils.getprefb(horizontalSettingName, true) ? new Coord(360, 37) : new Coord(37, 360)));
 			isHorizontal = Utils.getprefb(horizontalSettingName, true);
@@ -2635,22 +2644,42 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 
 		public void draw(GOut g) {
-			if (showUI) {
-				for (int i = 0; i < 10; i++) {
-					int slot = i + (curbelt * 12);
-					Coord c = beltc(i);
-					g.image(invsq, beltc(i));
-					try {
-						if (belt[slot] != null) {
-							belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
-						}
-					} catch (Exception ignored) {
-					}
-					String keybindString = beltkeys[i].key().name();
-					g.aimage(new TexI(Utils.outline2(actBarKeybindsFoundry.render(keybindString).img, Color.BLACK, true)), c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1);
-				}
-				super.draw(g);
+			if (!visible || !showUI) {
+				return;
 			}
+
+			if (cachedKeybindTextures == null || cachedSlotCoords == null || lastCurbelt != curbelt) {
+				if (cachedKeybindTextures == null) {
+					cachedKeybindTextures = new Tex[10];
+					for (int i = 0; i < 10; i++) {
+						String keybindString = beltkeys[i].key().name();
+						BufferedImage keybindImg = actBarKeybindsFoundry.render(keybindString).img;
+						BufferedImage outlinedImg = Utils.outline2(keybindImg, Color.BLACK, true);
+						cachedKeybindTextures[i] = new TexI(outlinedImg);
+					}
+				}
+
+				cachedSlotCoords = new Coord[10];
+				for (int i = 0; i < 10; i++) {
+					cachedSlotCoords[i] = beltc(i);
+				}
+				lastCurbelt = curbelt;
+			}
+
+			for (int i = 0; i < 10; i++) {
+				int slot = i + (curbelt * 12);
+				Coord c = cachedSlotCoords[i];
+				g.image(invsq, c);
+				try {
+					if (belt[slot] != null) {
+						belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
+					}
+				} catch (Exception ignored) {
+				}
+				g.aimage(cachedKeybindTextures[i], c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1);
+			}
+
+			super.draw(g);
 		}
 
 		public boolean globtype(GlobKeyEvent ev) {
@@ -2797,6 +2826,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			isHorizontal = horizontal;
 			Utils.setprefb(horizontalSettingName, horizontal);
 			checkIfOutsideOfUI();
+			// Invalidate coordinate cache since orientation changed
+			cachedSlotCoords = null;
 		}
 
 		private MenuGrid.PagButton curttp = null;
@@ -2923,6 +2954,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
             actionBar5.hide();
         if (!Utils.getprefb("showActionBar6", false))
             actionBar6.hide();
+
+        // Register listener to invalidate ActionBar keybind caches when keybindings change
+        KeyBinding.addChangeListener(() -> {
+            if(actionBar1 != null) actionBar1.invalidateKeybindCache();
+            if(actionBar2 != null) actionBar2.invalidateKeybindCache();
+            if(actionBar3 != null) actionBar3.invalidateKeybindCache();
+            if(actionBar4 != null) actionBar4.invalidateKeybindCache();
+            if(actionBar5 != null) actionBar5.invalidateKeybindCache();
+            if(actionBar6 != null) actionBar6.invalidateKeybindCache();
+        });
 	}
 
 	public List<WItem> getAllContentsWindows() {
