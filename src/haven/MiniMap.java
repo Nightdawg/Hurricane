@@ -85,7 +85,6 @@ public class MiniMap extends Widget {
 	private Tex biometex;
     public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
-	public static boolean highlightMapTiles = Utils.getprefb("highlightMapTiles", false);
 	private final List<MapSprite> mapSprites = new LinkedList<>();
 	private Coord2d lastMineSupportUpdatePos = null;
 	private static final double MINE_SUPPORT_UPDATE_THRESHOLD = 11.0 * 5; // 5 tiles, same as fog of war

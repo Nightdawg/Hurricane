@@ -252,7 +252,7 @@ public class TileHighlight {
 	    all.addAll(items);
 	}
 	all.sort(Comparator.comparing(item -> item.name));
-	gui.mapfile.toggleol(TileHighlight.TAG, MiniMap.highlightMapTiles);
+	gui.mapfile.toggleol(TileHighlight.TAG, true);
 	initialized = true;
     }
     

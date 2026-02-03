@@ -131,16 +131,11 @@ public class MapWnd extends Window implements Console.Directory {
 		})
 		.settip("Show Grid Lines");
 	toolbarTop.add(new ICheckBox("gfx/hud/mmap/maphighlight", "", "-d", "-h", "-dh"), UI.scale(new Coord(25, 0)))
-		.state(() -> MiniMap.highlightMapTiles)
+		.state(() -> ui.gui.tileHighlight.visible())
 		.click(() -> {
-			Utils.setprefb("highlightMapTiles", !MiniMap.highlightMapTiles);
-			toggleol(TileHighlight.TAG, !MiniMap.highlightMapTiles);
-			MiniMap.highlightMapTiles = !MiniMap.highlightMapTiles;
-		})
-		.rclick(() -> {
 			TileHighlight.toggle(ui.gui);
 		})
-		.settip("Highlight Map Tiles\n\nLeft-click to toggle Tile Highlighting\nRight-click to open Highlight Settings", true);
+		.settip("Highlight Map Tiles", true);
 	toolbarTop.c = new Coord(UI.scale(2), UI.scale(2));
 	toolbarTop.pack();
 	toolbar = add(new Widget(Coord.z));
