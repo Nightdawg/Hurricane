@@ -65,6 +65,26 @@ public class Fightsess extends Widget {
 	public static final Text.Foundry keybindsFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 14);
 	public static final Text.Foundry damageFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 11);
 
+	private static final Map<String, Tex> keybindTexCache = new HashMap<>();
+	private static final Map<String, Tex> damagePredictionTexCache = new HashMap<>();
+	private static final Tex[] openingValueTexCache = new Tex[101];
+	private static final Map<Integer, Tex> ipTexCache = new HashMap<>();
+	private static final Map<Integer, Tex> oipTexCache = new HashMap<>();
+	private static final LinkedHashMap<String, Tex> timerTexCache = new LinkedHashMap<String, Tex>(100, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<String, Tex> eldest) {
+			return size() > 50;
+		}
+	};
+	private static final LinkedHashMap<String, Tex> agilityTexCache = new LinkedHashMap<String, Tex>(50, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<String, Tex> eldest) {
+			return size() > 30;
+		}
+	};
+	private static Tex estAgiLabelTex = null;
+	private static Tex unknownTextTex = null;
+
 	public static final Color stamBarBlue = new Color(47, 58, 207, 200);
 	public static final Color hpBarGreen = new Color(0, 166, 10, 255);
 	public static final Color hpBarGray = new Color(113, 113, 113, 255);
@@ -149,6 +169,103 @@ public class Fightsess extends Widget {
 	pcc = map.screenxf(raw).round2();
 	pho = (int)(map.screenxf(raw.add(0, 0, UI.scale(20))).round2().sub(pcc).y) - UI.scale(20);
     }
+
+
+	private static Tex getKeybindTexture(String keybindString) {
+        return keybindTexCache.computeIfAbsent(keybindString, key -> new TexI(Utils.outline2(keybindsFoundry.render(key).img, Color.BLACK, true)));
+	}
+
+
+	private static Tex getDamagePredictionTexture(String damageValue) {
+        return damagePredictionTexCache.computeIfAbsent(damageValue, key -> new TexI(Utils.outline2(damageFoundry.render(key, Color.RED).img, Color.BLACK, true)));
+	}
+
+	private void renderMyOpeningValue(GOut g, int ameteri, Coord position, Coord imageSize) {
+		if (ameteri > 0) {
+			Tex tex = openingValueTexCache[ameteri];
+			if (tex == null) {
+				tex = Text.renderstroked(String.valueOf(ameteri), openingAdditionalFont).tex();
+				openingValueTexCache[ameteri] = tex;
+			}
+			g.aimage(tex, position.add(imageSize).sub(1, 1), 1, 1);
+		}
+	}
+
+	private void renderEnemyOpeningValue(GOut g, int ameteri, Coord position, Coord imageSize) {
+		if (ameteri > 0) {
+			Tex tex = openingValueTexCache[ameteri];
+			if (tex == null) {
+				tex = Text.renderstroked(String.valueOf(ameteri), openingAdditionalFont).tex();
+				openingValueTexCache[ameteri] = tex;
+			}
+			g.aimage(tex, position.add(imageSize).sub(1, 1), 1, 1);
+		}
+	}
+
+	private void renderRelationOpeningValue(GOut g, int openingValue, Coord topLeft, int openingOffsetX) {
+		Tex tex = openingValueTexCache[openingValue];
+		if (tex == null) {
+			tex = Text.renderstroked(String.valueOf(openingValue), openingAdditionalFont).tex();
+			openingValueTexCache[openingValue] = tex;
+		}
+		int valueOffset = openingValue < 10 ? 15 : openingValue < 100 ? 18 : 20;
+		g.aimage(tex, new Coord(topLeft.x + UI.scale(openingOffsetX) + UI.scale(valueOffset) - UI.scale(1), topLeft.y + UI.scale(39)), 1, 0.5);
+	}
+
+	private void renderPlayerIP(GOut g, int ip, int x, int y) {
+		Tex tex = ipTexCache.computeIfAbsent(ip, key -> PUtils.strokeTex(Text.renderstroked(Integer.toString(key),
+            OptWnd.myIPCombatColorOptionWidget.currentColor, Color.BLACK, ipFoundry)));
+		g.aimage(tex, new Coord(x - UI.scale(40), y - UI.scale(30)), 1, 0.5);
+	}
+
+	private void renderOpponentIP(GOut g, int oip, int x, int y) {
+		Tex tex = oipTexCache.computeIfAbsent(oip, key -> PUtils.strokeTex(Text.renderstroked(Integer.toString(key),
+            OptWnd.enemyIPCombatColorOptionWidget.currentColor, Color.BLACK, ipFoundry)));
+		g.aimage(tex, new Coord(x + UI.scale(40), y - UI.scale(30)), 0, 0.5);
+	}
+
+	private void renderAttackTimer(GOut g, double atkctValue, Coord position) {
+		String formatted = fmt1DecPlace(atkctValue);
+		Tex tex = timerTexCache.computeIfAbsent(formatted, key -> Text.renderstroked(key).tex());
+		g.aimage(tex, position, 0.5, 0.5);
+	}
+
+	private void renderMoveCooldown(GOut g, double cooldownSeconds, Coord position) {
+		String formatted = fmt2DecPlaces(cooldownSeconds);
+		Tex tex = timerTexCache.computeIfAbsent(formatted, key -> Text.renderstroked(key).tex());
+		g.aimage(tex, position, 0.5, 0.5);
+	}
+
+	private void renderEstimatedAgilityLabel(GOut g, Coord position) {
+		if (estAgiLabelTex == null) {
+			estAgiLabelTex = Text.renderstroked("Est. Agi: ").tex();
+		}
+		g.aimage(estAgiLabelTex, position, 1, 0.5);
+	}
+
+	private void renderAgilityRange(GOut g, String agiText, Coord position) {
+		Tex tex = agilityTexCache.computeIfAbsent(agiText, key -> Text.renderstroked(key).tex());
+		g.aimage(tex, position, 0, 0.5);
+	}
+
+	private void renderUnknownText(GOut g, Coord position) {
+		if (unknownTextTex == null) {
+			unknownTextTex = Text.renderstroked("Unknown").tex();
+		}
+		g.aimage(unknownTextTex, position, 0, 0.5);
+	}
+
+	private void renderAgilityMin(GOut g, double minAgi, Coord position) {
+		String agiText = ">" + minAgi + "x";
+		Tex tex = agilityTexCache.computeIfAbsent(agiText, key -> Text.renderstroked(key, OptWnd.enemyIPCombatColorOptionWidget.currentColor, Color.BLACK).tex());
+		g.aimage(tex, position, 0, 0.5);
+	}
+
+	private void renderAgilityMax(GOut g, double maxAgi, Coord position) {
+		String agiText = "<" + maxAgi + "x";
+		Tex tex = agilityTexCache.computeIfAbsent(agiText, key -> Text.renderstroked(key, OptWnd.myIPCombatColorOptionWidget.currentColor, Color.BLACK).tex());
+		g.aimage(tex, position, 0, 0.5);
+	}
 
     private static class Effect implements RenderTree.Node {
 	Sprite spr;
@@ -311,8 +428,7 @@ public class Fightsess extends Widget {
 			} else {
 				g.image(img, new Coord(x + myLocation, y - UI.scale(20)));
 			}
-            if (ameteri > 0)
-                g.aimage(Text.renderstroked(String.valueOf(ameteri), openingAdditionalFont).tex(), new Coord(x + myLocation, y - UI.scale(20)).add(isz).sub(1, 1), 1, 1);
+            renderMyOpeningValue(g, ameteri, new Coord(x + myLocation, y - UI.scale(20)), isz);
 			myLocation -= UI.scale(40);
 		} catch (Loading ignored) {
 		}
@@ -376,18 +492,17 @@ public class Fightsess extends Widget {
 					g.image(img, new Coord(x + location, y - UI.scale(20)));
 					g.chcolor(255, 255, 255, 255);
 				}
-                if (ameteri > 0)
-                    g.aimage(Text.renderstroked(String.valueOf(ameteri), openingAdditionalFont).tex(), new Coord(x + location, y - UI.scale(20)).add(isz).sub(1, 1), 1, 1);
+                renderEnemyOpeningValue(g, ameteri, new Coord(x + location, y - UI.scale(20)), isz);
 				location += UI.scale(40);
 			} catch (Loading ignored) {
 			}
 		}
 
 //	    g.aimage(ip.get().tex(), new Coord(x - UI.scale(40), y - UI.scale(30)), 1, 0.5);
-		g.aimage(PUtils.strokeTex(Text.renderstroked(Integer.toString(fv.current.ip), OptWnd.myIPCombatColorOptionWidget.currentColor, Color.BLACK, ipFoundry)), new Coord(x - UI.scale(40), y - UI.scale(30)), 1, 0.5);
+		renderPlayerIP(g, fv.current.ip, x, y);
 
 //	    g.aimage(oip.get().tex(), new Coord(x + UI.scale(40), y - UI.scale(30)), 0, 0.5);
-		g.aimage(PUtils.strokeTex(Text.renderstroked(Integer.toString(fv.current.oip), OptWnd.enemyIPCombatColorOptionWidget.currentColor, Color.BLACK, ipFoundry)), new Coord(x + UI.scale(40), y - UI.scale(30)), 0, 0.5);
+		renderOpponentIP(g, fv.current.oip, x, y);
 
 
 //	    if(fv.lsrel.size() > 1)
@@ -416,7 +531,8 @@ public class Fightsess extends Widget {
 		g.chcolor(225, 0, 0, 220);
 		g.fellipse(cdc, UI.scale(new Coord(24, 24)), Math.PI / 2 - (Math.PI * 2 * Math.min(1.0 - a, 1.0)), Math.PI / 2);
 		g.chcolor();
-		g.aimage(Text.renderstroked(fmt1DecPlace(fv.atkct - now)).tex(), cdc, 0.5, 0.5);
+		double atkctValue = fv.atkct - now;
+		renderAttackTimer(g, atkctValue, cdc);
 	    }
 	    g.image(cdframe, new Coord(x, y).sub(cdframe.sz().div(2)));
 
@@ -516,18 +632,19 @@ public class Fightsess extends Widget {
 		}
 	} catch(Exception ignored) {
 	}
-	g.aimage(Text.renderstroked(fmt2DecPlaces(fv.lastMoveCooldownSeconds)).tex(), cdc2, 0.5, 0.5);
+	renderMoveCooldown(g, fv.lastMoveCooldownSeconds, cdc2);
 	if(fv.current != null) {
 		if (OptWnd.showEstimatedAgilityTextCheckBox.a) {
-			g.aimage(Text.renderstroked("Est. Agi: ").tex(), cdc3, 1, 0.5);
+			renderEstimatedAgilityLabel(g, cdc3);
 			if (fv.current.minAgi != 0 && fv.current.maxAgi != 2D) {
-				g.aimage(Text.renderstroked("" + fv.current.minAgi + "x - " + fv.current.maxAgi + "x").tex(), cdc3, 0, 0.5);
+				String agiText = "" + fv.current.minAgi + "x - " + fv.current.maxAgi + "x";
+				renderAgilityRange(g, agiText, cdc3);
 			} else if (fv.current.minAgi == 0 && fv.current.maxAgi != 2D) {
-				g.aimage(Text.renderstroked("<" + fv.current.maxAgi + "x", OptWnd.myIPCombatColorOptionWidget.currentColor, Color.BLACK).tex(), cdc3, 0, 0.5);
+				renderAgilityMax(g, fv.current.maxAgi, cdc3);
 			} else if (fv.current.minAgi != 0 && fv.current.maxAgi == 2D) {
-				g.aimage(Text.renderstroked(">" + fv.current.minAgi + "x", OptWnd.enemyIPCombatColorOptionWidget.currentColor, Color.BLACK).tex(), cdc3, 0, 0.5);
+				renderAgilityMin(g, fv.current.minAgi, cdc3);
 			} else {
-				g.aimage(Text.renderstroked("Unknown").tex(), cdc3, 0, 0.5);
+				renderUnknownText(g, cdc3);
 			}
 		}
 	    try {
@@ -572,9 +689,9 @@ public class Fightsess extends Widget {
 			int infoY = 0;
 			if (OptWnd.showCombatHotkeysUICheckBox.a) {
 				String keybindString = kb_acts[i].key().name();
-
 				infoY += 8;
-				g.aimage(new TexI(Utils.outline2(keybindsFoundry.render(keybindString).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+				Tex keybindTex = getKeybindTexture(keybindString);
+				g.aimage(keybindTex, ca.add(img.sz().x/2, img.sz().y + UI.scale(infoY)), 0.5, 0.5);
 			}
 			if (OptWnd.showDamagePredictUICheckBox.a) {
 				String name = act.res.get().basename();
@@ -617,7 +734,8 @@ public class Fightsess extends Widget {
 				}
 				if(!damage.isEmpty()) {
 					infoY += 12;
-					g.aimage(new TexI(Utils.outline2(damageFoundry.render(damage,Color.RED).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+					Tex damageTex = getDamagePredictionTexture(damage);
+					g.aimage(damageTex, ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
 				}
 			}
 		    if(i == use) {
@@ -1031,8 +1149,7 @@ public class Fightsess extends Widget {
 				g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX), topLeft.y + UI.scale(30)), UI.scale(new Coord(18, 18)));
 			g.chcolor(255, 255, 255, 255);
 
-			int valueOffset = opening.value < 10 ? 15 : opening.value< 100 ? 18 : 20;
-			g.aimage(Text.renderstroked(String.valueOf(opening.value), openingAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(openingOffsetX) + UI.scale(valueOffset) - UI.scale(1), topLeft.y + UI.scale(39)), 1, 0.5);
+			renderRelationOpeningValue(g, opening.value, topLeft, openingOffsetX);
 			openingOffsetX += 19;
 		}
 		g.chcolor(255, 255, 255, 255);
