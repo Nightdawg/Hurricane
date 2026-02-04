@@ -117,6 +117,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public QuestHelper questhelper;
 	public static Map<Long,String> gobIdToKinName = new ConcurrentHashMap<>();
 	public static boolean showUI = true;
+	public static long leaderTargetPing = -1;
 	public MiniStudy miniStudy;
 	public static String backgroundSong = "";
 	public static long delayedMusicStopTime;
