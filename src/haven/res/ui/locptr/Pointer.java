@@ -178,4 +178,13 @@ public class Pointer extends Widget {
 	}
 	return(null);
     }
+
+    @Override
+    public void dispose() {
+	if (cachedDistText != null) {
+	    cachedDistText.dispose();
+	    cachedDistText = null;
+	}
+	super.dispose();
+    }
 }

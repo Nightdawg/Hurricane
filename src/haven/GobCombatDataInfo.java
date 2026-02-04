@@ -349,4 +349,33 @@ public class GobCombatDataInfo extends GobInfo {
             }
         }
     }
+
+    @Override
+    public void dispose() {
+        if (cachedIpTex != null) {
+            cachedIpTex.dispose();
+            cachedIpTex = null;
+        }
+        if (cachedOipTex != null) {
+            cachedOipTex.dispose();
+            cachedOipTex = null;
+        }
+        if (cachedManeuverTexLast != null) {
+            cachedManeuverTexLast.dispose();
+            cachedManeuverTexLast = null;
+        }
+        if (cachedManeuverTexCurrent != null) {
+            cachedManeuverTexCurrent.dispose();
+            cachedManeuverTexCurrent = null;
+        }
+        if (cachedCleaveCooldownTex != null) {
+            cachedCleaveCooldownTex.dispose();
+            cachedCleaveCooldownTex = null;
+        }
+        if (cachedDefenseCooldownTex != null) {
+            cachedDefenseCooldownTex.dispose();
+            cachedDefenseCooldownTex = null;
+        }
+        super.dispose();
+    }
 }
