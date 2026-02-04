@@ -191,6 +191,9 @@ public class Partyview extends Widget {
 	    }
 	    party.memb = nmemb;
 	    updsteam();
+	    if (ui != null && ui.gui != null) {
+		ui.sess.glob.oc.gobAction(Gob::updateLeaderPingArrow);
+	    }
 	} else if(msg == "ldr") {
 	    party.leader = party.memb.get(Utils.uiv(args[0]));
         if (ui != null && ui.gui != null) {
@@ -225,6 +228,15 @@ public class Partyview extends Widget {
 	 * until then, at least clear it when logging out. */
 	party.memb = Collections.emptyMap();
 	party.leader = null;
+
+	if (GameUI.leaderTargetPing != -1 && ui != null && ui.gui != null) {
+	    Gob target = ui.sess.glob.oc.getgob(GameUI.leaderTargetPing);
+	    if (target != null) {
+		target.removeLeaderPingArrow();
+	    }
+	    GameUI.leaderTargetPing = -1;
+	}
+
         if (ui != null && ui.gui != null) {
             ui.sess.glob.oc.gobAction(Gob::updatePartyCircleOverlay);
             ui.sess.glob.oc.gobAction(Gob::updatePartyHighlightOverlay);
