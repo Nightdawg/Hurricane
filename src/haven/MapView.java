@@ -1904,10 +1904,10 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
 	if (OptWnd.continuousWalkingCheckBox.a && holdingLeftClick) {
 		long now = System.currentTimeMillis();
-		if ((now - lastContinuousClick) > 100) {
+		if ((now - lastContinuousClick) > 50) {
 			lastContinuousClick = System.currentTimeMillis();
 			if (currentCursorLocation.x >= 0 && currentCursorLocation.y >= 0 && currentCursorLocation.x < ui.gui.sz.x && currentCursorLocation.y < ui.gui.sz.y
-					&& !ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper){
+					&& !ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper && ui.checkCursorImage("gfx/hud/curs/arw")){
 				new Click(currentCursorLocation, 1).run();
 
 				// ND: I think this Hittest stuff is the same as the Click one above?
