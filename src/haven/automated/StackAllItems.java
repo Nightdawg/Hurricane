@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static haven.Inventory.sqsz;
 
@@ -67,7 +68,12 @@ public class StackAllItems implements Runnable {
                     }
                     stackSizes.put(wItem, amount);
                 }
-                List<WItem> sortedByStackSize = stackSizes.entrySet().stream().sorted(Map.Entry.comparingByValue()).map(Map.Entry::getKey).toList();
+                List<WItem> sortedByStackSize =
+                        stackSizes.entrySet().stream()
+                                .sorted(Map.Entry.comparingByValue())
+                                .map(Map.Entry::getKey)
+                                .collect(Collectors.toList());
+
                 WItem lowestStack = sortedByStackSize.get(0);
                 WItem nextLowest = sortedByStackSize.get(1);
 
