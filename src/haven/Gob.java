@@ -59,6 +59,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     int clprio = 0;
     public long id;
     public boolean removed = false;
+    public volatile boolean culled = false;
+    private Collection<RenderTree.Slot> culledSlots = null;
     public final Glob glob;
 	public ConcurrentHashMap<Class<? extends GAttrib>, GAttrib> attr = new ConcurrentHashMap<>(); // ND: Make this ConcurrentHashMap to prevent concurrent modification exceptions. It doesn't seem to affect performance
     public final Collection<Overlay> ols = new ArrayList<Overlay>();
@@ -611,6 +613,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
     void removed() {
 	removed = true;
+	culled = false;
+	culledSlots = null;
     }
 
     private void deferred() {

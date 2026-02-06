@@ -3817,6 +3817,7 @@ public class OptWnd extends Window {
 	public static CheckBox disableOpiumHighCheckBox;
 	public static CheckBox disableLibertyCapsHighCheckBox;
 	public static CheckBox disableDrunkennessDistortionCheckBox;
+    public static CheckBox onlyRenderCameraVisibleObjectsCheckBox;
 	public static HSlider palisadesAndBrickWallsScaleSlider;
 	private Button palisadesAndBrickWallsScaleResetButton;
 	public static CheckBox enableSkyboxCheckBox;
@@ -4238,6 +4239,15 @@ public class OptWnd extends Window {
 					Utils.setprefb("disableDrunkennessDistortion", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
+
+            rightColumn = add(onlyRenderCameraVisibleObjectsCheckBox = new CheckBox("Only Render Camera-Visible Objects (Experimental)"){
+                {a = (Utils.getprefb("onlyRenderCameraVisibleObjects", false));}
+                public void changed(boolean val) {
+                    Utils.setprefb("onlyRenderCameraVisibleObjects", val);
+                }
+            }, rightColumn.pos("bl").adds(0, 34));
+            onlyRenderCameraVisibleObjectsCheckBox.tooltip = onlyRenderCameraVisibleObjectsTooltip;
+
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 38));
@@ -5458,6 +5468,9 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[185,185,185]{I have no idea why this disgusting effect exists at all. " +
 			"\nThe vanilla client does not warn you about it in any way, shape or form.}", UI.scale(280));
+    private static final Object onlyRenderCameraVisibleObjectsTooltip = RichText.render("Render only objects within the camera’s view frustum. Objects behind the camera are not rendered, reducing GPU load and potentially improving performance." +
+            "\n" +
+            "\n$col[218,163,0]{This is an experimental feature. It should work fine, but I wouldn't trust it with my life.}", UI.scale(300));
 
 	// Server Integration Settings Tooltips
 	private static final Object uploadMapTilesTooltip = RichText.render("Enable this to upload your map tiles to your web map server.", UI.scale(300));

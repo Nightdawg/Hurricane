@@ -138,16 +138,72 @@ public class OCache implements Iterable<Gob> {
 	    for(Gob ob : this)
 		copy.add(ob);
 	}
+
+	MapView mapView;
+	Coord viewportSize;
+	if(glob.sess != null && glob.sess.ui != null && glob.sess.ui.gui != null) {
+	    mapView = glob.sess.ui.gui.map;
+	    viewportSize = (mapView != null) ? mapView.sz : null;
+	} else {
+        viewportSize = null;
+        mapView = null;
+    }
+
+	java.util.concurrent.atomic.AtomicInteger culledCount = new java.util.concurrent.atomic.AtomicInteger(0);
+	java.util.concurrent.atomic.AtomicInteger renderedCount = new java.util.concurrent.atomic.AtomicInteger(0);
+	java.util.concurrent.atomic.AtomicInteger virtualCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
 	if(!Config.par.get()) {
 	    copy.forEach(ob -> {
+		    if(ob.virtual) {
+			virtualCount.incrementAndGet();
+		    }
+
+		    if(mapView != null && viewportSize != null && !ob.virtual) {
+			if(shouldCullGob(ob, mapView, viewportSize)) {
+			    if(!ob.culled) {
+				mapView.cullGob(ob);
+				ob.culled = true;
+			    }
+			    culledCount.incrementAndGet();
+			    return;
+			} else {
+			    if(ob.culled) {
+				mapView.uncullGob(ob);
+				ob.culled = false;
+			    }
+			}
+		    }
+
 		    synchronized(ob) {
 			ob.gtick(g);
 		    }
+		    renderedCount.incrementAndGet();
 		});
 	} else {
 	    Collection<Render> subs = new ArrayList<>();
 	    ThreadLocal<Render> subv = new ThreadLocal<>();
 	    copy.parallelStream().forEach(ob -> {
+		    if(ob.virtual) {
+			virtualCount.incrementAndGet();
+		    }
+
+		    if(mapView != null && viewportSize != null && !ob.virtual) {
+			if(shouldCullGob(ob, mapView, viewportSize)) {
+			    if(!ob.culled) {
+				mapView.cullGob(ob);
+				ob.culled = true;
+			    }
+			    culledCount.incrementAndGet();
+			    return;
+			} else {
+			    if(ob.culled) {
+				mapView.uncullGob(ob);
+				ob.culled = false;
+			    }
+			}
+		    }
+
 		    Render sub = subv.get();
 		    if(sub == null) {
 			sub = g.env().render();
@@ -159,11 +215,41 @@ public class OCache implements Iterable<Gob> {
 		    synchronized(ob) {
 			ob.gtick(sub);
 		    }
+		    renderedCount.incrementAndGet();
 		});
 	    for(Render sub : subs)
 		g.submit(sub);
 	}
     }
+
+    private boolean shouldCullGob(Gob ob, MapView mapView, Coord viewportSize) {
+        if (OptWnd.onlyRenderCameraVisibleObjectsCheckBox.a) {
+            try {
+                Coord3f gc = ob.getc();
+                if (gc == null) {
+                    return false;
+                }
+                Coord3f screenPos3f = mapView.screenxf(gc);
+                if (screenPos3f == null) {
+                    return false;
+                }
+                Coord screenPos = screenPos3f.round2();
+                if (screenPos == null) {
+                    return false;
+                }
+                int margin = 50;
+                if (screenPos.x < -margin || screenPos.x > viewportSize.x + margin ||
+                        screenPos.y < -margin || screenPos.y > viewportSize.y + margin) {
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
 
     @SuppressWarnings("unchecked")
     public Iterator<Gob> iterator() {

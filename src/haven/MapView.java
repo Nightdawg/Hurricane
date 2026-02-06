@@ -632,6 +632,14 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	super.dispose();
     }
 
+    public void cullGob(Gob ob) {
+	gobs.cullGob(ob);
+    }
+
+    public void uncullGob(Gob ob) {
+	gobs.uncullGob(ob);
+    }
+
     public boolean visol(String tag) {
 	synchronized(oltags) {
 	    return(oltags.containsKey(tag));
@@ -659,12 +667,50 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	final OCache oc = glob.oc;
 	final Map<Gob, Loader.Future<?>> adding = new HashMap<>();
 	final Map<Gob, RenderTree.Slot> current = new HashMap<>();
+	final Set<Gob> culledBeforeAdd = new HashSet<>();
 	RenderTree.Slot slot;
+
+	private boolean shouldCullGobOnAdd(Gob ob) {
+        if (OptWnd.onlyRenderCameraVisibleObjectsCheckBox.a) {
+            if (ob == null || ob.virtual)
+                return false;
+            if (ob.isMe != null && ob.isMe)
+                return false;
+            try {
+                Coord3f gc = ob.getc();
+                if (gc == null)
+                    return false;
+                Coord3f screenPos3f = screenxf(gc);
+                if (screenPos3f == null)
+                    return false;
+                Coord screenPos = screenPos3f.round2();
+                if (screenPos == null || sz == null)
+                    return false;
+
+                int margin = 50;
+                return screenPos.x < -margin || screenPos.x > sz.x + margin ||
+                        screenPos.y < -margin || screenPos.y > sz.y + margin;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return false;
+	}
 
 	private void addgob(Gob ob) {
 	    RenderTree.Slot slot = this.slot;
 	    if(slot == null)
 		return;
+
+	    if(shouldCullGobOnAdd(ob)) {
+		synchronized(this) {
+		    adding.remove(ob);
+		    culledBeforeAdd.add(ob);
+		    ob.culled = true;
+		}
+		return;
+	    }
+
 	    synchronized(ob) {
 		synchronized(this) {
 		    if(!adding.containsKey(ob))
@@ -725,6 +771,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	public void removed(Gob ob) {
 	    RenderTree.Slot slot;
 	    synchronized(this) {
+		culledBeforeAdd.remove(ob);
 		slot = current.remove(ob);
 		if(slot == null) {
 		    Loader.Future<?> t = adding.remove(ob);
@@ -739,6 +786,34 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		    /* Ignore here as there is a harmless remove-race
 		     * on disposal. */
 		}
+	    }
+	}
+
+	public void cullGob(Gob ob) {
+	    RenderTree.Slot gobSlot;
+	    synchronized(this) {
+		if(culledBeforeAdd.contains(ob))
+		    return;
+		gobSlot = current.remove(ob);
+		if(gobSlot == null)
+		    return;
+		culledBeforeAdd.add(ob);
+	    }
+	    try {
+		gobSlot.remove();
+	    } catch(RenderTree.SlotRemoved e) {}
+	}
+
+	public void uncullGob(Gob ob) {
+	    synchronized(this) {
+		if(!culledBeforeAdd.contains(ob))
+		    return;
+		culledBeforeAdd.remove(ob);
+		if(current.containsKey(ob) || adding.containsKey(ob))
+		    return;
+		if(slot == null)
+		    return;
+		adding.put(ob, glob.loader.defer(() -> addgob(ob), null));
 	    }
 	}
 
@@ -761,6 +836,68 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	Area area;
 	Loading lastload = new Loading("Initializing map...");
 
+	private boolean shouldCullCut(Coord cc) {
+        if (OptWnd.onlyRenderCameraVisibleObjectsCheckBox.a) {
+            try {
+                try {
+                    Coord3f playerPos = getcc();
+                    if (playerPos != null) {
+                        Coord2d playerPos2d = new Coord2d(playerPos.x, playerPos.y);
+                        Coord2d cutCenter = cc.mul(MCache.cutsz).mul(tilesz).add(MCache.cutsz.mul(tilesz).div(2));
+                        if (playerPos2d.dist(cutCenter) <= 200) {
+                            return false;
+                        }
+                    }
+                } catch (Exception e) {
+                    return false;
+                }
+                Coord2d cutWorldPos = cc.mul(MCache.cutsz).mul(tilesz);
+                Coord2d cutSize = MCache.cutsz.mul(tilesz);
+
+                Coord3f[] checkPoints = new Coord3f[]{
+                        new Coord3f((float) cutWorldPos.x, (float) cutWorldPos.y, 0),
+                        new Coord3f((float) (cutWorldPos.x + cutSize.x), (float) cutWorldPos.y, 0),
+                        new Coord3f((float) cutWorldPos.x, (float) (cutWorldPos.y + cutSize.y), 0),
+                        new Coord3f((float) (cutWorldPos.x + cutSize.x), (float) (cutWorldPos.y + cutSize.y), 0),
+                        new Coord3f((float) (cutWorldPos.x + cutSize.x / 2), (float) (cutWorldPos.y + cutSize.y / 2), 0),
+                        new Coord3f((float) (cutWorldPos.x + cutSize.x / 2), (float) cutWorldPos.y, 0),
+                        new Coord3f((float) (cutWorldPos.x + cutSize.x / 2), (float) (cutWorldPos.y + cutSize.y), 0),
+                        new Coord3f((float) cutWorldPos.x, (float) (cutWorldPos.y + cutSize.y / 2), 0),
+                        new Coord3f((float) (cutWorldPos.x + cutSize.x), (float) (cutWorldPos.y + cutSize.y / 2), 0)
+                };
+
+                int margin = 50;
+                int minX = -margin;
+                int maxX = sz.x + margin;
+                int minY = -margin;
+                int maxY = sz.y + margin;
+
+                boolean anyVisible = false;
+
+                for (Coord3f point : checkPoints) {
+                    Coord3f screenPos3f = screenxf(point);
+                    if (screenPos3f == null)
+                        continue;
+
+                    Coord screenPos = screenPos3f.round2();
+                    if (screenPos == null)
+                        continue;
+
+                    if (screenPos.x >= minX && screenPos.x <= maxX &&
+                            screenPos.y >= minY && screenPos.y <= maxY) {
+                        anyVisible = true;
+                        break;
+                    }
+                }
+
+                return !anyVisible;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return false;
+	}
+
 	abstract class Grid<T> extends RenderTree.Node.Track1 {
 	    final Map<Coord, Pair<T, RenderTree.Slot>> cuts = new HashMap<>();
 	    final boolean position;
@@ -781,6 +918,15 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		Loading curload = null;
 		for(Coord cc : area) {
 		    try {
+			if(shouldCullCut(cc)) {
+			    Pair<T, RenderTree.Slot> cur = cuts.get(cc);
+			    if(cur != null) {
+				cur.b.remove();
+				cuts.remove(cc);
+			    }
+			    continue;
+			}
+
 			T cut = getcut(cc);
 			Pair<T, RenderTree.Slot> cur = cuts.get(cc);
 			if((cur == null) || (cur.a != cut)) {
@@ -1849,6 +1995,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		} catch (Exception ignored) {
 		}
 	}
+
 
     }
     
