@@ -107,6 +107,9 @@ public class AudioSprite {
             case "sfx/terobjs/knarr":
                 stream = new Audio.VolAdjust(stream, OptWnd.knarrSoundVolumeSlider.val / 100d);
                 break;
+            case "sfx/tiles/wstep":
+                stream = new Audio.VolAdjust(stream, OptWnd.waterSplashSoundVolumeSlider.val / 100d);
+                break;
         }
 	    this.clip = new ActAudio.PosClip(new Audio.Monitor(stream) {
 		    protected void eof() {
