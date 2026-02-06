@@ -1156,6 +1156,7 @@ public class Config {
             "Finery Forge",
             "Fireplace",
             "Frame",
+            "Grand Study Desk",
             "Herbalist Table",
             "Kiln",
             "Ore Smelter",
