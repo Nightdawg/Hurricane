@@ -2357,7 +2357,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		}
 	} else if((grab != null) && grab.mmousedown(ev.c, ev.b)) {
 	} else {
-		if (ev.b == 1 && !ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper)
+		if (OptWnd.continuousWalkingCheckBox.a && ev.b == 1 && !ui.modctrl && !ui.modshift && !ui.modmeta && !ui.modsuper && ui.checkCursorImage("gfx/hud/curs/arw"))
 			holdingLeftClick = true;
 	    new Click(ev.c, ev.b).run();
 	}
