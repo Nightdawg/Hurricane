@@ -438,6 +438,7 @@ public class OptWnd extends Window {
 	private final int audioSliderWidth = 220;
 	public static HSlider themeSongVolumeSlider;
     public static HSlider weatherSoundVolumeSlider;
+    public static HSlider knarrSoundVolumeSlider;
 
     public class AudioPanel extends Panel {
 	public AudioPanel(Panel back) {
@@ -693,6 +694,15 @@ public class OptWnd extends Window {
             }
             public void changed() {
                 Utils.setprefi("doomBellCapSoundVolume", val);
+            }
+        }, rightColumn.pos("bl").adds(0, 2));
+        rightColumn = add(new Label("Knarr Sound Volume"), rightColumn.pos("bl").adds(0, 5));
+        rightColumn = add(knarrSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("knarrSoundVolume", 30)) {
+            protected void attach(UI ui) {
+                super.attach(ui);
+            }
+            public void changed() {
+                Utils.setprefi("knarrSoundVolume", val);
             }
         }, rightColumn.pos("bl").adds(0, 2));
 

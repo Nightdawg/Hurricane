@@ -104,6 +104,9 @@ public class AudioSprite {
             case "sfx/creak":
                 stream = new Audio.VolAdjust(stream, OptWnd.creakSoundVolumeSlider.val / 100d);
                 break;
+            case "sfx/terobjs/knarr":
+                stream = new Audio.VolAdjust(stream, OptWnd.knarrSoundVolumeSlider.val / 100d);
+                break;
         }
 	    this.clip = new ActAudio.PosClip(new Audio.Monitor(stream) {
 		    protected void eof() {
