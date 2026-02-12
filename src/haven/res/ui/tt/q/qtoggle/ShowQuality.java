@@ -10,7 +10,7 @@ import haven.res.ui.pag.toggle.*;
 import haven.MenuGrid.Pagina;
 
 /* >pagina: ShowQuality$Fac */
-@haven.FromResource(name = "ui/tt/q/qtoggle", version = 8)
+@haven.FromResource(name = "ui/tt/q/qtoggle", version = 9)
 public class ShowQuality extends MenuGrid.PagButton {
     public ShowQuality(Pagina pag) {
 	super(pag);
