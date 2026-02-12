@@ -48,7 +48,7 @@ public class Text implements Disposable {
 	public static final Font latin;
 	public static final Foundry num12boldFnd;
 	public static final Foundry num20boldFnd;
-	
+
     static {
 	std = new Foundry(sans, 10);
 	latin = new Font("Dialog", Font.PLAIN, 10);
@@ -61,26 +61,32 @@ public class Text implements Disposable {
 	    super(text, img);
 	}
 
+	public abstract int baseline();
 	public abstract int advance(int pos);
 	public abstract int charat(int x);
     }
 
     public static class Line extends Slug {
 	private final FontMetrics m;
-	
+
 	private Line(String text, BufferedImage img, FontMetrics m) {
 	    super(text, img);
 	    this.m = m;
 	}
-	
+
+	@Deprecated
 	public Coord base() {
 	    return(new Coord(0, m.getLeading() + m.getAscent()));
 	}
-	
+
+	public int baseline() {
+	    return(m.getLeading() + m.getAscent());
+	}
+
 	public int advance(int pos) {
 	    return(m.stringWidth(text.substring(0, pos)));
 	}
-	
+
 	public int charat(int x) {
 	    int l = 0, r = text.length() + 1;
 	    while(true) {
@@ -254,22 +260,48 @@ public class Text implements Disposable {
 		return fnd.renderstroked2(text, c, s);
 	}
 
-    public static abstract class Imager extends Furnace {
-	private final Furnace back;
+    public static abstract class OffsetForge extends Forge {
+	public final Forge back;
 
-	public Imager(Furnace back) {
+	public OffsetForge(Forge back) {
 	    this.back = back;
 	}
 
-	protected abstract BufferedImage proc(Text text);
+	protected abstract BufferedImage proc(Slug text);
+	protected abstract Coord tloff();
+	protected abstract Coord broff();
 
-	public Text render(String text) {
-	    return(new Text(text, proc(back.render(text))));
+	public class OSlug extends Slug {
+	    public final Slug bk;
+
+	    private OSlug(Slug bk, BufferedImage img) {
+		super(bk.text, img);
+		this.bk = bk;
+	    }
+
+	    public int baseline() {return(bk.baseline() + tloff().y);}
+	    public int advance(int pos) {return(bk.advance(pos) + tloff().x);}
+	    public int charat(int x) {return(bk.charat(x) - tloff().x);}
 	}
 
-	public static Imager of(Furnace back, Function<? super Text, ? extends BufferedImage> prod) {
-	    return(new Imager(back) {
-		    public BufferedImage proc(Text text) {return(prod.apply(text));}
+	public Slug render(String text) {
+	    Slug bk = back.render(text);
+	    return(new OSlug(bk, proc(bk)));
+	}
+
+	public int height() {
+	    return(back.height() + tloff().y + broff().y);
+	}
+
+	public Coord strsize(String text) {
+	    return(back.strsize(text).add(tloff()).add(broff()));
+	}
+
+	public static OffsetForge of(Forge back, Coord tloff, Coord broff, Function<? super Slug, ? extends BufferedImage> prod) {
+	    return(new OffsetForge(back) {
+		    public BufferedImage proc(Slug text) {return(prod.apply(text));}
+		    public Coord tloff() {return(tloff);}
+		    public Coord broff() {return(broff);}
 		});
 	}
     }
@@ -396,7 +428,7 @@ public class Text implements Disposable {
 	public static Line renderstroked(String text, Text.Foundry fnd) {
 		return renderstroked(text, Color.WHITE, Color.BLACK, fnd);
 	}
-	
+
     public static Line render(String text) {
 	return(render(text, Color.WHITE));
     }
