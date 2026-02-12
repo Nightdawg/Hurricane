@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import haven.MenuGrid.Pagina;
 
 /* >tt: Quality */
-@haven.FromResource(name = "ui/tt/q/quality", version = 27)
+@haven.FromResource(name = "ui/tt/q/quality", version = 28)
 public class Quality extends QBuff implements GItem.OverlayInfo<Tex> {
     public static boolean show = Utils.getprefb("qtoggle", false);
     public static final BufferedImage qualityWorkaround = Resource.remote().loadwait("ui/tt/q/quality").layer(Resource.imgc, 0).scaled();
