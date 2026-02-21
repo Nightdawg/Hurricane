@@ -65,9 +65,17 @@ public interface MapSource {
 		}
 		BufferedImage tex = tileimg(m, texes, t);
 		int rgb = 0;
-		if(tex != null)
+		if(tex != null) {
 		    rgb = tex.getRGB(Utils.floormod(c.x + a.ul.x, tex.getWidth()),
 				     Utils.floormod(c.y + a.ul.y, tex.getHeight()));
+		    Tileset ts = m.tileset(t);
+		    if(ts != null) {
+			Resource r = ts.getres();
+			if(r != null) {
+			    rgb = SimplifiedMapColors.applyColor(r.name, rgb);
+			}
+		    }
+		}
 		buf.setRGB(c.x, c.y, rgb);
 	    }
 	}

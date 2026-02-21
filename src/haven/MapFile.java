@@ -466,9 +466,11 @@ public class MapFile {
 		    int t = gettile(c);
 		    BufferedImage tex = tiletex(t, texes, cached);
 		    int rgb = 0;
-		    if(tex != null)
+		    if(tex != null) {
 			rgb = tex.getRGB(Utils.floormod(c.x + off.x, tex.getWidth()),
 					 Utils.floormod(c.y + off.y, tex.getHeight()));
+			rgb = SimplifiedMapColors.applyColor(tilesets[t].res.name, rgb);
+		    }
 		    buf.setSample(c.x, c.y, 0, (rgb & 0x00ff0000) >>> 16);
 		    buf.setSample(c.x, c.y, 1, (rgb & 0x0000ff00) >>>  8);
 		    buf.setSample(c.x, c.y, 2, (rgb & 0x000000ff) >>>  0);
