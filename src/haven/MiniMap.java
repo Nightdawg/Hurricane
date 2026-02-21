@@ -572,6 +572,13 @@ public class MiniMap extends Widget {
 		return(ret.get());
 	}
 
+	public void clearCache() {
+		img_c = null;
+		synchronized(olimg_c) {
+			olimg_c.clear();
+		}
+	}
+
 	private Collection<DisplayMarker> markers = Collections.emptyList();
 	private int markerseq = -1;
 	public Collection<DisplayMarker> markers(boolean remark) {
@@ -1404,4 +1411,13 @@ public class MiniMap extends Widget {
 		}
 	}
 
+	public void refreshMapCache() {
+		if (display != null) {
+			for (DisplayGrid dg : display) {
+				if (dg != null) {
+					dg.clearCache();
+				}
+			}
+		}
+	}
 }

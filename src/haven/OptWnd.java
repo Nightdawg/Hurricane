@@ -747,6 +747,11 @@ public class OptWnd extends Window {
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 	public static HSlider mapIconsSizeSlider;
+	public static CheckBox simplifiedMapColorsCheckBox;
+	public static ColorOptionWidget sprintLandsColorWidget;
+	public static ColorOptionWidget thirdSpeedLandsColorWidget;
+	public static ColorOptionWidget swampsColorWidget;
+	public static ColorOptionWidget thicketColorWidget;
 	public static CheckBox improvedInstrumentMusicWindowCheckBox;
     public static CheckBox preventEscKeyFromClosingWindowsCheckBox;
     public static CheckBox stackWindowsWhenOpenedCheckBox;
@@ -2793,11 +2798,63 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("bl").adds(0, 2));
 			showCheeseRacksTierTextCheckBox.tooltip = showCheeseRacksTierTextTooltip;
 
-			Widget backButton;
+		rightColumn = add(simplifiedMapColorsCheckBox = new CheckBox("Simplified Map Colors"){
+			{a = (Utils.getprefb("simplifiedMapColorsEnabled", false));}
+			public void changed(boolean val) {
+				Utils.setprefb("simplifiedMapColorsEnabled", val);
+				SimplifiedMapColors.enabled = val;
+				refreshMapCache();
+			}
+		}, rightColumn.pos("bl").adds(0, 15));
+
+		String[] sprintLandsColor = Utils.getprefsa("simplifiedMapColors_sprintLands_colorSetting", new String[]{"0", "255", "0", "255"});
+		rightColumn = add(sprintLandsColorWidget = new ColorOptionWidget("4th speed:", "simplifiedMapColors_sprintLands", 160,
+			Integer.parseInt(sprintLandsColor[0]), Integer.parseInt(sprintLandsColor[1]),
+			Integer.parseInt(sprintLandsColor[2]), Integer.parseInt(sprintLandsColor[3]), (Color col) -> {
+				SimplifiedMapColors.SprintLands = col;
+				SimplifiedMapColors.updateSprintLandsMapping();
+				refreshMapCache();
+			}){}, rightColumn.pos("bl").adds(1, 1));
+
+		String[] thirdSpeedLandsColor = Utils.getprefsa("simplifiedMapColors_thirdSpeedLands_colorSetting", new String[]{"0", "128", "0", "255"});
+		rightColumn = add(thirdSpeedLandsColorWidget = new ColorOptionWidget("3rd speed:", "simplifiedMapColors_thirdSpeedLands", 160,
+			Integer.parseInt(thirdSpeedLandsColor[0]), Integer.parseInt(thirdSpeedLandsColor[1]),
+			Integer.parseInt(thirdSpeedLandsColor[2]), Integer.parseInt(thirdSpeedLandsColor[3]), (Color col) -> {
+				SimplifiedMapColors.ThirdSpeedLands = col;
+				SimplifiedMapColors.updateThirdSpeedLandsMapping();
+				refreshMapCache();
+			}){}, rightColumn.pos("bl").adds(0, 4));
+
+		String[] swampsColor = Utils.getprefsa("simplifiedMapColors_swamps_colorSetting", new String[]{"0", "128", "128", "255"});
+		rightColumn = add(swampsColorWidget = new ColorOptionWidget("Swamps:", "simplifiedMapColors_swamps", 160,
+			Integer.parseInt(swampsColor[0]), Integer.parseInt(swampsColor[1]),
+			Integer.parseInt(swampsColor[2]), Integer.parseInt(swampsColor[3]), (Color col) -> {
+				SimplifiedMapColors.Swamps = col;
+				SimplifiedMapColors.updateSwampsMapping();
+				refreshMapCache();
+			}){}, rightColumn.pos("bl").adds(0, 4));
+
+		String[] thicketColor = Utils.getprefsa("simplifiedMapColors_thicket_colorSetting", new String[]{"255", "255", "0", "255"});
+		rightColumn = add(thicketColorWidget = new ColorOptionWidget("Thicket:", "simplifiedMapColors_thicket", 160,
+			Integer.parseInt(thicketColor[0]), Integer.parseInt(thicketColor[1]),
+			Integer.parseInt(thicketColor[2]), Integer.parseInt(thicketColor[3]), (Color col) -> {
+				SimplifiedMapColors.Thicket = col;
+				SimplifiedMapColors.updateThicketMapping();
+				refreshMapCache();
+			}){}, rightColumn.pos("bl").adds(0, 4));
+
+		Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 18).x(0));
 			pack();
 			centerBackButton(backButton, this);
 		}
+
+		private void refreshMapCache() {
+			if (ui != null && ui.gui != null && ui.gui.mapfile != null && ui.gui.mapfile.view != null) {
+				ui.gui.mapfile.view.refreshMapCache();
+			}
+		}
+
 
 		private int addbtn(Widget cont, String nm, KeyBinding cmd, int y) {
 			return (cont.addhl(new Coord(0, y), cont.sz.x,
