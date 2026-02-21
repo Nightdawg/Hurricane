@@ -598,7 +598,30 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 	}
+
+	checkPendingLeaderPing();
     }
+
+    private void checkPendingLeaderPing() {
+		if (GameUI.leaderTargetPing != -1 && this.id == GameUI.leaderTargetPing) {
+			try {
+				if (getattr(Drawable.class) != null && getres().name.equals("gfx/borka/body")) {
+					boolean hasArrow = false;
+					synchronized (ols) {
+						for (Overlay ol : ols) {
+							if (ol.spr instanceof haven.sprites.LeaderPingArrowSprite) {
+								hasArrow = true;
+								break;
+							}
+						}
+					}
+					if (!hasArrow) {
+						addLeaderPingArrow();
+					}
+				}
+			} catch (Loading ignored) {}
+		}
+	}
 
     public void gtick(Render g) {
 	Drawable d = getattr(Drawable.class);
@@ -2262,6 +2285,25 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		h.start();
 	}
 
+	public void addLeaderPingArrow() {
+		removeLeaderPingArrow();
+		addol(new haven.sprites.LeaderPingArrowSprite(this));
+	}
+
+	public void removeLeaderPingArrow() {
+		synchronized (ols) {
+			List<Overlay> toRemove = new ArrayList<>();
+			for (Overlay ol : ols) {
+				if (ol.spr instanceof haven.sprites.LeaderPingArrowSprite) {
+					toRemove.add(ol);
+				}
+			}
+			for (Overlay ol : toRemove) {
+				ol.remove();
+			}
+		}
+	}
+
 	public Set<String> getPoses() {
 		Set<String> poses = new HashSet<>();
 		if (this.isComposite) {
@@ -2681,12 +2723,21 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
         }
     }
 
-    public void refreshGobHealthAttribute() {
-            GobHealth gobHealth = getattr(GobHealth.class);
-            if (gobHealth != null) {
-                setattr(new GobHealth(this, gobHealth.hp));
-            }
-    }
+	public void refreshGobHealthAttribute() {
+		GobHealth gobHealth = getattr(GobHealth.class);
+		if (gobHealth != null) {
+			setattr(new GobHealth(this, gobHealth.hp));
+		}
+	}
 
+	public void updateLeaderPingArrow() {
+		Party party = glob.party;
+		if (party == null || party.memb.size() <= 1) {
+			removeLeaderPingArrow();
+			if (GameUI.leaderTargetPing == this.id) {
+				GameUI.leaderTargetPing = -1;
+			}
+		}
+	}
 
 }

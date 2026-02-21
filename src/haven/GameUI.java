@@ -117,6 +117,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public QuestHelper questhelper;
 	public static Map<Long,String> gobIdToKinName = new ConcurrentHashMap<>();
 	public static boolean showUI = true;
+	public static long leaderTargetPing = -1;
 	public MiniStudy miniStudy;
 	public static String backgroundSong = "";
 	public static long delayedMusicStopTime;
@@ -1913,9 +1914,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_aggroAllNonFriendlyPlayers = KeyBinding.get("AggroAllNonFriendlyPlayers",   KeyMatch.nil);
 	public static KeyBinding kb_autoReaggroTarget = KeyBinding.get("autoReaggroTarget",  KeyMatch.forchar('P', 0));
 	public static KeyBinding kb_peaceCurrentTarget  = KeyBinding.get("peaceCurrentTargetKB",  KeyMatch.forchar('P', KeyMatch.M));
+	public static KeyBinding kb_pushPlayerButton = KeyBinding.get("PushPlayerButtonKB",  KeyMatch.nil);
 	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
     public static KeyBinding kb_autoCombatDistance  = KeyBinding.get("AutoCombatDistanceKB",  KeyMatch.forchar('K', 0));
     public static KeyBinding kb_nearestTarget =  KeyBinding.get("nearestTarget", KeyMatch.forcode(KeyEvent.VK_SPACE, 0));
+    public static KeyBinding kb_leaderTarget = KeyBinding.get("leaderTarget", KeyMatch.nil);
     public static KeyBinding kb_blt = KeyBinding.get("blt", KeyMatch.forchar('R', KeyMatch.M));
 
     public boolean globtype(GlobKeyEvent ev) {
@@ -2126,6 +2129,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(kb_aggroAllNonFriendlyPlayers.key().match(ev)) {
 		this.runActionThread(new Thread(new AggroEveryoneInRange(this), "AggroEverythingInRange"));
 		return (true);
+	} else if(kb_pushPlayerButton.key().match(ev)) {
+		this.runActionThread(new Thread(new PushPlayer(this), "PushPlayer"));
+		return(true);
 	} else if (kb_autoReaggroTarget.key().match(ev) && fv.current != null && fv.current.autogive != null) {
         fv.current.autogive.remoteTrigger();
 		return(true);
@@ -2143,6 +2149,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
             fv.targetNearestFoe();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        return(true);
+    } else if(kb_leaderTarget.key().match(ev)) {
+        if (leaderTargetPing != -1 && fv != null) {
+            Gob target = ui.sess.glob.oc.getgob(leaderTargetPing);
+            if (target != null) {
+                try {
+                    fv.wdgmsg("bump", (int)target.id);
+                } catch (Exception ignored) {}
+            }
         }
         return(true);
     } else if(kb_blt.key().match(ev)) {
