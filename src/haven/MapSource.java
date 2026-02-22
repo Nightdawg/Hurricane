@@ -106,11 +106,13 @@ public interface MapSource {
 	for(c.y = 0; c.y < sz.y; c.y++) {
 	    for(c.x = 0; c.x < sz.x; c.x++) {
 		int t = m.gettile(a.ul.add(c));
-		if((m.gettile(a.ul.add(c).add(-1, 0)) > t) ||
-		   (m.gettile(a.ul.add(c).add( 1, 0)) > t) ||
-		   (m.gettile(a.ul.add(c).add(0, -1)) > t) ||
-		   (m.gettile(a.ul.add(c).add(0,  1)) > t))
-		    buf.setRGB(c.x, c.y, Color.BLACK.getRGB());
+		if(!OptWnd.removeTileBorders) {
+		    if((m.gettile(a.ul.add(c).add(-1, 0)) > t) ||
+		       (m.gettile(a.ul.add(c).add( 1, 0)) > t) ||
+		       (m.gettile(a.ul.add(c).add(0, -1)) > t) ||
+		       (m.gettile(a.ul.add(c).add(0,  1)) > t))
+				buf.setRGB(c.x, c.y, Color.BLACK.getRGB());
+		}
 	    }
 	}
 	return(buf);

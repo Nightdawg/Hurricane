@@ -751,6 +751,8 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget thirdSpeedLandsColorWidget;
 	public static ColorOptionWidget swampsColorWidget;
 	public static ColorOptionWidget thicketColorWidget;
+	public static CheckBox removeTileBordersCheckBox;
+	public static boolean removeTileBorders = false;
 	public static CheckBox improvedInstrumentMusicWindowCheckBox;
     public static CheckBox preventEscKeyFromClosingWindowsCheckBox;
     public static CheckBox stackWindowsWhenOpenedCheckBox;
@@ -2798,6 +2800,18 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("bl").adds(0, 2));
 			showCheeseRacksTierTextCheckBox.tooltip = showCheeseRacksTierTextTooltip;
 
+			rightColumn = add(removeTileBordersCheckBox = new CheckBox("Remove Tile Borders"){
+				{
+					a = Utils.getprefb("removeTileBorders", false);
+					removeTileBorders = a;
+				}
+				public void changed(boolean val) {
+					Utils.setprefb("removeTileBorders", val);
+					removeTileBorders = val;
+					refreshMapCache();
+				}
+			}, rightColumn.pos("bl").adds(0, 15));
+
 		rightColumn = add(simplifiedMapColorsCheckBox = new CheckBox("Simplified Map Colors"){
 			{a = (Utils.getprefb("simplifiedMapColorsEnabled", false));}
 			public void changed(boolean val) {
@@ -2805,7 +2819,7 @@ public class OptWnd extends Window {
 				SimplifiedMapColors.enabled = val;
 				refreshMapCache();
 			}
-		}, rightColumn.pos("bl").adds(0, 15));
+		}, rightColumn.pos("bl").adds(0, 2));
 
 		String[] sprintLandsColor = Utils.getprefsa("simplifiedMapColors_sprintLands_colorSetting", new String[]{"0", "255", "0", "255"});
 		rightColumn = add(sprintLandsColorWidget = new ColorOptionWidget("4th speed:", "simplifiedMapColors_sprintLands", 160,

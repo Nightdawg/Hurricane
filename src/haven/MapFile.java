@@ -479,16 +479,18 @@ public class MapFile {
 	    }
 	    for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
 		for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
-		    int p = tilesets[gettile(c)].prio;
-		    if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
-		       (tilesets[gettile(c.add( 1, 0))].prio > p) ||
-		       (tilesets[gettile(c.add(0, -1))].prio > p) ||
-		       (tilesets[gettile(c.add(0,  1))].prio > p))
-		    {
-			buf.setSample(c.x, c.y, 0, 0);
-			buf.setSample(c.x, c.y, 1, 0);
-			buf.setSample(c.x, c.y, 2, 0);
-			buf.setSample(c.x, c.y, 3, 255);
+		    if(!OptWnd.removeTileBorders) {
+			int p = tilesets[gettile(c)].prio;
+			if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
+			   (tilesets[gettile(c.add( 1, 0))].prio > p) ||
+			   (tilesets[gettile(c.add(0, -1))].prio > p) ||
+			   (tilesets[gettile(c.add(0,  1))].prio > p))
+			{
+			    buf.setSample(c.x, c.y, 0, 0);
+			    buf.setSample(c.x, c.y, 1, 0);
+			    buf.setSample(c.x, c.y, 2, 0);
+			    buf.setSample(c.x, c.y, 3, 255);
+			}
 		    }
 		}
 	    }
