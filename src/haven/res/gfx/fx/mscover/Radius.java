@@ -46,7 +46,9 @@ public class Radius extends GAttrib {
 
     public static void parse(Gob gob, Message dat) {
 	try {
-	    gob.setattr(new Radius(gob, (dat.float16() * 11) - ε, true));
+        double rad = (dat.float16() * 11) - ε;
+	    gob.setattr(new Radius(gob, rad, true));
+        gob.msRadSize = (float) rad;
 	} catch(NoClassDefFoundError e) {
 	}
     }
