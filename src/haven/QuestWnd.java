@@ -33,6 +33,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import static haven.CharWnd.*;
 import static haven.PUtils.*;
+import static haven.PType.*;
 
 public class QuestWnd extends Widget {
     public final Widget questbox;
@@ -228,7 +229,7 @@ public class QuestWnd extends Widget {
 	    public String rendertext() {
 		StringBuilder buf = new StringBuilder();
 		Resource res = this.res.get();
-		buf.append("$img[" + res.name + "]\n\n");
+		buf.append("$img[self]\n\n");
 		buf.append("$b{$font[serif,16]{" + title() + "}}\n\n");
 		Resource.Pagina pag = res.layer(Resource.pagina);
 		if((pag != null) && !pag.text.equals("")) {
@@ -252,12 +253,12 @@ public class QuestWnd extends Widget {
 		    int a = 0;
 		    List<Condition> ncond = new ArrayList<Condition>(args.length);
 		    while(a < args.length) {
-			String desc = (String)args[a++];
-			int st = Utils.iv(args[a++]);
-			String status = (String)args[a++];
+			String desc = STR.of(args[a++]);
+			int st = INT.of(args[a++]);
+			String status = STR.of(args[a++]);
 			Object[] wdata = null;
-			if((a < args.length) && (args[a] instanceof Object[]))
-			    wdata = (Object[])args[a++];
+			if((a < args.length) && OBJS.is(args[a]))
+			    wdata = OBJS.of(args[a++]);
 			Condition cond = findcond(desc);
 			if(cond != null) {
 			    boolean ch = false;
@@ -438,7 +439,7 @@ public class QuestWnd extends Widget {
 	    }
 
 	    protected void layouth(Widget cont) {
-		RichText text = ifnd.render(rendertext(), cont.sz.x - UI.scale(20));
+		RichText text = ifnd.render(resdoc(res.get(), rendertext()), cont.sz.x - UI.scale(20));
 		cont.add(new Img(text.tex()), UI.scale(new Coord(10, 10)));
 	    }
 
@@ -510,7 +511,7 @@ public class QuestWnd extends Widget {
 		if(msg == "opts") {
 		    List<Pair<String, String>> opts = new ArrayList<>();
 		    for(int i = 0; i < args.length; i += 2)
-			opts.add(new Pair<>((String)args[i], (String)args[i + 1]));
+			opts.add(new Pair<>(STR.of(args[i]), STR.of(args[i + 1])));
 		    this.options = opts;
 		    refresh();
 		} else {
@@ -522,9 +523,9 @@ public class QuestWnd extends Widget {
 	@RName("quest")
 	public static class $quest implements Factory {
 	    public Widget create(UI ui, Object[] args) {
-		int id = Utils.iv(args[0]);
+		int id = INT.of(args[0]);
 		Indir<Resource> res = ui.sess.getresv(args[1]);
-		String title = (args.length > 2) ? (String)args[2] : null;
+		String title = (args.length > 2) ? STR.of(args[2]) : null;
 		return(new DefaultBox(id, res, title));
 	    }
 	}
@@ -680,7 +681,7 @@ public class QuestWnd extends Widget {
     }
 
     public void addchild(Widget child, Object... args) {
-	String place = (args[0] instanceof String) ? (((String)args[0]).intern()) : null;
+	String place = STR.opt(args[0]).map(String::intern).or(null);
 	if(place == "quest") {
 	    this.quest = (Quest.Info)child;
 	    questbox.add(child, Coord.z);
@@ -693,14 +694,14 @@ public class QuestWnd extends Widget {
     public void uimsg(String nm, Object... args) {
 	if(nm == "quests") {
 	    for(int i = 0; i < args.length;) {
-		int id = Utils.iv(args[i++]);
+		int id = INT.of(args[i++]);
 		Indir<Resource> res = ui.sess.getresv(args[i++]);
 		if(res != null) {
-		    int st = Utils.iv(args[i++]);
-		    int mtime = Utils.iv(args[i++]);
+		    int st = INT.of(args[i++]);
+		    int mtime = INT.of(args[i++]);
 		    String title = null;
-		    if((i < args.length) && (args[i] instanceof String))
-			title = (String)args[i++];
+		    if((i < args.length) && STR.is(args[i]))
+			title = STR.of(args[i++]);
 		    QuestList cl = cqst;
 		    Quest q = cqst.get(id);
 		    if(q == null)

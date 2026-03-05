@@ -2190,6 +2190,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		    Plob ob = placing.get();
 		    synchronized(ob) {
 			ob.slot.remove();
+			ob.removed();
 		    }
 		}
 		this.placing = null;
@@ -2230,6 +2231,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		    Plob ob = placing.get();
 		    synchronized(ob) {
 			ob.slot.remove();
+			ob.removed();
 		    }
 		}
 		this.placing = null;
@@ -2796,7 +2798,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	public final Coord max;
 	public Coord sc;
 	public int modflags;
-	private MCache.Overlay ol;
+	private MCache.RectOverlay ol;
 	private UI.Grab mgrab;
 	private Text tt;
 	final GrabXL xl = new GrabXL(this) {
@@ -2823,14 +2825,15 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		if(selection != this)
 		    return(false);
 		if(sc != null) {
-		    ol.destroy();
+		    glob.map.remove(ol);
 		    mgrab.remove();
 		}
 		sc = mc.div(MCache.tilesz2);
 		modflags = ui.modflags();
 		xl.mv = true;
 		mgrab = ui.grabmouse(MapView.this);
-		ol = glob.map.new Overlay(Area.sized(sc, new Coord(1, 1)), selol);
+		ol = glob.map.new RectOverlay(selol, Area.sized(sc, new Coord(1, 1)));
+		glob.map.add(ol);
 		return(true);
 	    }
 	}
@@ -2851,7 +2854,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		    Coord ec = getec(mc);
 		    xl.mv = false;
 		    tt = null;
-		    ol.destroy();
+		    glob.map.remove(ol);
 		    mgrab.remove();
 			if (areaSelectCallback != null) {
 				areaSelectCallback.areaselect(ol.a.ul, ol.a.br);
@@ -2882,7 +2885,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	public void destroy() {
 	    synchronized(MapView.this) {
 		if(sc != null) {
-		    ol.destroy();
+		    glob.map.remove(ol);
 		    mgrab.remove();
 		}
 		release(xl);

@@ -35,6 +35,7 @@ import java.util.function.*;
 import java.awt.Color;
 import haven.MapFile.Segment;
 import haven.MapFile.DataGrid;
+import haven.MapFile.Grid;
 import haven.MapFile.GridInfo;
 import haven.MapFile.Marker;
 import haven.MapFile.PMarker;
@@ -42,6 +43,7 @@ import haven.MapFile.SMarker;
 import haven.res.ui.obj.buddy.Buddy;
 import haven.sprites.MapSprite;
 
+import haven.MapFile.TileInfo;
 import static haven.MCache.cmaps;
 import static haven.MCache.tilesz;
 import static haven.OCache.posres;
@@ -69,7 +71,7 @@ public class MiniMap extends Widget {
     public List<DisplayIcon> icons = Collections.emptyList();
     protected Locator setloc;
     protected boolean follow;
-    protected float zoomlevel = 1;
+    protected float zoomlevel = 1, maglevel = Utils.clip((int)Math.round(Math.log(UI.scale(1.0)) / Math.log(2)), 0, 3);
 	public float smallMapZoomLevel = 1;
 	public float bigMapZoomLevel = 1;
 	public float zoomMomentum = 0;
@@ -77,7 +79,7 @@ public class MiniMap extends Widget {
     protected DisplayGrid[] display;
     protected Area dgext, dtext;
     protected Segment dseg;
-    protected int dlvl;
+    protected int dlvl, dmag;
     protected Location dloc;
 	public boolean compact;
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
@@ -120,7 +122,7 @@ public class MiniMap extends Widget {
     }
 
     public static class Location {
-	public Segment seg;
+	public final Segment seg;
 	public final Coord tc;
 
 	public Location(Segment seg, Coord tc) {
@@ -463,6 +465,7 @@ public class MiniMap extends Widget {
 	public final Coord sc;
 	public final Area mapext;
 	public final Indir<? extends DataGrid> gref;
+	public Coord dc;
 	private DataGrid cgrid = null;
 	private Tex img = null;
 	private Defer.Future<Tex> nextimg = null;
@@ -653,6 +656,7 @@ public class MiniMap extends Widget {
 
     public void drawgrid(GOut g, Coord ul, DisplayGrid disp) {
 	try {
+	    disp.dc = ul;
 	    Tex img = disp.img();
 	    if(img != null)
 		g.image(img, ul, UI.scale(img.sz().mul(dlvl).divUpFloor(zoomlevel)));
@@ -958,6 +962,16 @@ public class MiniMap extends Widget {
 	return(null);
     }
 
+    public DisplayGrid gridat(Coord sc) {
+	if((dloc == null) || (dgext == null))
+	    return(null);
+	Coord hsz = sz.div(2);
+	Coord gc = dloc.tc.add(scalec(sc.sub(hsz))).div(cmaps.mul(1 << dlvl));
+	if(!dgext.contains(gc))
+	    return(null);
+	return(display[dgext.ri(gc)]);
+    }
+
     public DisplayMarker findmarker(Marker rm) {
 	for(DisplayGrid dgrid : display) {
 	    if(dgrid == null)
@@ -1137,19 +1151,56 @@ public class MiniMap extends Widget {
 	return(true);
     }
 
+    private Text lasttip = null;
     public Object tooltip(Coord c, Widget prev) {
-	if(dloc != null) {
-	    Coord tc = c.sub(sz.div(2)).mul(scalef()).add(dloc.tc);
-	    DisplayMarker mark = markerat(tc);
-	    if(mark != null) {
-		return(mark.tip);
-	    }
-
-		DisplayIcon icon = iconat(c);
-		if(icon != null) {
-			return icon.tooltip();
+	DisplayGrid grid = gridat(c);
+	String tname = null, oname = null;
+	try {
+	    if((grid != null) && (grid.dc != null)) {
+		DataGrid dgrid = grid.gref.get();
+		if(dgrid != null) {
+		    Coord gc = c.sub(grid.dc).div(1 << dmag);
+		    gc = Area.sized(cmaps).closest(gc); /* XXX: This should not be necessary. */
+		    TileInfo tile = dgrid.tilesets[dgrid.gettile(gc)];
+		    if(tile != null) {
+			Resource tres = tile.res.get();
+			Resource.Tooltip tt = tres.layer(Resource.tooltip);
+			if(tt != null)
+			    tname = tt.t;
+		    }
 		}
+	    }
+	} catch(Loading l) {
+	    tname = "...";
 	}
+	Location mloc = xlate(c);
+	if(mloc != null) {
+	    DisplayIcon icon = iconat(c);
+	    DisplayMarker mark = markerat(mloc.tc);
+	    if(icon != null) {
+		if(icon.icon != null)
+		    oname = icon.icon.name();
+	    } else if(mark != null) {
+		oname = mark.tip.text;
+	    }
+	}
+	if((tname != null) || (oname != null)) {
+	    StringBuilder buf = new StringBuilder();
+	    if(oname != null)
+		buf.append(RichText.Parser.quote(oname));
+	    if(tname != null) {
+		if(buf.length() > 0)
+		    buf.append("\n");
+		buf.append("Terrain: $col[255,255,128]{" + RichText.Parser.quote(tname) + "}");
+	    }
+	    String tip = buf.toString();
+	    if((lasttip == null) || !lasttip.text.equals(tip))
+		lasttip = RichText.render(tip, 0);
+	} else {
+	    lasttip = null;
+	}
+	if(lasttip != null)
+	    return(lasttip);
 	return(super.tooltip(c, prev));
     }
 
