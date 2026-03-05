@@ -1307,7 +1307,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateTroughsRadius();
 		updateBeeSkepRadius();
 		updateMoundBedsRadius();
-		updateMineLadderRadius();
 		initPermanentHighlightOverlay();
 		HitBoxes.addHitBox(this);
         updatePartyCircleOverlay();
@@ -2386,15 +2385,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					alarmPlayed.add(id);
 				}
 			} catch (Exception ignored) {
-			}
-		}
-	}
-
-	public void updateMineLadderRadius() {
-		if (getres() != null) {
-			String resourceName = getres().name;
-			if (resourceName.equals("gfx/terobjs/ladder")){
-				setRadiusOverlay(OptWnd.showMineSupportRadiiCheckBox.a, new Color(0, 121, 12, 128), 100F);
 			}
 		}
 	}

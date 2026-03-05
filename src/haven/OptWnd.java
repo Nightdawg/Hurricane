@@ -28,7 +28,6 @@ package haven;
 
 import haven.automated.mapper.MappingClient;
 import haven.render.*;
-import haven.res.gfx.fx.msrad.MSRad;
 import haven.res.sfx.ambient.weather.wsound.WeatherSound;
 import haven.res.ui.pag.toggle.Toggle;
 import haven.resutil.Ridges;
@@ -2037,7 +2036,6 @@ public class OptWnd extends Window {
 	public static CheckBox showWorkstationProgressUnpreparedCheckBox;
 	public static ColorOptionWidget showWorkstationProgressUnpreparedColorOptionWidget;
 	public static String[] workstationProgressUnpreparedColorSetting = Utils.getprefsa("workstationProgressUnprepared" + "_colorSetting", new String[]{"20", "20", "20", "180"});
-	public static CheckBox showMineSupportRadiiCheckBox;
     public static CheckBox showMineSupportCoverageCheckBox;
     public static ColorOptionWidget safeTilesColorOptionWidget;
     public static String[] coveredTilesColorSetting = Utils.getprefsa("coveredTiles" + "_colorSetting", new String[]{"0", "105", "210", "60"});
@@ -2045,7 +2043,6 @@ public class OptWnd extends Window {
 	public static OldDropBox<Integer> sweeperDurationDropbox;
 	public static final List<Integer> sweeperDurations = Arrays.asList(5, 10, 15, 30, 45, 60, 120);
 	public static int sweeperSetDuration = Utils.getprefi("sweeperSetDuration", 1);
-
 	public static ColorOptionWidget areaChatPingColorOptionWidget;
 	public static String[] areaChatPingColorSetting = Utils.getprefsa("areaChatPing" + "_colorSetting", new String[]{"255", "183", "0", "255"});
 	public static ColorOptionWidget partyChatPingColorOptionWidget;
@@ -2336,19 +2333,6 @@ public class OptWnd extends Window {
 					ui.gui.map.updatePlobWorkstationProgressHighlight();
 				}
 			}), showWorkstationProgressUnpreparedColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
-			leftColumn = add(showMineSupportRadiiCheckBox = new CheckBox("Show Mine Support Radii"){
-				{a = (Utils.getprefb("showMineSupportRadii", false));}
-				public void set(boolean val) {
-					Utils.setprefb("showMineSupportRadii", val);
-					a = val;
-					MSRad.show(val);
-					if (ui != null && ui.gui != null){
-						ui.sess.glob.oc.gobAction(Gob::updateMineLadderRadius);
-						ui.gui.optionInfoMsg("Mine Support Radii are now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
-					}
-				}
-			}, leftColumn.pos("bl").adds(0, 12).x(0));
-			showMineSupportRadiiCheckBox.tooltip = showMineSupportRadiiTooltip;
 
 			leftColumn = add(showMineSupportCoverageCheckBox = new CheckBox("Show Mine Support Coverage"){
                 {a = (Utils.getprefb("showMineSupportTiles", false));}
@@ -2368,11 +2352,10 @@ public class OptWnd extends Window {
                             GroundSupportOverlay.getInstance().clear();
                             ui.gui.map.disol(GroundSupportOverlay.TAG);
                         }
-                        ui.sess.glob.oc.gobAction(Gob::updateMineLadderRadius);
                         ui.gui.optionInfoMsg("Mine Support Coverage is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
                     }
 				}
-			}, leftColumn.pos("bl").adds(0, 2));
+			}, leftColumn.pos("bl").adds(0, 22).x(0));
             showMineSupportCoverageCheckBox.tooltip = showMineSupportCoverageTooltip;
 
             leftColumn = add(safeTilesColorOptionWidget = new ColorOptionWidget("Safe Tiles Color:", "coveredTiles", 115, Integer.parseInt(coveredTilesColorSetting[0]), Integer.parseInt(coveredTilesColorSetting[1]), Integer.parseInt(coveredTilesColorSetting[2]), Integer.parseInt(coveredTilesColorSetting[3]), (Color col) -> {
@@ -5302,7 +5285,6 @@ public class OptWnd extends Window {
 			"\n$col[185,185,185]{Unfortunately, the server only sends the tier info, so the client can't tell which exact cheese is in the trays.}" +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
-	private static final Object showMineSupportRadiiTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private static final Object showMineSupportCoverageTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private static final Object enableMineSweeperTooltip = RichText.render("This will cause cave dust tiles to show the number of potential cave-ins surrounding them, just like in Minesweeper." +
 			"\n$col[218,163,0]{Note:} $col[185,185,185]{If a cave-in has been mined out, the tiles surrounding it will still drop cave dust, and they will still show a number on the ground. The cave dust tiles are pre-generated with the world. That's just how Loftar coded it.}" +
