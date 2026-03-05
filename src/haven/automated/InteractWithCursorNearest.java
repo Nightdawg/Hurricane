@@ -24,7 +24,7 @@ public class InteractWithCursorNearest implements Runnable {
                 if (player == null)
                     return; // player is null, possibly taking a road, don't bother trying to do any of the below
                 if (inf != null) {
-                    Long gobid = new Long((Integer) inf.clickargs()[1]);
+                    Long gobid = Long.valueOf((Integer) inf.clickargs()[1]);
                     Gob clickedGob = gui.map.glob.oc.getgob(gobid);
                     if (clickedGob != null) {
                         Resource res = null;

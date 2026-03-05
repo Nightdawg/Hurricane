@@ -2360,7 +2360,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    Object[] args = {pc, mc.floor(posres), clickb, modflags};
 	    if(inf != null) {
 		args = Utils.extend(args, inf.clickargs());
-		Long gobid = new Long((Integer) inf.clickargs()[1]);
+		Long gobid = Long.valueOf((Integer) inf.clickargs()[1]);
 		Gob gob = glob.oc.getgob(gobid);
 			if(gob != null) {
 				if (OptWnd.clickThroughContainerDecalCheckBox.a && !ui.modctrl) {
@@ -2543,7 +2543,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 				@Override
 				protected void hit(Coord pc, Coord2d mc, ClickData inf) {
 					if (inf != null) {
-						Long gobid = new Long((Integer) inf.clickargs()[1]);
+						Long gobid = Long.valueOf((Integer) inf.clickargs()[1]);
 						Gob gob = glob.oc.getgob(gobid);
 						if (gob != null) {
 							try {
@@ -3314,7 +3314,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 						gobPathLastClick = null;
 				} else if (clickb == 3) {
 					if (args.length > 4) {
-						Long gobid = new Long((Integer) args[5]);
+						Long gobid = Long.valueOf((Integer) args[5]);
 						Gob gob = glob.oc.getgob(gobid);
 						if (gob != null) {
 							gobPathLastClick = new Coord3f((float)mc.x, (float)mc.y, glob.map.getzp(mc).z);

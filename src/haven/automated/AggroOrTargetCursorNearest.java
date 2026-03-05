@@ -30,7 +30,7 @@ public class AggroOrTargetCursorNearest implements Runnable {
                 if (player == null)
                     return;
                 if (inf != null) {
-                    Long gobid = new Long((Integer) inf.clickargs()[1]);
+                    Long gobid = Long.valueOf((Integer) inf.clickargs()[1]);
                     Gob clickedGob = gui.map.glob.oc.getgob(gobid);
                     if (clickedGob != null) {
                         if (isPlayer(clickedGob)) {
