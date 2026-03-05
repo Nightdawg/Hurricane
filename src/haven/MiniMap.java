@@ -602,6 +602,14 @@ public class MiniMap extends Widget {
 	return(UI.unscale((zoomlevel)));
     }
 
+    private Coord scalec(Coord c) {
+        int f = dlvl - dmag;
+        if(f < 0)
+            return(c.div(1 << -f));
+        else
+            return(c.mul(1 << f));
+    }
+
     public Coord st2c(Coord tc) {
 	return(UI.scale(tc.add(sessloc.tc).sub(dloc.tc).div(zoomlevel)).add(sz.div(2)));
     }

@@ -323,10 +323,6 @@ public class Session implements Resource.Resolver {
 	conn.send(msg);
     }
 
-    public void sendmsg(byte[] msg) {
-	conn.send(ByteBuffer.wrap(msg));
-    }
-
 	public int getresid(Resource res) {
 		synchronized (rescache) {
 			for (Map.Entry<Integer, CachedRes> entry : rescache.entrySet()) {
