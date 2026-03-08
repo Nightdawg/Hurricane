@@ -22,6 +22,7 @@ public class AUtils {
         add("gfx/kritter/badger/badger");
         add("gfx/kritter/bat/bat");
         add("gfx/kritter/bear/bear");
+        add("gfx/kritter/bear/polarbear");
         add("gfx/kritter/beaver/beaver");
         add("gfx/kritter/boar/boar");
         add("gfx/kritter/boreworm/boreworm");

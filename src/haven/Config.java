@@ -433,6 +433,7 @@ public class Config {
 
 	public static final String[] beastResPaths = {
 			"gfx/kritter/bear/bear",
+            "gfx/kritter/bear/polarbear",
 			"gfx/kritter/lynx/lynx",
 			"gfx/kritter/walrus/walrus",
 			"gfx/kritter/mammoth/mammoth",

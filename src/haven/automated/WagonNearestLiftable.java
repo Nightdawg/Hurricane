@@ -22,6 +22,7 @@ public class WagonNearestLiftable implements Runnable {
         "gfx/kritter/cattle/cattle",
         "gfx/kritter/badger/badger",
         "gfx/kritter/bear/bear",
+        "gfx/kritter/bear/polarbear",
         "gfx/kritter/beaver/beaver",
         "gfx/kritter/boar/boar",
         "gfx/kritter/caveangler/caveangler",
