@@ -60,6 +60,7 @@ public class AUtils {
         add("gfx/kritter/goshawk/goshawk");
         add("gfx/kritter/narwhal/narwhal");
         add("gfx/kritter/crane/crane");
+        add("gfx/kritter/woodscorpion/woodscorpion");
 
         add("gfx/kritter/ants/queenant");
         add("gfx/kritter/ants/royalguardant");
