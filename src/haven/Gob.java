@@ -1978,13 +1978,17 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					setAuraCircleOverlay(OptWnd.showCritterAurasCheckBox.a, OptWnd.genericCritterAuraColorOptionWidget.currentColor);
 				} else if (resourceName.matches(".*(rabbit|bunny)$")) {
 					setAuraCircleOverlay(OptWnd.showCritterAurasCheckBox.a, OptWnd.rabbitAuraColorOptionWidget.currentColor);
-				}
+                } else if (resourceName.matches(".*(woodscorpion)$")) {
+                    setAuraCircleOverlay(OptWnd.showCritterAurasCheckBox.a, OptWnd.dangerousCritterAuraColorOptionWidget.currentColor);
+                }
 			} else if (knocked != null && knocked) {
 				if (Arrays.stream(Config.critterResPaths).anyMatch(resourceName::matches)) {
 					setAuraCircleOverlay(false, OptWnd.genericCritterAuraColorOptionWidget.currentColor);
 				} else if (resourceName.matches(".*(rabbit|bunny)$")) {
 					setAuraCircleOverlay(false, OptWnd.rabbitAuraColorOptionWidget.currentColor);
-				}
+                } else if (resourceName.matches(".*(woodscorpion)$")) {
+                    setAuraCircleOverlay(OptWnd.showCritterAurasCheckBox.a, OptWnd.dangerousCritterAuraColorOptionWidget.currentColor);
+                }
 			} else if (!isComposite) { // ND: For critters that can't have a knocked status, like insects.
 				if (Arrays.stream(Config.critterResPaths).anyMatch(resourceName::matches)) {
 					setAuraCircleOverlay(OptWnd.showCritterAurasCheckBox.a, OptWnd.genericCritterAuraColorOptionWidget.currentColor);

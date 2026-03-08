@@ -1999,6 +1999,8 @@ public class OptWnd extends Window {
 	public static String[] rabbitAuraColorSetting = Utils.getprefsa("rabbitAura" + "_colorSetting", new String[]{"88", "255", "0", "140"});
 	public static ColorOptionWidget genericCritterAuraColorOptionWidget;
 	public static String[] genericCritterAuraColorSetting = Utils.getprefsa("genericCritterAura" + "_colorSetting", new String[]{"193", "0", "255", "140"});
+    public static ColorOptionWidget dangerousCritterAuraColorOptionWidget;
+    public static String[] dangerousCritterAuraColorSetting = Utils.getprefsa("dangerousCritterAura" + "_colorSetting", new String[]{"193", "0", "0", "140"});
 	public static CheckBox showSpeedBuffAurasCheckBox;
 	public static ColorOptionWidget speedBuffAuraColorOptionWidget;
 	public static String[] speedBuffAuraColorSetting = Utils.getprefsa("speedBuffAura" + "_colorSetting", new String[]{"255", "255", "255", "140"});
@@ -2125,7 +2127,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Highlight Cliffs is now " + (val ? "ENABLED" : "DISABLED") + "!", (val ? msgGreen : msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, leftColumn.pos("bl").adds(0, 12).x(0));
+			}, leftColumn.pos("bl").adds(0, 18).x(0));
 			highlightCliffsCheckBox.tooltip = highlightCliffsTooltip;
 			leftColumn = add(highlightCliffsColorOptionWidget = new ColorOptionWidget("Highlight Cliffs Color:", "highlightCliffs", 115, Integer.parseInt(highlightCliffsColorSetting[0]), Integer.parseInt(highlightCliffsColorSetting[1]), Integer.parseInt(highlightCliffsColorSetting[2]), Integer.parseInt(highlightCliffsColorSetting[3]), (Color col) -> {
 				Ridges.setCliffHighlightMat();
@@ -2488,7 +2490,7 @@ public class OptWnd extends Window {
 				public void changed(boolean val) {
 					Utils.setprefb("displayObjectHealthPercentage", val);
 				}
-			}, middleColumn.pos("bl").adds(0, -6).x(UI.scale(240)));
+			}, middleColumn.pos("bl").adds(0, -9).x(UI.scale(240)));
 			displayObjectDurabilityPercentageCheckBox.tooltip = displayObjectDurabilityPercentageTooltip;
             middleColumn = add(showDurabilityCrackTextureCheckBox = new CheckBox("Show Durability Crack Texture"){
                 {a = (Utils.getprefb("showDurabilityCrackTexture", true));}
@@ -2505,7 +2507,7 @@ public class OptWnd extends Window {
 				public void changed(boolean val) {
 					Utils.setprefb("displayObjectQualityOnInspection", val);
 				}
-			}, middleColumn.pos("bl").adds(0, 23));
+			}, middleColumn.pos("bl").adds(0, 2));
 			displayObjectQualityOnInspectionCheckBox.tooltip = displayObjectQualityOnInspectionTooltip;
 
 			middleColumn = add(showCritterAurasCheckBox = new CheckBox("Show Critter Circle Auras (Clickable)"){
@@ -2542,6 +2544,21 @@ public class OptWnd extends Window {
 					ui.sess.glob.oc.gobAction(Gob::updateCritterAuras);
 				}
 			}), genericCritterAuraColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+
+
+            middleColumn = add(dangerousCritterAuraColorOptionWidget = new ColorOptionWidget("Dangerous Critter Aura:", "dangerousCritterAura", 115, Integer.parseInt(dangerousCritterAuraColorSetting[0]), Integer.parseInt(dangerousCritterAuraColorSetting[1]), Integer.parseInt(dangerousCritterAuraColorSetting[2]), Integer.parseInt(dangerousCritterAuraColorSetting[3]), (Color col) -> {
+                if (ui != null && ui.gui != null) {
+                    ui.sess.glob.oc.gobAction(Gob::updateCritterAuras);
+                }
+            }){}, middleColumn.pos("bl").adds(0, 4));
+            add(new Button(UI.scale(70), "Reset", false).action(() -> {
+                Utils.setprefsa("dangerousCritterAura" + "_colorSetting", new String[]{"193", "0", "0", "140"});
+                dangerousCritterAuraColorOptionWidget.cb.colorChooser.setColor(dangerousCritterAuraColorOptionWidget.currentColor = new Color(193, 0, 0, 140));
+                if (ui != null && ui.gui != null) {
+                    ui.sess.glob.oc.gobAction(Gob::updateCritterAuras);
+                }
+            }), dangerousCritterAuraColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+
 
 			middleColumn = add(showSpeedBuffAurasCheckBox = new CheckBox("Show Speed Buff Circle Auras"){
 				{a = (Utils.getprefb("showSpeedBuffAuras", true));}
