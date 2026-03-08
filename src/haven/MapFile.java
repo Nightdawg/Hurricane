@@ -479,7 +479,7 @@ public class MapFile {
 	    }
 	    for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
 		for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
-		    if(!OptWnd.removeTileBorders) {
+		    if(!OptWnd.removeMapTileBordersCheckBox.a) {
 			int p = tilesets[gettile(c)].prio;
 			if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
 			   (tilesets[gettile(c.add( 1, 0))].prio > p) ||

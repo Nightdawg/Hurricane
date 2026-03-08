@@ -106,7 +106,7 @@ public interface MapSource {
 	for(c.y = 0; c.y < sz.y; c.y++) {
 	    for(c.x = 0; c.x < sz.x; c.x++) {
 		int t = m.gettile(a.ul.add(c));
-		if(!OptWnd.removeTileBorders) {
+		if(!OptWnd.removeMapTileBordersCheckBox.a) {
 		    if((m.gettile(a.ul.add(c).add(-1, 0)) > t) ||
 		       (m.gettile(a.ul.add(c).add( 1, 0)) > t) ||
 		       (m.gettile(a.ul.add(c).add(0, -1)) > t) ||

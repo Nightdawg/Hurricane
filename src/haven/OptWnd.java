@@ -751,8 +751,7 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget thirdSpeedLandsColorWidget;
 	public static ColorOptionWidget swampsColorWidget;
 	public static ColorOptionWidget thicketColorWidget;
-	public static CheckBox removeTileBordersCheckBox;
-	public static boolean removeTileBorders = false;
+	public static CheckBox removeMapTileBordersCheckBox;
 	public static CheckBox improvedInstrumentMusicWindowCheckBox;
     public static CheckBox preventEscKeyFromClosingWindowsCheckBox;
     public static CheckBox stackWindowsWhenOpenedCheckBox;
@@ -2800,17 +2799,14 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("bl").adds(0, 2));
 			showCheeseRacksTierTextCheckBox.tooltip = showCheeseRacksTierTextTooltip;
 
-			rightColumn = add(removeTileBordersCheckBox = new CheckBox("Remove Tile Borders"){
-				{
-					a = Utils.getprefb("removeTileBorders", false);
-					removeTileBorders = a;
-				}
+			rightColumn = add(removeMapTileBordersCheckBox = new CheckBox("Remove Map Tile Borders"){
+				{a = Utils.getprefb("removeMapTileBorders", false);}
 				public void changed(boolean val) {
-					Utils.setprefb("removeTileBorders", val);
-					removeTileBorders = val;
+					Utils.setprefb("removeMapTileBorders", val);
 					refreshMapCache();
 				}
 			}, rightColumn.pos("bl").adds(0, 15));
+            removeMapTileBordersCheckBox.tooltip = removeMapTileBordersTooltip;
 
 		rightColumn = add(simplifiedMapColorsCheckBox = new CheckBox("Simplified Map Colors"){
 			{a = (Utils.getprefb("simplifiedMapColorsEnabled", false));}
@@ -5399,7 +5395,7 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
     private static final Object partyChatPingColorOptionTooltip = RichText.render("$col[218,163,0]{Note:} $col[185,185,185]{If you ping players for your party, you will instead set a Party Mark on them.}", UI.scale(300));
-
+    private static final Object removeMapTileBordersTooltip = RichText.render("$col[200,0,0]{WARNING: This setting might not work with your Web Map Integration!}", UI.scale(300));
 
 	// Quality Display Settings Tooltips
 	private static final Object customQualityColorsTooltip = RichText.render("These numbers and colors are completely arbitrary, and you can change them to whatever you like." +
