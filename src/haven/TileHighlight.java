@@ -28,6 +28,7 @@ public class TileHighlight {
 
 	public static final Map<String, List<String>> tileHighlightNames = new HashMap<String, List<String>>(){{
 		put("Ground Tiles", new ArrayList<String>(){{
+            add("gfx/tiles/acreclaypit");
 			add("gfx/tiles/ashland");
             add("gfx/tiles/badlands");
 			add("gfx/tiles/beach");
