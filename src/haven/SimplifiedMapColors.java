@@ -32,10 +32,15 @@ public class SimplifiedMapColors {
 
     public static void updateColorMappings() {
         tileColors.clear();
+        updateCaveMapping();
         updateSprintLandsMapping();
         updateThirdSpeedLandsMapping();
         updateSwampsMapping();
         updateThicketMapping();
+    }
+
+    public static void updateCaveMapping() {
+        tileColors.put("gfx/tiles/cave", new Color(49, 49, 49));
     }
 
     public static void updateSprintLandsMapping() {
@@ -44,7 +49,6 @@ public class SimplifiedMapColors {
         tileColors.put("gfx/tiles/beach", SprintLands);
         tileColors.put("gfx/tiles/bluesod", SprintLands);
         tileColors.put("gfx/tiles/bountyacre", SprintLands);
-        tileColors.put("gfx/tiles/cave", SprintLands);
         tileColors.put("gfx/tiles/cloudrange", SprintLands);
         tileColors.put("gfx/tiles/dirt", SprintLands);
         tileColors.put("gfx/tiles/dryflat", SprintLands);
@@ -71,6 +75,7 @@ public class SimplifiedMapColors {
         tileColors.put("gfx/tiles/wildcavern", SprintLands);
         tileColors.put("gfx/tiles/wildmoor", SprintLands);
         tileColors.put("gfx/tiles/wildturf", SprintLands);
+        tileColors.put("gfx/tiles/mine", SprintLands);
     }
 
     public static void updateThirdSpeedLandsMapping() {
@@ -117,6 +122,11 @@ public class SimplifiedMapColors {
         if(customColor != null) {
             return customColor.getRGB();
         }
+// TODO - those (pavings) are in theory better than normal sprintlands cuz use less energy so idk maybe other color or just leave commented for now idk
+//        if(tileName.startsWith("gfx/tiles/paving/") || tileName.startsWith("gfx/tiles/woodchip-")) {
+//            return SprintLands.getRGB();
+//        }
+
         return originalRgb;
     }
 }
