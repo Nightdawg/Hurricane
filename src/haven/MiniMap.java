@@ -71,7 +71,7 @@ public class MiniMap extends Widget {
     public List<DisplayIcon> icons = Collections.emptyList();
     protected Locator setloc;
     protected boolean follow;
-    protected float zoomlevel = 1, maglevel = Utils.clip((int)Math.round(Math.log(UI.scale(1.0)) / Math.log(2)), 0, 3);
+    protected float zoomlevel = 1, maglevel = 1 << Utils.clip((int)Math.round(Math.log(UI.scale(1.0)) / Math.log(2)), 0, 3);
 	public float smallMapZoomLevel = 1;
 	public float bigMapZoomLevel = 1;
 	public float zoomMomentum = 0;
@@ -130,6 +130,10 @@ public class MiniMap extends Widget {
 	    Objects.requireNonNull(tc);
 	    this.seg = seg; this.tc = tc;
 	}
+
+	public String toString() {
+	    return(String.format("(%d, %d) @ %s", tc.x, tc.y, Long.toUnsignedString(seg.id, 16)));
+	}
     }
 
     public interface Locator {
@@ -147,8 +151,11 @@ public class MiniMap extends Widget {
 	    MCache map = sess.glob.map;
 	    if(lastgrid != null) {
 		synchronized(map.grids) {
-		    if(map.grids.get(lastgrid.gc) == lastgrid)
-			return(lastloc);
+		    if(map.grids.get(lastgrid.gc) == lastgrid) {
+			GridInfo info = file.gridinfo.get(lastgrid.id);
+			if((info != null) && (info.seg == lastloc.seg.id))
+			    return(lastloc);
+		    }
 		}
 		lastgrid = null;
 		lastloc = null;
@@ -323,7 +330,7 @@ public class MiniMap extends Widget {
 	public Coord sc = null;
 	public double ang = 0.0;
 	public int z;
-	public double stime;
+	public double stime, ntime;
 	public boolean notify;
 	private Consumer<UI> snotify;
 	private boolean markchecked;
@@ -333,7 +340,7 @@ public class MiniMap extends Widget {
 	    this.gob = attr.gob;
 	    this.icon = attr.icon();
 	    this.z = icon.z();
-	    this.stime = Utils.rtime();
+	    this.stime = ui.lasttick;
 	    this.conf = conf;
 	    if(this.notify = conf.notify)
 		this.snotify = conf.notification();
@@ -342,6 +349,12 @@ public class MiniMap extends Widget {
 	public void update(Coord2d rc, double ang) {
 	    this.rc = rc;
 	    this.ang = ang;
+	    if(notify) {
+		if((ntime = (ui.lasttick - stime) * 0.5) > 1.0) {
+		    notify = false;
+		    snotify = null;
+		}
+	    }
 	}
 
 	public void dispupdate() {
@@ -354,18 +367,13 @@ public class MiniMap extends Widget {
 	public void draw(GOut g) {
 	    icon.draw(g, sc);
 	    if(notify) {
-		double t = (Utils.rtime() - stime) * 1.0;
-		if(t > 1) {
-		    notify = false;
-		} else {
-		    double f = 1.0 + (Math.pow(Math.sin(t * Math.PI * 1.5), 2) * 1.0);
-		    double a = (t < 0.5) ? 0.5 : (0.5 - (t - 0.5));
-		    g.usestate(new ColorMask(notifcol));
-		    g.usestate(new Scale2D(sc.add(g.tx), (float)f));
-		    g.chcolor(255, 255, 255, (int)Math.round(255 * a));
-		    icon.draw(g, sc);
-		    g.defstate();
-		}
+		double f = 1.0 + (Math.pow(Math.sin(ntime * Math.PI * 1.5), 2) * 1.0);
+		double a = (ntime < 0.5) ? 0.5 : (0.5 - (ntime - 0.5));
+		g.usestate(new ColorMask(notifcol));
+		g.usestate(new Scale2D(sc.add(g.tx), (float)f));
+		g.chcolor(255, 255, 255, (int)Math.round(255 * a));
+		icon.draw(g, sc);
+		g.defstate();
 	    }
 	    if(snotify != null) {
 		snotify.accept(ui);
@@ -609,12 +617,20 @@ public class MiniMap extends Widget {
 	return(UI.unscale((zoomlevel)));
     }
 
+    private Coord l2dscale(Coord c) {
+        return(c.mul(dmag).div(1 << dlvl));
+    }
+
     private Coord scalec(Coord c) {
         int f = dlvl - dmag;
         if(f < 0)
             return(c.div(1 << -f));
         else
             return(c.mul(1 << f));
+    }
+
+    private Coord d2lscale(Coord c) {
+        return(c.mul(1 << dlvl).div(dmag));
     }
 
     public Coord st2c(Coord tc) {
@@ -729,7 +745,6 @@ public class MiniMap extends Widget {
 			    DisplayIcon disp = pmap.remove(icon);
 			    if(disp == null)
 				disp = new DisplayIcon(icon, conf);
-			    disp.update(gob.rc, gob.a);
 			    ret.add(disp);
 			}
 		    }
@@ -740,6 +755,8 @@ public class MiniMap extends Widget {
 	    if(disp.force())
 		ret.add(disp);
 	}
+	for(DisplayIcon disp : ret)
+	    disp.update(disp.gob.rc, disp.gob.a);
 	Collections.sort(ret, (a, b) -> a.z - b.z);
 	if(ret.size() == 0)
 	    return(Collections.emptyList());
@@ -1174,7 +1191,7 @@ public class MiniMap extends Widget {
 	    if((grid != null) && (grid.dc != null)) {
 		DataGrid dgrid = grid.gref.get();
 		if(dgrid != null) {
-		    Coord gc = c.sub(grid.dc).div(1 << dmag);
+		    Coord gc = c.sub(grid.dc).div(dmag);
 		    gc = Area.sized(cmaps).closest(gc); /* XXX: This should not be necessary. */
 		    TileInfo tile = dgrid.tilesets[dgrid.gettile(gc)];
 		    if(tile != null) {
