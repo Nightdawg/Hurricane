@@ -1,8 +1,8 @@
 #!/bin/bash
-# ---------------------------------------------
+# --------------------------------------------
 # Hafen launcher script for Linux/macOS
 # Equivalent to the Windows .bat version
-# ---------------------------------------------
+# --------------------------------------------
 
 # Optional: print where Java is being run from
 echo "Launching Hafen..."
