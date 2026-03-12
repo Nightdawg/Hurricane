@@ -94,8 +94,6 @@ public class MappingClient {
 	    EnterGrid(gc);
 	}
     }
-    
-    private final Map<Long, MapRef> cache = new HashMap<Long, MapRef>();
 
     public void ProcessMap(MapFile mapfile, Predicate<MapFile.Marker> uploadCheck) {
 	scheduler.schedule(new ExtractMapper(mapfile, uploadCheck), 5, TimeUnit.SECONDS);
@@ -402,12 +400,9 @@ public class MappingClient {
 			    buffer.write(data, 0, nRead);
 			}
 			buffer.flush();
-			String response = buffer.toString(StandardCharsets.UTF_8.name());
+			String response = buffer.toString(StandardCharsets.UTF_8);
 			JSONObject jo = new JSONObject(response);
 			JSONArray reqs = jo.optJSONArray("gridRequests");
-			synchronized (cache) {
-			    cache.put(Long.valueOf(gridUpdate.grids[1][1]), new MapRef(jo.getLong("map"), new Coord(jo.getJSONObject("coords").getInt("x"), jo.getJSONObject("coords").getInt("y"))));
-			}
 			for (int i = 0; reqs != null && i < reqs.length(); i++) {
 			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i))));
 			}
@@ -467,20 +462,6 @@ public class MappingClient {
     private static Coord2d gridOffset(Coord2d c) {
 	Coord gridUnit = toGridUnit(c);
 	return new Coord2d(c.x - gridUnit.x, c.y - gridUnit.y);
-    }
-    
-    public class MapRef {
-	public Coord gc;
-	public long mapID;
-	
-	private MapRef(long mapID, Coord gc) {
-	    this.gc = gc;
-	    this.mapID = mapID;
-	}
-	
-	public String toString() {
-	    return (gc.toString() + " in map space " + mapID);
-	}
     }
 
 	public void uploadSMarker(Gob gob, MapFile.SMarker marker) {
