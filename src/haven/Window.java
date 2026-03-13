@@ -153,7 +153,7 @@ public class Window extends Widget {
             if (((DefaultDeco) deco).stackbtn != null)
                 ((DefaultDeco) deco).stackbtn.visible = true;
 			if (((DefaultDeco) deco).extlistbtn != null)
-				((DefaultDeco) deco).extlistbtn.visible = true;
+				((DefaultDeco) deco).extlistbtn.visible = ((DefaultDeco) deco).findExtInventory() != null;;
             if (((DefaultDeco) deco).unstackbtn != null)
                 ((DefaultDeco) deco).unstackbtn.visible = true;
         }
@@ -385,7 +385,21 @@ public class Window extends Widget {
 		}
 		return null;
 	}
-	
+
+	private ExtInventory findExtInventory() {
+		if (!(parent instanceof Window))
+			return null;
+
+		Window wnd = (Window) parent;
+		for (Widget w = wnd.child; w != null; w = w.next) {
+			if (w == wnd.deco)
+				continue;
+			if (w instanceof ExtInventory)
+				return (ExtInventory) w;
+		}
+		return null;
+	}
+
 	private int inventoryExtraWidth() {
 		if (!(parent instanceof Window))
 			return 0;
@@ -407,8 +421,9 @@ public class Window extends Widget {
 			return;
 
 		extlistbtn = add(new IButton(extlistbtni[0], extlistbtni[1], extlistbtni[2])).action(() -> {
-			if (ui != null && ui.gui != null && ui.gui.maininvext != null) {
-				ui.gui.maininvext.togglePanel();
+			ExtInventory ext = findExtInventory();
+			if (ext != null) {
+				ext.togglePanel();
 			}
 		});
 		extlistbtn.settip("Quality List");
@@ -864,11 +879,14 @@ public class Window extends Widget {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-					try {
-						((DefaultDeco) deco).addExtListBtn();
-					} catch (Exception e) {
-						e.printStackTrace();
+					if (child instanceof ExtInventory) {
+						try {
+							((DefaultDeco) deco).addExtListBtn();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
+
 				}
             }
         } catch (Exception e) {
