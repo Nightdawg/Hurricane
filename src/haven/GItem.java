@@ -50,7 +50,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
     private Widget hovering;
     private boolean hoverset;
     private GSprite spr;
-    private ItemInfo.Raw rawinfo;
+	private ItemInfo.Raw rawinfo = ItemInfo.Raw.nil;;
     public List<ItemInfo> info = Collections.emptyList();
 	public boolean sendttupdate = false;
 	public long meterUpdated = 0; // ND: last time meter was updated, ms
@@ -210,22 +210,23 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	hoverset = false;
     }
 
-    public List<ItemInfo> info() {
-	if(this.info == null) {
-	    List<ItemInfo> info = ItemInfo.buildinfo(this, rawinfo);
-	    addcontinfo(info);
-	    Resource.Pagina pg = res.get().layer(Resource.pagina);
-	    if(pg != null)
-		info.add(new ItemInfo.Pagina(this, pg.text));
-	    this.info = info;
-		try {
-			if (FoodService.isValidEndpoint() && !checkForHempBuff()) {
-				FoodService.checkFood(info, getres(), ui.gui.genus);
-			}
-		} catch (Exception ignored) {}
+	public List<ItemInfo> info() {
+		if(this.info == null) {
+			ItemInfo.Raw raw = (rawinfo != null) ? rawinfo : ItemInfo.Raw.nil;
+			List<ItemInfo> info = ItemInfo.buildinfo(this, raw);
+			addcontinfo(info);
+			Resource.Pagina pg = res.get().layer(Resource.pagina);
+			if(pg != null)
+				info.add(new ItemInfo.Pagina(this, pg.text));
+			this.info = info;
+			try {
+				if (FoodService.isValidEndpoint() && !checkForHempBuff()) {
+					FoodService.checkFood(info, getres(), ui.gui.genus);
+				}
+			} catch (Exception ignored) {}
+		}
+		return(this.info);
 	}
-	return(this.info);
-    }
 
 
 
