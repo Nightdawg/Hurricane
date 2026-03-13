@@ -26,6 +26,9 @@ public class ExtInventory extends Widget {
     public final Inventory inv;
     private final QualityPanel panel;
 
+    private Coord lastLayoutInvSz = null;
+    private boolean lastLayoutExpanded = false;
+
     private boolean expanded = false;
     private volatile boolean pendingUnresolvedItems = false;
 
@@ -100,12 +103,23 @@ public class ExtInventory extends Widget {
         if (wnd != null) {
             wnd.pack();
         }
+
+        lastLayoutInvSz = inv.sz;
+        lastLayoutExpanded = expanded;
     }
 
     @Override
     public void tick(double dt) {
         super.tick(dt);
-        if ((panel.c.x != inv.sz.x + MARGIN) || (panel.sz.y != Math.max(inv.sz.y, HEADER_H + (ROW_H * MIN_ROWS)))) {
+
+        boolean invSizeChanged = (lastLayoutInvSz == null) || !lastLayoutInvSz.equals(inv.sz);
+        boolean expandedChanged = (lastLayoutExpanded != expanded);
+
+        boolean panelGeometryChanged = expanded &&
+                ((panel.c.x != inv.sz.x + MARGIN) ||
+                        (panel.sz.y != Math.max(inv.sz.y, HEADER_H + (ROW_H * MIN_ROWS))));
+
+        if (invSizeChanged || expandedChanged || panelGeometryChanged) {
             relayout();
         }
     }
