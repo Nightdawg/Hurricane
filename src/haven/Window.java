@@ -88,6 +88,10 @@ public class Window extends Widget {
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnu"),
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnd"),
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnh")};
+	private static final BufferedImage[] extlistbtni = new BufferedImage[] {
+    Resource.loadsimg("gfx/hud/wnd/lg/qlistbtnu"),
+    Resource.loadsimg("gfx/hud/wnd/lg/qlistbtnd"),
+    Resource.loadsimg("gfx/hud/wnd/lg/qlistbtnh")};
     public Deco deco;
     public String cap;
     public TexRaw gbuf = null;
@@ -148,6 +152,8 @@ public class Window extends Widget {
         if (cap != null && Arrays.stream(Config.EXCLUDED_INVENTORY_WINDOWS).noneMatch(cap::equals)) {
             if (((DefaultDeco) deco).stackbtn != null)
                 ((DefaultDeco) deco).stackbtn.visible = true;
+			if (((DefaultDeco) deco).extlistbtn != null)
+				((DefaultDeco) deco).extlistbtn.visible = true;
             if (((DefaultDeco) deco).unstackbtn != null)
                 ((DefaultDeco) deco).unstackbtn.visible = true;
         }
@@ -212,7 +218,7 @@ public class Window extends Widget {
 								   UI.rscale(0.75), UI.rscale(1.0), Color.BLACK);
 	public final boolean lg;
 	public final IButton cbtn;
-    public IButton stackbtn, unstackbtn;
+    public IButton extlistbtn, stackbtn, unstackbtn;
 	public boolean dragsize, cfocus;
 	public Area aa, ca;
 	public Coord cptl = Coord.z, cpsz = Coord.z;
@@ -239,14 +245,18 @@ public class Window extends Widget {
 	    resize(wsz);
 	    ca = Area.sized(tlm, csz);
 	    aa = Area.sized(ca.ul.add(mrgn), asz);
-		cbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(9), - UI.scale(10)); // ND: UI Window close button location
-        if (stackbtn != null)
-            stackbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(40), - UI.scale(10));
-        if (unstackbtn != null)
-            unstackbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(59), - UI.scale(10));
+		int extra = inventoryExtraWidth();
+		int anchor = sz.x - extra;
+		cbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(9), -UI.scale(10));
+		if (extlistbtn != null)
+			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(78), -UI.scale(10));
+		if (stackbtn != null)
+			stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(59), -UI.scale(10));
+		if (unstackbtn != null)
+			unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(40), -UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
-
+	
 	public Area contarea() {
 	    return(aa);
 	}
@@ -360,29 +370,78 @@ public class Window extends Widget {
 	    return(ca.contains(c) || (c.isect(cptl, cpsz) && (cm.back.getRaster().getSample(cpc.x % cm.back.getWidth(), cpc.y, 3) >= 128)));
 	}
 
+	private Inventory findInventory() {
+		if (!(parent instanceof Window))
+			return null;
+
+		Window wnd = (Window) parent;
+		for (Widget w = wnd.child; w != null; w = w.next) {
+			if (w == wnd.deco)
+				continue;
+			if (w instanceof Inventory)
+				return (Inventory) w;
+			if (w instanceof ExtInventory)
+				return ((ExtInventory) w).inv;
+		}
+		return null;
+	}
+	
+	private int inventoryExtraWidth() {
+		if (!(parent instanceof Window))
+			return 0;
+
+		Window wnd = (Window) parent;
+		for (Widget w = wnd.child; w != null; w = w.next) {
+			if (w == wnd.deco)
+				continue;
+			if (w instanceof ExtInventory) {
+				ExtInventory ext = (ExtInventory) w;
+				return Math.max(0, ext.sz.x - ext.inv.sz.x);
+			}
+		}
+		return 0;
+	}
+
+	public void addExtListBtn() {
+		if (extlistbtn != null)
+			return;
+
+		extlistbtn = add(new IButton(extlistbtni[0], extlistbtni[1], extlistbtni[2])).action(() -> {
+			if (ui != null && ui.gui != null && ui.gui.maininvext != null) {
+				ui.gui.maininvext.togglePanel();
+			}
+		});
+		extlistbtn.settip("Quality List");
+		extlistbtn.visible = false;
+	}
+
     public void addStackBtn() {
-        stackbtn = add(new IButton(stackbtni[0], stackbtni[1], stackbtni[2])).action(() -> {
-            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
-                if (wdg instanceof Inventory) {
-                    new Thread(new StackAllItems(this.ui.gui, (Inventory) wdg)).start();
-                }
-            }
-        });
-        stackbtn.settip("Stack All");
-        stackbtn.visible = false;
-    }
+		if (stackbtn != null)
+			return;
+
+		stackbtn = add(new IButton(stackbtni[0], stackbtni[1], stackbtni[2])).action(() -> {
+			Inventory inv = findInventory();
+			if (inv != null) {
+				new Thread(new StackAllItems(this.ui.gui, inv)).start();
+			}
+		});
+		stackbtn.settip("Stack All");
+		stackbtn.visible = false;
+	}
 
     public void addUnstackBtn() {
-        unstackbtn = add(new IButton(unstackbtni[0], unstackbtni[1], unstackbtni[2])).action(() -> {
-            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
-                if (wdg instanceof Inventory) {
-                    new Thread(new UnstackAllItems(this.ui.gui, (Inventory) wdg)).start();
-                }
-            }
-        });
-        unstackbtn.settip("Unstack All");
-        unstackbtn.visible = false;
-    }
+		if (unstackbtn != null)
+			return;
+
+		unstackbtn = add(new IButton(unstackbtni[0], unstackbtni[1], unstackbtni[2])).action(() -> {
+			Inventory inv = findInventory();
+			if (inv != null) {
+				new Thread(new UnstackAllItems(this.ui.gui, inv)).start();
+			}
+		});
+		unstackbtn.settip("Unstack All");
+		unstackbtn.visible = false;
+	}
 
     }
 
@@ -793,11 +852,24 @@ public class Window extends Widget {
 
     private <T extends Widget> void enhanceWidgets(T child) {
         try {
-            if (child instanceof Inventory) {
+            if (child instanceof Inventory || child instanceof ExtInventory) {
                 if (deco instanceof DefaultDeco) {
-                    ((DefaultDeco)deco).addStackBtn();
-                    ((DefaultDeco)deco).addUnstackBtn();
-                }
+					try {
+						((DefaultDeco) deco).addStackBtn();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					try {
+						((DefaultDeco) deco).addUnstackBtn();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					try {
+						((DefaultDeco) deco).addExtListBtn();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
             }
         } catch (Exception e) {
             e.printStackTrace();

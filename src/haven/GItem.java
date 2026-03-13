@@ -254,18 +254,24 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	if(name == "num") {
 	    num = Utils.iv(args[0]);
 	} else if(name == "chres") {
-	    synchronized(this) {
-		res = ui.sess.getresv(args[0]);
-		sdt = (args.length > 1) ? new MessageBuf((byte[])args[1]) : MessageBuf.nil;
-		spr = null;
-	    }
+		synchronized(this) {
+			res = ui.sess.getresv(args[0]);
+			sdt = (args.length > 1) ? new MessageBuf((byte[])args[1]) : MessageBuf.nil;
+			spr = null;
+		}
+		qBuff = null;
+		stackQualityTex = null;
+		info = null;
+		infoseq++;
 	} else if(name == "tt") {
-	    info = null;
-	    rawinfo = new ItemInfo.Raw(args);
+		info = null;
+		qBuff = null;
+		stackQualityTex = null;
+		rawinfo = new ItemInfo.Raw(args);
 		if (sendttupdate) {
 			wdgmsg("ttupdate");
 		}
-	    infoseq++;
+		infoseq++;
 		meterUpdated = System.currentTimeMillis();
 	} else if(name == "meter") {
 	    meter = Utils.iv(args[0]);
@@ -292,7 +298,11 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    contentsnm = (String)args[1];
 	    contentsid = null;
 	    if(args.length > 2)
-		contentsid = args[2];
+			contentsid = args[2];
+		qBuff = null;
+		stackQualityTex = null;
+		info = null;
+		infoseq++;
 	    contentswnd = contparent().add(new ContentsWindow(this, contents));
 		if(this.parent instanceof Equipory){
 			Equipory equipory = (Equipory) this.parent;

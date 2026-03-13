@@ -66,7 +66,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     private double msgtime;
     private Window invwnd, equwnd, /*makewnd,*/ srchwnd, iconwnd;
 	public CraftWindow makewnd;
-    public Inventory maininv;
+	public Inventory maininv;
+	public ExtInventory maininvext;
     public CharWnd chrwdg;
     public MapWnd mapfile;
     public Widget qqview;
@@ -1180,15 +1181,19 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(place == "fsess") {
 	    fs = add((Fightsess)child, Coord.z);
 	} else if(place == "inv") {
-	    invwnd = new Hidewnd(Coord.z, "Inventory") {
-		    public void cresize(Widget ch) {
-			pack();
-		    }
+		invwnd = new Hidewnd(Coord.z, "Inventory") {
+			public void cresize(Widget ch) {
+				pack();
+			}
 		};
-	    invwnd.add(maininv = (Inventory)child, Coord.z);
-	    invwnd.pack();
-	    invwnd.hide();
-	    add(invwnd, Utils.getprefc("wndc-inv", new Coord(100, 100)));
+		
+		maininv = (Inventory) child;
+		maininvext = new ExtInventory(maininv);
+
+		invwnd.add(maininvext, Coord.z);
+		invwnd.pack();
+		invwnd.hide();
+		add(invwnd, Utils.getprefc("wndc-inv", new Coord(100, 100)));
 	} else if(place == "equ") {
 	    equwnd = new Hidewnd(Coord.z, "Equipment");
 	    equwnd.add(child, Coord.z);
