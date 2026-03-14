@@ -89,6 +89,10 @@ public class Window extends Widget {
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnu"),
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnd"),
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnh")};
+    private static final BufferedImage[] sortbtni = new BufferedImage[] {
+    Resource.loadsimg("gfx/hud/wnd/lg/sortbtnu"),
+    Resource.loadsimg("gfx/hud/wnd/lg/sortbtnd"),
+    Resource.loadsimg("gfx/hud/wnd/lg/sortbtnh")};
 	private static final BufferedImage[] extlistbtni = new BufferedImage[] {
     Resource.loadsimg("gfx/hud/wnd/lg/qlistbtnu"),
     Resource.loadsimg("gfx/hud/wnd/lg/qlistbtnd"),
@@ -450,7 +454,7 @@ public class Window extends Widget {
 	}
 
     public void addSortBtn() {
-        sortbtn = add(new IButton(stackbtni[0], stackbtni[1], stackbtni[2])).action(() -> {
+        sortbtn = add(new IButton(sortbtni[0], sortbtni[1], sortbtni[2])).action(() -> {
             for (Widget wdg = this; wdg != null; wdg = wdg.next) {
                 if (wdg instanceof Inventory) {
                     InventorySorter.sort((Inventory) wdg);
