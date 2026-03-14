@@ -32,9 +32,11 @@ public class InventorySorter implements Defer.Callable<Void> {
     private static InventorySorter current;
     private Defer.Future<Void> task;
     private final List<Inventory> inventories;
+    private final GameUI gui;
 
-    private InventorySorter(List<Inventory> inventories) {
+    private InventorySorter(List<Inventory> inventories, GameUI gui) {
 	this.inventories = inventories;
+	this.gui = gui;
     }
 
     public static void sort(Inventory inv) {
@@ -42,7 +44,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    inv.ui.gui.error("Need empty cursor to sort inventory!");
 	    return;
 	}
-	start(new InventorySorter(Collections.singletonList(inv)), inv.ui.gui);
+	start(new InventorySorter(Collections.singletonList(inv), inv.ui.gui));
     }
 
     public static void sortAll(GameUI gui) {
@@ -57,7 +59,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    targets.add(inv);
 	}
 	if (!targets.isEmpty()) {
-	    start(new InventorySorter(targets), gui);
+	    start(new InventorySorter(targets, gui));
 	}
     }
 
@@ -72,15 +74,13 @@ public class InventorySorter implements Defer.Callable<Void> {
     @Override
     public Void call() throws InterruptedException {
 	for (Inventory inv : inventories) {
-	    if (inv.disposed()) {
-		cancel();
-		break;
-	    }
+	    if (inv.parent == null) return null;
 	    doSort(inv);
 	}
 	synchronized (lock) {
 	    if (current == this) current = null;
 	}
+	gui.ui.sfxrl(sfx_done);
 	return null;
     }
 
@@ -154,14 +154,9 @@ public class InventorySorter implements Defer.Callable<Void> {
 
     private static final Audio.Clip sfx_done = Audio.resclip(Resource.remote().loadwait("sfx/hud/on"));
 
-    private static void start(InventorySorter sorter, GameUI gui) {
+    private static void start(InventorySorter sorter) {
 	cancel();
 	synchronized (lock) { current = sorter; }
 	sorter.task = Defer.later(sorter);
-	sorter.task.callback(() -> {
-	    if (!sorter.task.cancelled()) {
-		gui.ui.sfxrl(sfx_done);
-	    }
-	});
     }
 }
