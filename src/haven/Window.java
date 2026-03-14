@@ -26,6 +26,7 @@
 
 package haven;
 
+import haven.automated.InventorySorter;
 import haven.automated.StackAllItems;
 import haven.automated.UnstackAllItems;
 import haven.automated.mapper.MappingClient;
@@ -156,6 +157,8 @@ public class Window extends Widget {
 				((DefaultDeco) deco).extlistbtn.visible = ((DefaultDeco) deco).findExtInventory() != null;;
             if (((DefaultDeco) deco).unstackbtn != null)
                 ((DefaultDeco) deco).unstackbtn.visible = true;
+            if (((DefaultDeco) deco).sortbtn != null)
+                ((DefaultDeco) deco).sortbtn.visible = true;
         }
     }
 
@@ -218,7 +221,7 @@ public class Window extends Widget {
 								   UI.rscale(0.75), UI.rscale(1.0), Color.BLACK);
 	public final boolean lg;
 	public final IButton cbtn;
-    public IButton extlistbtn, stackbtn, unstackbtn;
+    public IButton extlistbtn, stackbtn, unstackbtn, sortbtn;
 	public boolean dragsize, cfocus;
 	public Area aa, ca;
 	public Coord cptl = Coord.z, cpsz = Coord.z;
@@ -254,9 +257,11 @@ public class Window extends Widget {
 			stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(59), -UI.scale(10));
 		if (unstackbtn != null)
 			unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(40), -UI.scale(10));
+        if (sortbtn != null)
+            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(78), - UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
-	
+
 	public Area contarea() {
 	    return(aa);
 	}
@@ -443,6 +448,19 @@ public class Window extends Widget {
 		stackbtn.settip("Stack All");
 		stackbtn.visible = false;
 	}
+
+    public void addSortBtn() {
+        sortbtn = add(new IButton(stackbtni[0], stackbtni[1], stackbtni[2])).action(() -> {
+            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
+                if (wdg instanceof Inventory) {
+                    InventorySorter.sort((Inventory) wdg);
+                    break;
+                }
+            }
+        });
+        sortbtn.settip("Sort");
+        sortbtn.visible = false;
+    }
 
     public void addUnstackBtn() {
 		if (unstackbtn != null)
@@ -879,6 +897,11 @@ public class Window extends Widget {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
+                    try {
+                        ((DefaultDeco) deco).addSortBtn();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
 					if (child instanceof ExtInventory) {
 						try {
 							((DefaultDeco) deco).addExtListBtn();
