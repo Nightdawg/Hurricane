@@ -84,63 +84,152 @@ public class InventorySorter implements Defer.Callable<Void> {
 	return null;
     }
 
+    private static class Entry {
+	final WItem w;
+	final Coord slots;
+	Coord current;
+	Coord target;
+
+	Entry(WItem w, Coord slots, Coord current) {
+	    this.w = w;
+	    this.slots = slots;
+	    this.current = current;
+	    this.target = current;
+	}
+    }
+
     private void doSort(Inventory inv) throws InterruptedException {
-	boolean[][] grid = new boolean[inv.isz.x][inv.isz.y];
-	boolean[] mask = inv.sqmask;
-	if (mask != null) {
+	// Build mask grid (permanently blocked cells)
+	boolean[][] maskGrid = new boolean[inv.isz.x][inv.isz.y];
+	if (inv.sqmask != null) {
 	    int mo = 0;
 	    for (int y = 0; y < inv.isz.y; y++)
 		for (int x = 0; x < inv.isz.x; x++)
-		    grid[x][y] = mask[mo++];
+		    maskGrid[x][y] = inv.sqmask[mo++];
 	}
 
-	List<WItem> items = new ArrayList<>();
+	// Collect all items, skip those with unloaded sprites
+	List<Entry> entries = new ArrayList<>();
 	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
-	    if (wdg.visible && wdg instanceof WItem) {
-		WItem w = (WItem) wdg;
-		Coord slots = w.sz.div(sqsz);
-		if (slots.x * slots.y == 1) {
-		    items.add(w);
-		} else {
-		    Coord loc = w.c.sub(1, 1).div(sqsz);
-		    for (int x = 0; x < slots.x; x++)
-			for (int y = 0; y < slots.y; y++)
-			    grid[loc.x + x][loc.y + y] = true;
+	    if (!wdg.visible || !(wdg instanceof WItem)) continue;
+	    WItem w = (WItem) wdg;
+	    if (w.item.spr() == null) continue;
+	    Coord slots = w.sz.div(sqsz);
+	    Coord current = w.c.sub(1, 1).div(sqsz);
+	    entries.add(new Entry(w, slots, current));
+	}
+
+	// Sort all items together
+	entries.sort(Comparator.comparing(e -> e.w, ITEM_COMPARATOR));
+
+	// Assign target positions in scan order, respecting each item's size
+	boolean[][] assignGrid = copyGrid(maskGrid, inv.isz);
+	for (Entry e : entries) {
+	    Coord pos = findFit(assignGrid, inv.isz, e.slots);
+	    if (pos == null) break;
+	    e.target = pos;
+	    markGrid(assignGrid, pos, e.slots, true);
+	}
+
+	List<Entry> singles = entries.stream().filter(e -> e.slots.x * e.slots.y == 1).collect(Collectors.toList());
+	List<Entry> multis  = entries.stream().filter(e -> e.slots.x * e.slots.y > 1).collect(Collectors.toList());
+
+	// Phase 1: place multi-tile items
+	// For each, first evict any 1x1 items from its target cells, then take+drop it
+	boolean anyMultiSkipped = false;
+	for (Entry me : multis) {
+	    if (me.current.equals(me.target)) continue;
+	    boolean blocked = false;
+	    for (int tx = me.target.x; tx < me.target.x + me.slots.x && !blocked; tx++) {
+		for (int ty = me.target.y; ty < me.target.y + me.slots.y && !blocked; ty++) {
+		    Coord cell = new Coord(tx, ty);
+		    for (Entry se : singles) {
+			if (se.current.equals(cell)) {
+			    Coord free = findFreeCell(inv.isz, maskGrid, entries);
+			    if (free == null) { blocked = true; break; }
+			    se.w.item.wdgmsg("take", Coord.z);
+			    Thread.sleep(10);
+			    inv.wdgmsg("drop", free);
+			    Thread.sleep(10);
+			    se.current = free;
+			    break;
+			}
+		    }
 		}
 	    }
+	    if (blocked) { anyMultiSkipped = true; continue; }
+	    me.w.item.wdgmsg("take", Coord.z);
+	    Thread.sleep(10);
+	    inv.wdgmsg("drop", me.target);
+	    Thread.sleep(10);
+	    me.current = me.target;
 	}
+	if (anyMultiSkipped)
+	    gui.error("Could not move all large items — inventory too full");
 
-	// [WItem, currentPos, targetPos]
-	List<Object[]> sorted = items.stream()
-	    .sorted(ITEM_COMPARATOR)
-	    .map(w -> new Object[]{w, w.c.sub(1, 1).div(sqsz), new Coord(0, 0)})
-	    .collect(Collectors.toList());
-
-	int cx = -1, cy = 0;
-	for (Object[] a : sorted) {
-	    while (true) {
-		if (++cx == inv.isz.x) { cx = 0; cy++; }
-		if (cy == inv.isz.y) break;
-		if (!grid[cx][cy]) { a[2] = new Coord(cx, cy); break; }
-	    }
-	    if (cy == inv.isz.y) break;
-	}
-
-	for (Object[] a : sorted) {
-	    if (a[1].equals(a[2])) continue;
-	    ((WItem) a[0]).item.wdgmsg("take", Coord.z);
-	    Object[] handu = a;
+	// Phase 2: sort 1x1 items using chain/swap algorithm
+	for (Entry se : singles) {
+	    if (se.current.equals(se.target)) continue;
+	    se.w.item.wdgmsg("take", Coord.z);
+	    Entry handu = se;
 	    while (handu != null) {
-		inv.wdgmsg("drop", handu[2]);
-		Object[] b = null;
-		for (Object[] x : sorted) {
-		    if (x[1].equals(handu[2])) { b = x; break; }
+		inv.wdgmsg("drop", handu.target);
+		Entry next = null;
+		for (Entry x : singles) {
+		    if (x != handu && x.current.equals(handu.target)) { next = x; break; }
 		}
-		handu[1] = handu[2];
-		handu = b;
+		handu.current = handu.target;
+		handu = next;
 	    }
 	    Thread.sleep(10);
 	}
+    }
+
+    // Find the first position where an item of given slots fits (left-to-right, top-to-bottom)
+    private static Coord findFit(boolean[][] grid, Coord isz, Coord slots) {
+	for (int y = 0; y <= isz.y - slots.y; y++) {
+	    for (int x = 0; x <= isz.x - slots.x; x++) {
+		if (fits(grid, x, y, slots)) return new Coord(x, y);
+	    }
+	}
+	return null;
+    }
+
+    private static boolean fits(boolean[][] grid, int ox, int oy, Coord slots) {
+	for (int x = 0; x < slots.x; x++)
+	    for (int y = 0; y < slots.y; y++)
+		if (grid[ox + x][oy + y]) return false;
+	return true;
+    }
+
+    // Find a free 1x1 cell not currently occupied by any item
+    private static Coord findFreeCell(Coord isz, boolean[][] maskGrid, List<Entry> entries) {
+	outer:
+	for (int y = 0; y < isz.y; y++) {
+	    for (int x = 0; x < isz.x; x++) {
+		if (maskGrid[x][y]) continue;
+		for (Entry e : entries) {
+		    for (int ex = e.current.x; ex < e.current.x + e.slots.x; ex++)
+			for (int ey = e.current.y; ey < e.current.y + e.slots.y; ey++)
+			    if (ex == x && ey == y) continue outer;
+		}
+		return new Coord(x, y);
+	    }
+	}
+	return null;
+    }
+
+    private static boolean[][] copyGrid(boolean[][] src, Coord sz) {
+	boolean[][] copy = new boolean[sz.x][sz.y];
+	for (int x = 0; x < sz.x; x++)
+	    copy[x] = Arrays.copyOf(src[x], sz.y);
+	return copy;
+    }
+
+    private static void markGrid(boolean[][] grid, Coord pos, Coord slots, boolean val) {
+	for (int x = 0; x < slots.x; x++)
+	    for (int y = 0; y < slots.y; y++)
+		grid[pos.x + x][pos.y + y] = val;
     }
 
     public static void cancel() {
