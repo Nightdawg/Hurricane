@@ -26,6 +26,7 @@
 
 package haven;
 
+import haven.automated.InventorySorter;
 import haven.automated.StackAllItems;
 import haven.automated.UnstackAllItems;
 import haven.automated.mapper.MappingClient;
@@ -88,6 +89,10 @@ public class Window extends Widget {
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnu"),
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnd"),
     Resource.loadsimg("gfx/hud/wnd/lg/unstackbtnh")};
+    private static final BufferedImage[] sortbtni = new BufferedImage[] {
+    Resource.loadsimg("gfx/hud/wnd/lg/sortbtnu"),
+    Resource.loadsimg("gfx/hud/wnd/lg/sortbtnd"),
+    Resource.loadsimg("gfx/hud/wnd/lg/sortbtnh")};
     public Deco deco;
     public String cap;
     public TexRaw gbuf = null;
@@ -150,6 +155,8 @@ public class Window extends Widget {
                 ((DefaultDeco) deco).stackbtn.visible = true;
             if (((DefaultDeco) deco).unstackbtn != null)
                 ((DefaultDeco) deco).unstackbtn.visible = true;
+            if (((DefaultDeco) deco).sortbtn != null)
+                ((DefaultDeco) deco).sortbtn.visible = true;
         }
     }
 
@@ -212,7 +219,7 @@ public class Window extends Widget {
 								   UI.rscale(0.75), UI.rscale(1.0), Color.BLACK);
 	public final boolean lg;
 	public final IButton cbtn;
-    public IButton stackbtn, unstackbtn;
+    public IButton stackbtn, unstackbtn, sortbtn;
 	public boolean dragsize, cfocus;
 	public Area aa, ca;
 	public Coord cptl = Coord.z, cpsz = Coord.z;
@@ -244,6 +251,8 @@ public class Window extends Widget {
             stackbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(40), - UI.scale(10));
         if (unstackbtn != null)
             unstackbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(59), - UI.scale(10));
+        if (sortbtn != null)
+            sortbtn.c = Coord.of(sz.x - cbtn.sz.x - UI.scale(78), - UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
@@ -370,6 +379,19 @@ public class Window extends Widget {
         });
         stackbtn.settip("Stack All");
         stackbtn.visible = false;
+    }
+
+    public void addSortBtn() {
+        sortbtn = add(new IButton(sortbtni[0], sortbtni[1], sortbtni[2])).action(() -> {
+            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
+                if (wdg instanceof Inventory) {
+                    InventorySorter.sort((Inventory) wdg);
+                    break;
+                }
+            }
+        });
+        sortbtn.settip("Sort");
+        sortbtn.visible = false;
     }
 
     public void addUnstackBtn() {
@@ -797,6 +819,7 @@ public class Window extends Widget {
                 if (deco instanceof DefaultDeco) {
                     ((DefaultDeco)deco).addStackBtn();
                     ((DefaultDeco)deco).addUnstackBtn();
+                    ((DefaultDeco)deco).addSortBtn();
                 }
             }
         } catch (Exception e) {
