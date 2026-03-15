@@ -50,7 +50,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
     private Widget hovering;
     private boolean hoverset;
     private GSprite spr;
-    private ItemInfo.Raw rawinfo;
+	private ItemInfo.Raw rawinfo = ItemInfo.Raw.nil;;
     public List<ItemInfo> info = Collections.emptyList();
 	public boolean sendttupdate = false;
 	public long meterUpdated = 0; // ND: last time meter was updated, ms
@@ -210,22 +210,23 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	hoverset = false;
     }
 
-    public List<ItemInfo> info() {
-	if(this.info == null) {
-	    List<ItemInfo> info = ItemInfo.buildinfo(this, rawinfo);
-	    addcontinfo(info);
-	    Resource.Pagina pg = res.get().layer(Resource.pagina);
-	    if(pg != null)
-		info.add(new ItemInfo.Pagina(this, pg.text));
-	    this.info = info;
-		try {
-			if (FoodService.isValidEndpoint() && !checkForHempBuff()) {
-				FoodService.checkFood(info, getres(), ui.gui.genus);
-			}
-		} catch (Exception ignored) {}
+	public List<ItemInfo> info() {
+		if(this.info == null) {
+			ItemInfo.Raw raw = (rawinfo != null) ? rawinfo : ItemInfo.Raw.nil;
+			List<ItemInfo> info = ItemInfo.buildinfo(this, raw);
+			addcontinfo(info);
+			Resource.Pagina pg = res.get().layer(Resource.pagina);
+			if(pg != null)
+				info.add(new ItemInfo.Pagina(this, pg.text));
+			this.info = info;
+			try {
+				if (FoodService.isValidEndpoint() && !checkForHempBuff()) {
+					FoodService.checkFood(info, getres(), ui.gui.genus);
+				}
+			} catch (Exception ignored) {}
+		}
+		return(this.info);
 	}
-	return(this.info);
-    }
 
 
 
@@ -254,18 +255,24 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	if(name == "num") {
 	    num = Utils.iv(args[0]);
 	} else if(name == "chres") {
-	    synchronized(this) {
-		res = ui.sess.getresv(args[0]);
-		sdt = (args.length > 1) ? new MessageBuf((byte[])args[1]) : MessageBuf.nil;
-		spr = null;
-	    }
+		synchronized(this) {
+			res = ui.sess.getresv(args[0]);
+			sdt = (args.length > 1) ? new MessageBuf((byte[])args[1]) : MessageBuf.nil;
+			spr = null;
+		}
+		qBuff = null;
+		stackQualityTex = null;
+		info = null;
+		infoseq++;
 	} else if(name == "tt") {
-	    info = null;
-	    rawinfo = new ItemInfo.Raw(args);
+		info = null;
+		qBuff = null;
+		stackQualityTex = null;
+		rawinfo = new ItemInfo.Raw(args);
 		if (sendttupdate) {
 			wdgmsg("ttupdate");
 		}
-	    infoseq++;
+		infoseq++;
 		meterUpdated = System.currentTimeMillis();
 	} else if(name == "meter") {
 	    meter = Utils.iv(args[0]);
@@ -292,7 +299,11 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    contentsnm = (String)args[1];
 	    contentsid = null;
 	    if(args.length > 2)
-		contentsid = args[2];
+			contentsid = args[2];
+		qBuff = null;
+		stackQualityTex = null;
+		info = null;
+		infoseq++;
 	    contentswnd = contparent().add(new ContentsWindow(this, contents));
 		if(this.parent instanceof Equipory){
 			Equipory equipory = (Equipory) this.parent;
