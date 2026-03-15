@@ -78,6 +78,9 @@ public class ExtInventory extends Widget {
     public void setExpanded(boolean v) {
         expanded = v;
         panel.visible = v;
+        if (v) {
+            panel.refresh();
+        }
         relayout();
     }
 
@@ -90,6 +93,8 @@ public class ExtInventory extends Widget {
             if (wnd != null) {
                 wnd.pack();
             }
+            lastLayoutInvSz = new Coord(inv.sz);
+            lastLayoutExpanded = expanded;
             return;
         }
 
@@ -104,7 +109,7 @@ public class ExtInventory extends Widget {
             wnd.pack();
         }
 
-        lastLayoutInvSz = inv.sz;
+        lastLayoutInvSz = new Coord(inv.sz);
         lastLayoutExpanded = expanded;
     }
 
@@ -246,6 +251,14 @@ public class ExtInventory extends Widget {
         return byQuality(b, a);
     }
 
+    private static void sortByQuality(List<WItem> items, boolean reverse) {
+        if (reverse) {
+            items.sort(ExtInventory::byReverseQuality);
+        } else {
+            items.sort(ExtInventory::byQuality);
+        }
+    }
+
     private static boolean isResolvedForList(WItem w) {
         String name = rawName(w);
         if (name == null)
@@ -281,11 +294,7 @@ public class ExtInventory extends Widget {
     private static void processGroup(List<WItem> items, boolean reverse, String action, Object... args) {
         dbg("processGroup action=%s count=%d reverse=%s", action, items.size(), reverse);
 
-        if (reverse) {
-            items.sort(ExtInventory::byReverseQuality);
-        } else {
-            items.sort(ExtInventory::byQuality);
-        }
+        sortByQuality(items, reverse);
 
         for (WItem item : items) {
             if (item.parent != null) {
@@ -293,6 +302,14 @@ public class ExtInventory extends Widget {
                 item.item.wdgmsg(action, args);
             }
         }
+    }
+
+    private static void sendInvxf2(GItem item, int amount, int externalInventoryId) {
+        Object[] invxf2Args = new Object[3];
+        invxf2Args[0] = 0;
+        invxf2Args[1] = amount;
+        invxf2Args[2] = externalInventoryId;
+        item.wdgmsg("invxf2", invxf2Args);
     }
 
     private void transferGroupSmart(List<WItem> items, boolean reverse) {
@@ -304,11 +321,7 @@ public class ExtInventory extends Widget {
         }
 
         List<WItem> ordered = new ArrayList<>(items);
-        if (reverse) {
-            ordered.sort(ExtInventory::byReverseQuality);
-        } else {
-            ordered.sort(ExtInventory::byQuality);
-        }
+        sortByQuality(ordered, reverse);
 
         Map<WItem, WItem> topLevelMap = buildTopLevelMap();
         LinkedHashMap<WItem, List<WItem>> grouped = new LinkedHashMap<>();
@@ -337,14 +350,9 @@ public class ExtInventory extends Widget {
                 if (amount > 0 && !stack.order.isEmpty()) {
                     if (wholeStackSelected) {
                         for (Integer externalInventoryId : externalInventoryIds) {
-                            Object[] invxf2Args = new Object[3];
-                            invxf2Args[0] = 0;
-                            invxf2Args[1] = amount;
-                            invxf2Args[2] = externalInventoryId;
-
                             dbg("    send whole-stack invxf2 via first child id=%d target=%d amount=%d",
                                     stack.order.get(0).wdgid(), externalInventoryId, amount);
-                            stack.order.get(0).wdgmsg("invxf2", invxf2Args);
+                            sendInvxf2(stack.order.get(0), amount, externalInventoryId);
                         }
                     } else {
                         List<WItem> exact = new ArrayList<>(members);
@@ -360,14 +368,9 @@ public class ExtInventory extends Widget {
                         for (WItem child : exact) {
                             if (child.parent != null) {
                                 for (Integer externalInventoryId : externalInventoryIds) {
-                                    Object[] invxf2Args = new Object[3];
-                                    invxf2Args[0] = 0;
-                                    invxf2Args[1] = 1;
-                                    invxf2Args[2] = externalInventoryId;
-
                                     dbg("    send mixed-stack exact invxf2 -> %s target=%d",
                                             itemdbg(child), externalInventoryId);
-                                    child.item.wdgmsg("invxf2", invxf2Args);
+                                    sendInvxf2(child.item, 1, externalInventoryId);
                                 }
                             }
                         }
@@ -394,9 +397,9 @@ public class ExtInventory extends Widget {
 
         List<WItem> out = new ArrayList<>();
         for (WItem w : flat) {
-            String wn = safeNameSnapshot(w);
-            String wr = safeResnameSnapshot(w);
-            Double wq = quantizeQSnapshot(qualityOf(w), grouping);
+            String wn = safeName(w);
+            String wr = safeResname(w);
+            Double wq = quantizeQ(qualityOf(w), grouping);
 
             if (Objects.equals(name, wn) &&
                     Objects.equals(resname, wr) &&
@@ -442,12 +445,12 @@ public class ExtInventory extends Widget {
         out.add(w);
     }
 
-    private String safeNameSnapshot(WItem w) {
+    private static String safeName(WItem w) {
         String n = rawName(w);
         return (n == null) ? "???" : n;
     }
 
-    private String safeResnameSnapshot(WItem w) {
+    private static String safeResname(WItem w) {
         try {
             return w.item.res.get().name;
         } catch (Loading l) {
@@ -455,7 +458,7 @@ public class ExtInventory extends Widget {
         }
     }
 
-    private Double quantizeQSnapshot(Double q, Grouping g) {
+    private static Double quantizeQ(Double q, Grouping g) {
         if (q == null || g == Grouping.NONE) return q;
         if (g == Grouping.Q) return q;
 
@@ -532,6 +535,8 @@ public class ExtInventory extends Widget {
         final WItem highSample;
         final WItem lowSample;
         final Double avgQ;
+        private String text;
+        private Tex tex;
 
         GroupRow(GroupKey key, List<WItem> items) {
             this.key = key;
@@ -575,8 +580,18 @@ public class ExtInventory extends Widget {
         }
 
         String text() {
-            String qtxt = (avgQ == null) ? "q?" : String.format("q%.1f", avgQ);
-            return String.format("x%d %s  %s", items.size(), key.name, qtxt);
+            if (text == null) {
+                String qtxt = (avgQ == null) ? "q?" : String.format("q%.1f", avgQ);
+                text = String.format("x%d %s  %s", items.size(), key.name, qtxt);
+            }
+            return text;
+        }
+
+        Tex tex() {
+            if (tex == null) {
+                tex = Text.render(text()).tex();
+            }
+            return tex;
         }
     }
 
@@ -629,9 +644,9 @@ public class ExtInventory extends Widget {
             }
 
             for (WItem w : flat) {
-                String name = safeName(w);
-                String resname = safeResname(w);
-                Double q = quantizeQ(qualityOf(w), grouping);
+                String name = ExtInventory.safeName(w);
+                String resname = ExtInventory.safeResname(w);
+                Double q = ExtInventory.quantizeQ(qualityOf(w), grouping);
 
                 String bucket;
                 if (grouping == Grouping.NONE) {
@@ -651,6 +666,11 @@ public class ExtInventory extends Widget {
             Collections.sort(rows, new GroupRowComparator());
             scroll = Math.max(0, Math.min(scroll, maxScroll()));
             rebuildHeader();
+        }
+
+        private void refresh() {
+            rebuild();
+            lastStamp = ExtInventory.this.inventoryStateStamp();
         }
 
         private void collectItems(List<WItem> out, WItem w) {
@@ -699,30 +719,6 @@ public class ExtInventory extends Widget {
             out.add(w);
         }
 
-        private String safeName(WItem w) {
-            String n = rawName(w);
-            return (n == null) ? "???" : n;
-        }
-
-        private String safeResname(WItem w) {
-            try {
-                return w.item.res.get().name;
-            } catch (Loading l) {
-                return "???";
-            }
-        }
-
-        private Double quantizeQ(Double q, Grouping g) {
-            if (q == null || g == Grouping.NONE) return q;
-            if (g == Grouping.Q) return q;
-
-            q = Math.floor(q);
-            if (g == Grouping.Q1) return q;
-            if (g == Grouping.Q5) return q - (q % 5.0);
-            if (g == Grouping.Q10) return q - (q % 10.0);
-            return q;
-        }
-
         private int visibleRows() {
             return Math.max(1, (sz.y - HEADER_H) / ROW_H);
         }
@@ -741,6 +737,9 @@ public class ExtInventory extends Widget {
         @Override
         public void tick(double dt) {
             super.tick(dt);
+            if (!expanded) {
+                return;
+            }
 
             long stamp = ExtInventory.this.inventoryStateStamp();
             if (stamp != lastStamp) {
@@ -774,8 +773,7 @@ public class ExtInventory extends Widget {
                 g.frect(new Coord(0, y), new Coord(sz.x, ROW_H));
                 g.chcolor();
 
-                Tex tex = Text.render(row.text()).tex();
-                g.aimage(tex, new Coord(4, y + (ROW_H / 2)), 0.0, 0.5);
+                g.aimage(row.tex(), new Coord(4, y + (ROW_H / 2)), 0.0, 0.5);
 
                 y += ROW_H;
             }
