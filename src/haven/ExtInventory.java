@@ -232,14 +232,18 @@ public class ExtInventory extends Widget {
         Double qa = qualityOf(a);
         Double qb = qualityOf(b);
 
-        if (qa == null && qb == null)
+        if (Objects.equals(qa, qb))
             return 0;
         if (qa == null)
             return 1;
         if (qb == null)
             return -1;
 
-        return Double.compare(qa, qb);
+        return Double.compare(qb, qa);
+    }
+
+    private static int byReverseQuality(WItem a, WItem b) {
+        return byQuality(b, a);
     }
 
     private static boolean isResolvedForList(WItem w) {
@@ -278,7 +282,7 @@ public class ExtInventory extends Widget {
         dbg("processGroup action=%s count=%d reverse=%s", action, items.size(), reverse);
 
         if (reverse) {
-            items.sort((a, b) -> byQuality(b, a));
+            items.sort(ExtInventory::byReverseQuality);
         } else {
             items.sort(ExtInventory::byQuality);
         }
@@ -301,7 +305,7 @@ public class ExtInventory extends Widget {
 
         List<WItem> ordered = new ArrayList<>(items);
         if (reverse) {
-            ordered.sort((a, b) -> byQuality(b, a));
+            ordered.sort(ExtInventory::byReverseQuality);
         } else {
             ordered.sort(ExtInventory::byQuality);
         }
@@ -525,14 +529,36 @@ public class ExtInventory extends Widget {
     private static final class GroupRow {
         final GroupKey key;
         final List<WItem> items;
-        final WItem sample;
+        final WItem highSample;
+        final WItem lowSample;
         final Double avgQ;
 
         GroupRow(GroupKey key, List<WItem> items) {
             this.key = key;
             this.items = items;
-            this.sample = items.get(0);
+            this.highSample = highestQ(items);
+            this.lowSample = lowestQ(items);
             this.avgQ = averageQ(items);
+        }
+
+        private static WItem highestQ(List<WItem> items) {
+            WItem best = items.get(0);
+            for (WItem w : items) {
+                if (byQuality(w, best) < 0) {
+                    best = w;
+                }
+            }
+            return best;
+        }
+
+        private static WItem lowestQ(List<WItem> items) {
+            WItem worst = items.get(0);
+            for (WItem w : items) {
+                if (byQuality(w, worst) > 0) {
+                    worst = w;
+                }
+            }
+            return worst;
         }
 
         private static Double averageQ(List<WItem> items) {
@@ -786,7 +812,7 @@ public class ExtInventory extends Widget {
                 final String rowResname = row.key.resname;
                 final Double rowQ = row.key.q;
                 final Grouping rowGrouping = grouping;
-                final boolean reverse = ui.modmeta;
+                final boolean reverse = (ev.b == 3);
 
                 dbg("shift-click row: %s", row.text());
                 dbg("  row item count=%d pending=%s", row.items.size(), pendingUnresolvedItems);
@@ -799,15 +825,14 @@ public class ExtInventory extends Widget {
             }
 
             if (ui.modctrl) {
-                for (WItem w : row.items) {
-                    w.item.wdgmsg("drop", sqsz.div(2));
-                }
+                List<WItem> ordered = new ArrayList<>(row.items);
+                processGroup(ordered, ev.b == 3, "drop", sqsz.div(2));
                 return true;
             }
 
-            WItem sample = row.sample;
-            if (sample.parent != null) {
-                sample.mousedown(new MouseDownEvent(ev, sqsz.div(2)));
+            WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
+            if (sample != null && sample.parent != null) {
+                sample.item.wdgmsg("take", sqsz.div(2));
             }
             return true;
         }
@@ -815,10 +840,10 @@ public class ExtInventory extends Widget {
         @Override
         public Object tooltip(Coord c, Widget prev) {
             GroupRow row = rowAt(c);
-            if (row == null || row.sample == null) {
+            if (row == null || row.highSample == null) {
                 return null;
             }
-            return row.sample.tooltip(Coord.z, (prev == this) ? row.sample : prev);
+            return row.highSample.tooltip(Coord.z, (prev == this) ? row.highSample : prev);
         }
 
         @Override
