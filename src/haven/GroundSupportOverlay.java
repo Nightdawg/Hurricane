@@ -1,6 +1,7 @@
 package haven;
 
 import haven.render.*;
+import haven.res.gfx.fx.mscover.Coverage;
 import java.awt.Color;
 import java.util.*;
 
@@ -43,6 +44,22 @@ public class GroundSupportOverlay implements MCache.OverlayInfo {
         return outlineMaterial;
     }
 
+    public static boolean supportsMineCoverage(Gob gob) {
+        return (gob != null) && (gob.getattr(Coverage.class) != null);
+    }
+
+    public void addGobCoverage(Gob gob) {
+        Coverage coverage = gob.getattr(Coverage.class);
+        if ((coverage == null) || (gob.rc == Coord2d.z)) {
+            return;
+        }
+        Area area = coverage.extent(gob.rc, gob.a);
+        if (area == null) {
+            return;
+        }
+        coverage.cover(gob.rc, gob.a, area, highlightedTiles::add);
+        invalidateCache();
+    }
 
     public void addTilesInRadius(Coord2d supportPos, double radiusInGameUnits) {
         int tilesToCheck = (int) Math.ceil(radiusInGameUnits / MCache.tilesz.x) + 1;

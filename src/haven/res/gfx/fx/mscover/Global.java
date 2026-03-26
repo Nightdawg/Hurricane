@@ -6,12 +6,12 @@ package haven.res.gfx.fx.mscover;
 import haven.*;
 import haven.render.*;
 import java.util.*;
+import java.util.function.*;
 import haven.res.ui.pag.toggle.*;
 import haven.MenuGrid.Pagina;
 import static haven.MCache.*;
 
-/* >objdelta: Radius */
-@haven.FromResource(name = "gfx/fx/mscover", version = 1)
+@haven.FromResource(name = "gfx/fx/mscover", version = 2)
 public class Global implements LocalOverlay {
     public static final OverlayInfo ol_1 = new Info(new Material(new BaseColor( 64, 255, 128, 16), States.maskdepth));
     public static final OverlayInfo ol_m = new Info(new Material(new BaseColor( 64, 255, 128, 32), States.maskdepth));
@@ -19,7 +19,7 @@ public class Global implements LocalOverlay {
     public static final OverlayInfo ol_d = new Info(new Material(new BaseColor(255,  64,  64, 32), States.maskdepth));
     public static final int GRAN = 25;
     public final Glob glob;
-    public final Collection<Radius> current = new HashSet<>();
+    public final Collection<Coverage> current = new HashSet<>();
     public MapView map;
     public Data dat = null;
     public boolean update = false;
@@ -93,7 +93,7 @@ public class Global implements LocalOverlay {
 	}
     }
 
-    public void add(Radius rad) {
+    public void add(Coverage rad) {
 	synchronized(current) {
 	    if(current.isEmpty()) {
 		for(LocalOverlay ol : ols)
@@ -112,9 +112,9 @@ public class Global implements LocalOverlay {
 	synchronized(current) {
 	    /* XXX: This shouldn't be necessary, if only
 	     * GAttrib.dispose were called properly */
-	    for(Radius rad : current) {
-		if(rad.gob.removed) {
-		    rad.removed = true;
+	    for(Coverage cov : current) {
+		if(cov.gob.removed) {
+		    cov.removed = true;
 		    update = true;
 		}
 	    }
@@ -123,12 +123,12 @@ public class Global implements LocalOverlay {
 	    boolean ch = false, hasvirt = false;
 	    synchronized(current) {
 		Area aa = null;
-		for(Radius rad : current) {
-		    Coord2d cc = rad.gob.rc;
+		for(Coverage cov : current) {
+		    Coord2d cc = cov.gob.rc;
+		    double a = cov.gob.a;
 		    if(cc == Coord2d.z)
 			continue;
-		    Area oa = Area.corn(cc.sub(rad.r, rad.r).floor(tilesz),
-					cc.add(rad.r, rad.r).ceil(tilesz));
+		    Area oa = cov.extent(cc, a);
 		    aa = (aa == null) ? oa : aa.include(oa);
 		}
 		if(aa == null) {
@@ -141,27 +141,28 @@ public class Global implements LocalOverlay {
 		if((dat == null) || !Utils.eq(dat.area, aa)) {
 		    ch = true;
 		    dat = new Data(aa);
-		    for(Radius rad : current)
-			rad.cc = null;
+		    for(Coverage cov : current)
+			cov.cc = null;
 		}
 
-		for(Iterator<Radius> i = current.iterator(); i.hasNext();) {
-		    Radius rad = i.next();
-		    int fl = rad.fl();
-		    Coord2d cc = rad.gob.rc;
-		    if(rad.removed) {
-			if(rad.cc != null)
-			    dat.mod(rad.cc, rad.r, rad.cfl, -1);
+		for(Iterator<Coverage> i = current.iterator(); i.hasNext();) {
+		    Coverage cov = i.next();
+		    int fl = cov.fl();
+		    Coord2d cc = cov.gob.rc;
+		    double a = cov.gob.a;
+		    if(cov.removed) {
+			if(cov.cc != null)
+			    dat.mod(cov.cc, cov.a, cov, cov.cfl, -1);
 			i.remove();
 			ch = true;
 			continue;
-		    } else if(!Utils.eq(rad.cc, cc) || (rad.cfl != fl)) {
-			if(rad.cc != null)
-			    dat.mod(rad.cc, rad.r, rad.cfl, -1);
-			dat.mod(rad.cc = cc, rad.r, rad.cfl = fl, 1);
+		    } else if(!Utils.eq(cov.cc, cc) || (cov.a != a) || (cov.cfl != fl)) {
+			if(cov.cc != null)
+			    dat.mod(cov.cc, cov.a, cov, cov.cfl, -1);
+			dat.mod(cov.cc = cc, cov.a = a, cov, cov.cfl = fl, 1);
 			ch = true;
 		    }
-		    if(!rad.real)
+		    if(!cov.real)
 			hasvirt = true;
 		}
 

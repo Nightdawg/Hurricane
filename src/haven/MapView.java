@@ -3129,8 +3129,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
                 GroundSupportOverlay.getInstance().setMap(glob.map);
                 enol(GroundSupportOverlay.TAG);
                 glob.oc.gobAction(gob -> {
-                    if (gob.msRadSize > 0) {
-                        GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                    if (GroundSupportOverlay.supportsMineCoverage(gob)) {
+                        GroundSupportOverlay.getInstance().addGobCoverage(gob);
                     }
                 });
             }

@@ -852,7 +852,7 @@ public class MiniMap extends Widget {
     }
 
     private static boolean isMineSupport(Gob gob) {
-        return gob.msRadSize > 0;
+        return GroundSupportOverlay.supportsMineCoverage(gob);
     }
 
     private void performMineSupportUpdate() {
@@ -871,7 +871,7 @@ public class MiniMap extends Widget {
 
         ui.sess.glob.oc.gobAction(gob -> {
             if (isMineSupport(gob)) {
-                overlay.addTilesInRadius(gob.rc, gob.msRadSize);
+                overlay.addGobCoverage(gob);
                 mineSupportGobIds.add(gob.id);
             }
         });
@@ -904,7 +904,7 @@ public class MiniMap extends Widget {
         mineSupportCallback = new OCache.ChangeCallback() {
             @Override
             public void added(Gob gob) {
-                if (OptWnd.showMineSupportCoverageCheckBox != null && OptWnd.showMineSupportCoverageCheckBox.a && isMineSupport(gob)) {
+                if (OptWnd.showMineSupportCoverageCheckBox != null && OptWnd.showMineSupportCoverageCheckBox.a) {
                     requestMineSupportUpdate();
                 }
             }

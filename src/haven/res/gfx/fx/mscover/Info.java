@@ -6,12 +6,12 @@ package haven.res.gfx.fx.mscover;
 import haven.*;
 import haven.render.*;
 import java.util.*;
+import java.util.function.*;
 import haven.res.ui.pag.toggle.*;
 import haven.MenuGrid.Pagina;
 import static haven.MCache.*;
 
-/* >objdelta: Radius */
-@haven.FromResource(name = "gfx/fx/mscover", version = 1)
+@haven.FromResource(name = "gfx/fx/mscover", version = 2)
 public class Info implements OverlayInfo {
     public static final Collection<String> tags = Collections.singleton("mscover");
     public final Material mat;
