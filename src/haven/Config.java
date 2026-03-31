@@ -424,6 +424,7 @@ public class Config {
 			"gfx/kritter/woodworm/woodworm",
 			"gfx/kritter/whirlingsnowflake/whirlingsnowflake",
 			"gfx/kritter/bullfinch/bullfinch",
+            "gfx/kritter/dumbledore/dumbledore",
 
 			"gfx/terobjs/items/grub", // ND: lmao
 			"gfx/terobjs/items/hoppedcow",
