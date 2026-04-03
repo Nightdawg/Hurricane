@@ -17,12 +17,12 @@ public class FillCheeseTray implements Runnable {
             for (Widget w = this.gui.lchild; w != null && tray == null; w = w.prev) {
                 if (w instanceof Window) {
                     for (Widget inv = w.lchild; inv != null; inv = inv.prev) {
-                        if (inv instanceof Inventory) {
-                            tray = AUtils.findItemInInv((Inventory) inv, "gfx/invobjs/cheesetray");
-                            if (tray != null) {
-                                break;
-                            }
-                        }
+                        Inventory inventory = Inventory.fromWidget(inv);
+                        if (inventory == null)
+                            continue;
+                        tray = AUtils.findItemInInv(inventory, "gfx/invobjs/cheesetray");
+                        if (tray != null)
+                            break;
                     }
                 }
             }

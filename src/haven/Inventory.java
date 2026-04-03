@@ -106,6 +106,14 @@ public class Inventory extends Widget implements DTarget {
 	super(sqsz.mul(sz).add(1, 1));
 	isz = sz;
     }
+
+    public static Inventory fromWidget(Widget w) {
+	if(w instanceof Inventory)
+	    return((Inventory)w);
+	if(w instanceof ExtInventory)
+	    return(((ExtInventory)w).inv);
+	return(null);
+    }
     
     public boolean mousewheel(MouseWheelEvent ev) {
 	if(ui.modshift) {
@@ -247,8 +255,8 @@ public class Inventory extends Widget implements DTarget {
 		List<Inventory> inventories = ui.gui.getAllWindows()
 				.stream()
 				.flatMap(w -> w.children().stream())
-				.filter(child -> child instanceof Inventory)
-				.map(i -> (Inventory) i)
+				.map(Inventory::fromWidget)
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 
 		List<Integer> externalInventoryIds = inventories
