@@ -457,6 +457,14 @@ public class MapWnd extends Window implements Console.Directory {
 	    g.chcolor();
 	    super.draw(g);
 	}
+
+        @Override
+        public void tick(double dt) {
+            super.tick(dt);
+            highlighterDynamicAlpha = Math.sin(Math.PI * ((System.currentTimeMillis() % 1000) / 1000.0));
+            handleMineSupportOverlays();
+        }
+
     }
 
     public class MarkButton extends ICheckBox implements CursorQuery.Handler {
@@ -537,13 +545,6 @@ public class MapWnd extends Window implements Console.Directory {
 	public boolean getcurs(CursorQuery ev) {
 	    return(ev.grabbed ? ev.set(markcurs) : false);
 	}
-
-		@Override
-		public void tick(double dt) {
-			super.tick(dt);
-			highlighterDynamicAlpha = Math.sin(Math.PI * ((System.currentTimeMillis() % 1000) / 1000.0));
-            handleMineSupportOverlays();
-		}
 
     }
 
