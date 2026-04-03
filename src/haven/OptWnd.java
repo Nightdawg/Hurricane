@@ -2352,8 +2352,8 @@ public class OptWnd extends Window {
                             GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
                             ui.gui.map.enol(GroundSupportOverlay.TAG);
                             ui.sess.glob.oc.gobAction(gob -> {
-                                if (gob.msRadSize > 0) {
-                                    GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                                if (GroundSupportOverlay.supportsMineCoverage(gob)) {
+                                    GroundSupportOverlay.getInstance().addGobCoverage(gob);
                                 }
                             });
                         } else {
@@ -2380,8 +2380,8 @@ public class OptWnd extends Window {
                             GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
                             ui.gui.map.enol(GroundSupportOverlay.TAG);
                             ui.sess.glob.oc.gobAction(gob -> {
-                                if (gob.msRadSize > 0) {
-                                    GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                                if (GroundSupportOverlay.supportsMineCoverage(gob)) {
+                                    GroundSupportOverlay.getInstance().addGobCoverage(gob);
                                 }
                             });
                         }
@@ -2404,8 +2404,8 @@ public class OptWnd extends Window {
                             GroundSupportOverlay.getInstance().setMap(ui.sess.glob.map);
                             ui.gui.map.enol(GroundSupportOverlay.TAG);
                             ui.sess.glob.oc.gobAction(gob -> {
-                                if (gob.msRadSize > 0) {
-                                    GroundSupportOverlay.getInstance().addTilesInRadius(gob.rc, gob.msRadSize);
+                                if (GroundSupportOverlay.supportsMineCoverage(gob)) {
+                                    GroundSupportOverlay.getInstance().addGobCoverage(gob);
                                 }
                             });
                         }

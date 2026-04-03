@@ -238,14 +238,24 @@ public class MCache implements MapSource {
 	public default void tick() {}
     }
 
+    private Collection<LocalOverlay> localoverlaycopy() {
+	synchronized(this) {
+	    return(new ArrayList<>(ols));
+	}
+    }
+
     public void add(LocalOverlay ol) {
-	ols.add(ol);
-	olseq++;
+	synchronized(this) {
+	    ols.add(ol);
+	    olseq++;
+	}
     }
 
     public void remove(LocalOverlay ol) {
-	ols.remove(ol);
-	olseq++;
+	synchronized(this) {
+	    ols.remove(ol);
+	    olseq++;
+	}
     }
 
     public class RectOverlay implements LocalOverlay {
@@ -283,13 +293,17 @@ public class MCache implements MapSource {
     public class Overlay extends RectOverlay {
 	public Overlay(Area a, OverlayInfo id) {
 	    super(id, a);
-	    ols.add(this);
-	    olseq++;
+	    synchronized(MCache.this) {
+		ols.add(this);
+		olseq++;
+	    }
 	}
 
 	public void destroy() {
-	    ols.remove(this);
-	    olseq++;
+	    synchronized(MCache.this) {
+		ols.remove(this);
+		olseq++;
+	    }
 	}
     }
 
@@ -908,7 +922,7 @@ public class MCache implements MapSource {
 	}
 	for(Grid g : copy)
 	    g.tick(dt);
-	for(LocalOverlay lol : new ArrayList<>(ols))
+	for(LocalOverlay lol : localoverlaycopy())
 	    lol.tick();
     }
 
@@ -1054,7 +1068,7 @@ public class MCache implements MapSource {
 		    ret.add(id);
 	    }
 	}
-	for(LocalOverlay lol : ols) {
+	for(LocalOverlay lol : localoverlaycopy()) {
 	    if(!lol.filter(a) && !ret.contains(lol.id()))
 		ret.add(lol.id());
 	}
@@ -1082,7 +1096,7 @@ public class MCache implements MapSource {
 		    buf[a.ri(tc)] = gbuf[(tc.x - gt.ul.x) + ((tc.y - gt.ul.y) * cmaps.x)];
 	    }
 	}
-	for(LocalOverlay lol : ols) {
+	for(LocalOverlay lol : localoverlaycopy()) {
 	    if(lol.id() != id)
 		continue;
 	    lol.fill(a, buf);
