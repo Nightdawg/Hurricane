@@ -34,6 +34,7 @@ import java.nio.channels.*;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.image.*;
+import haven.render.*;
 import haven.MapFile.Marker;
 import haven.MapFile.PMarker;
 import haven.MapFile.SMarker;
@@ -41,6 +42,7 @@ import haven.MiniMap.*;
 import haven.BuddyWnd.GroupSelector;
 import haven.automated.mapper.MappingClient;
 
+import haven.MiniMap.Location;
 import static haven.MCache.tilesz;
 import static haven.MCache.cmaps;
 import static haven.Utils.eq;
@@ -59,14 +61,15 @@ public class MapWnd extends Window implements Console.Directory {
     private final Widget toolbar;
 	private final Widget toolbarTop;
     private final Frame viewf;
+    private final MarkerObjs mvmarks = new MarkerObjs(this);
     private GroupSelector colsel;
+    private CheckBox onmapbtn;
     private Button mremove;
     private Predicate<Marker> mflt = pmarkers;
     private Comparator<ListMarker> mcmp = namecmp;
     private List<ListMarker> markers = Collections.emptyList();
     private int markerseq = -1;
     private Marker mrefocus = null;
-    private boolean domark = false;
     private int olalpha = 64;
     private final Collection<Runnable> deferred = new LinkedList<>();
 	private Coord bigmapc = Utils.getprefc("bigmapc", new Coord(0,0));
@@ -155,9 +158,7 @@ public class MapWnd extends Window implements Console.Directory {
 		    recenter();
 		}
 	    }, Coord.z);
-	toolbar.add(new ICheckBox("gfx/hud/mmap/mark", "", "-d", "-h", "-dh"), Coord.z)
-	    .state(() -> domark).set(a -> domark = a)
-	    .settip("Add marker").setgkey(kb_mark);
+	toolbar.add(new MarkButton(), Coord.z).setgkey(kb_mark);
 	toolbar.add(new ICheckBox("gfx/hud/mmap/hmark", "", "-d", "-h", "-dh"))
 	    .state(() -> Utils.eq(markcfg, MarkerConfig.hideall)).click(() -> {
 		    if(Utils.eq(markcfg, MarkerConfig.hideall))
@@ -229,7 +230,17 @@ public class MapWnd extends Window implements Console.Directory {
 	resize(sz);
     }
 
-	public void toggleol(String tag, boolean a) {
+    protected void added() {
+	super.added();
+	mv.basic.add(mvmarks);
+    }
+
+    public void remove() {
+	super.remove();
+	mvmarks.remove();
+    }
+
+    public void toggleol(String tag, boolean a) {
 	if(a)
 	    overlays.add(tag);
 	else
@@ -353,7 +364,7 @@ public class MapWnd extends Window implements Console.Directory {
 
 	public void resize(int h) {
 	    super.resize(new Coord(sz.x, h));
-	    listf.resize(listf.sz.x, sz.y - UI.scale(210));
+	    listf.resize(listf.sz.x, sz.y - UI.scale(225));
 	    listf.c = new Coord(sz.x - listf.sz.x, 0);
 	    list.resize(listf.inner());
 	    mebtn.c = new Coord(0, sz.y - mebtn.sz.y);
@@ -366,14 +377,15 @@ public class MapWnd extends Window implements Console.Directory {
 		namesel.c = listf.c.add(0, listf.sz.y + UI.scale(10));
 		mremove.c = pmbtn.c.sub(0, mremove.sz.y + UI.scale(10));
 		if(colsel != null) {
-		    colsel.c = namesel.c.add(0, namesel.sz.y + UI.scale(10));
+		    colsel.c   = namesel.c.add(0, namesel.sz.y + UI.scale(10));
+		    onmapbtn.c =  colsel.c.add(0,  colsel.sz.y + UI.scale(5));
 		}
 	    }
 	}
     }
 
-    private class View extends MiniMap implements CursorQuery.Handler {
-		private double highlighterDynamicAlpha = 0;
+    private class View extends MiniMap {
+        private double highlighterDynamicAlpha = 0;
 	View(MapFile file) {
 	    super(file);
 	}
@@ -406,7 +418,7 @@ public class MapWnd extends Window implements Console.Directory {
 
 	public boolean clickmarker(DisplayMarker mark, Location loc, int button, boolean press) {
 	    if(button == 1) {
-		if(!compact() && !press && !domark) {
+		if(!compact() && !press) {
 		    focus(mark.m);
 		    return(true);
 		}
@@ -419,7 +431,7 @@ public class MapWnd extends Window implements Console.Directory {
 	}
 
 	public boolean clickicon(DisplayIcon icon, Location loc, int button, boolean press) {
-	    if(!press && !domark) {
+	    if(!press) {
 		mvclick(mv, null, loc, icon.gob, button);
 		return(true);
 	    }
@@ -427,13 +439,6 @@ public class MapWnd extends Window implements Console.Directory {
 	}
 
 	public boolean clickloc(Location loc, int button, boolean press) {
-	    if(domark && (button == 1) && !press) {
-		Marker nm = new PMarker(loc.seg.id, loc.tc, "New marker", BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)]);
-		file.add(nm);
-		focus(nm);
-		domark = false;
-		return(true);
-	    }
 	    if(!press && (sessloc != null) && (loc.seg == sessloc.seg)) {
 		mvclick(mv, null, loc, null, button);
 		return(true);
@@ -442,10 +447,6 @@ public class MapWnd extends Window implements Console.Directory {
 	}
 
 	public boolean mousedown(MouseDownEvent ev) {
-	    if(domark && (ev.b == 3)) {
-		domark = false;
-		return(true);
-	    }
 	    super.mousedown(ev);
 	    return(true);
 	}
@@ -456,11 +457,85 @@ public class MapWnd extends Window implements Console.Directory {
 	    g.chcolor();
 	    super.draw(g);
 	}
+    }
+
+    public class MarkButton extends ICheckBox implements CursorQuery.Handler {
+	private UI.Grab grab = null;
+
+	private MarkButton() {
+	    super("gfx/hud/mmap/mark", "", "-d", "-h", "-dh");
+	}
+
+	public boolean state() {
+	    return(grab != null);
+	}
+
+	public void click() {
+	    if(grab == null)
+		grab = ui.grabmouse(this);
+	}
+
+	public void mark(Location loc, boolean onmap) {
+	    Marker nm = new PMarker(loc.seg.id, loc.tc, "New marker", BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)], onmap);
+	    file.add(nm);
+	    focus(nm);
+	}
+
+	private boolean ungrab() {
+	    if(grab != null) {
+		grab.remove();
+		grab = null;
+	    }
+	    return(true);
+	}
+
+	public class FindMark extends MapView.Maptest {
+	    private FindMark(MapView mv, Coord c) {mv.super(c);}
+
+	    protected void hit(Coord pc, Coord2d mc) {
+		Location sloc = view.sessloc;
+		if(sloc != null) {
+		    Location loc = new Location(sloc.seg, sloc.tc.add(mc.floor(tilesz)));
+		    mark(loc, true);
+		}
+		ungrab();
+	    }
+	}
+
+	public class PlaceMarker extends Widget.PointerEvent {
+	    public PlaceMarker(Coord c) {super(c);}
+	    public PlaceMarker(PlaceMarker from, Coord c) {super(from, c);}
+	    public PlaceMarker derive(Coord c) {return(new PlaceMarker(this, c));}
+
+	    protected boolean shandle(Widget w) {
+		if((w == MarkButton.this) && checkhit(c)) {
+		    return(ungrab());
+		} else if(w instanceof MiniMap) {
+		    mark(((MiniMap)w).xlate(c), false);
+		    return(ungrab());
+		} else if(w instanceof MapView) {
+		    new FindMark(mv, c).run();
+		    return(true);
+		}
+		return(super.shandle(w));
+	    }
+	}
+
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(!ev.grabbed)
+		return(super.mousedown(ev));
+	    if(ev.b == 1) {
+		Coord gc = ev.c.add(rootpos());
+		ui.dispatch(ui.root, new PlaceMarker(gc));
+		return(true);
+	    } else if(ev.b == 3) {
+		return(ungrab());
+	    }
+	    return(false);
+	}
 
 	public boolean getcurs(CursorQuery ev) {
-	    if(domark)
-		return(ev.set(markcurs));
-	    return(false);
+	    return(ev.grabbed ? ev.set(markcurs) : false);
 	}
 
 		@Override
@@ -787,6 +862,7 @@ public class MapWnd extends Window implements Console.Directory {
 		mremove = null;
 		if(colsel != null) {
 		    ui.destroy(colsel);
+		    ui.destroy(onmapbtn);
 		    colsel = null;
 		}
 	    }
@@ -815,6 +891,11 @@ public class MapWnd extends Window implements Console.Directory {
 				view.file.update(mark);
 			    }
 			});
+		    onmapbtn = (CheckBox)tool.add(new CheckBox("Display in world").state(() -> pm.onmap));
+		    onmapbtn.set(v -> {
+			pm.onmap = v;
+			view.file.update(mark);
+		    });
 		}
 		mremove = tool.add(new Button(UI.scale(200), "Remove", false) {
 			public void click() {
@@ -929,6 +1010,97 @@ public class MapWnd extends Window implements Console.Directory {
 		compact(compact);
 		return(super.mouseup(ev));
 	}
+
+    public static class MarkerObjs extends RenderTree.Node.Track1 implements TickList.TickNode, TickList.Ticking {
+	public static final Indir<Resource> flag = Resource.local().load("gfx/hud/mmap/markobj");
+	public final MapWnd mm;
+	private final Map<PMarker, Pair<Gob, RenderTree.Slot>> dcurrent = new HashMap<>();
+	private Collection<PMarker> acurrent = Collections.emptyList();
+	private Location curloc = null;
+	private boolean loading = true;
+
+	public MarkerObjs(MapWnd mm) {
+	    this.mm = mm;
+	}
+
+	private Area area = null;
+	private int markerseq = -1;
+	private void updatepos() {
+	    try {
+		Location loc = mm.view.sessloc;
+		if(loc == null)
+		    return;
+		Coord cc = Coord2d.of(mm.mv.getcc()).floor(tilesz).div(MCache.cutsz);
+		Area area = Area.corni(cc.sub(2, 2), cc.add(2, 2)).mul(MCache.cutsz).xl(loc.tc);
+		int markerseq = mm.file.markerseq;
+		if(Utils.eq(area, this.area) && (markerseq == this.markerseq))
+		    return;
+		Collection<PMarker> next = new ArrayList<>();
+		if(!mm.file.lock.readLock().tryLock())
+		    return;
+		try {
+		    for(Marker m : mm.file.markers) {
+			if(!(m instanceof PMarker))
+			    continue;
+			PMarker pm = (PMarker)m;
+			if(pm.onmap && (pm.seg == loc.seg.id) && area.contains(pm.tc))
+			    next.add(pm);
+		    }
+		} finally {
+		    mm.file.lock.readLock().unlock();
+		}
+		this.acurrent = next.isEmpty() ? Collections.emptyList() : next;
+		this.area = area;
+		this.curloc = loc;
+		this.markerseq = markerseq;
+		this.loading = true;
+	    } catch(Loading l) {
+	    }
+	}
+
+	private void updateobjs() {
+	    if(!loading)
+		return;
+	    try {
+		Collection<PMarker> old = new HashSet<>(dcurrent.keySet());
+		for(PMarker m : acurrent) {
+		    if(!dcurrent.containsKey(m)) {
+			Gob mob = new Gob(mm.ui.sess.glob, Coord2d.of(m.tc.sub(curloc.tc)).add(0.5, 0.5).mul(tilesz));
+			MessageBuf sdt = new MessageBuf();
+			sdt.addcolor(m.color);
+			mob.setattr(new ResDrawable(mob, flag, new MessageBuf(sdt.fin())));
+			dcurrent.put(m, Pair.of(mob, slot.add(mob.placed)));
+		    }
+		    old.remove(m);
+		}
+		for(PMarker m : old) {
+		    Pair<Gob, RenderTree.Slot> r = dcurrent.remove(m);
+		    synchronized(r.a) {
+			r.b.remove();
+		    }
+		}
+		loading = false;
+	    } catch(Loading l) {}
+	}
+
+	public TickList.Ticking ticker() {return(this);}
+	public void autotick(double dt) {
+	    updatepos();
+	    updateobjs();
+	    for(Pair<Gob, RenderTree.Slot> c : dcurrent.values())
+		c.a.ctick(dt);
+	}
+
+	public void autogtick(Render out) {
+	    for(Pair<Gob, RenderTree.Slot> c : dcurrent.values())
+		c.a.gtick(out);
+	}
+
+	void remove() {
+	    if(slot != null)
+		slot.remove();
+	}
+    }
 
     public void markobj(long gobid, long oid, Indir<Resource> resid, String nm) {
 	synchronized(deferred) {
