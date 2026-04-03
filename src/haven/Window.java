@@ -460,6 +460,10 @@ public class Window extends Widget {
                     InventorySorter.sort((Inventory) wdg);
                     break;
                 }
+                if (wdg instanceof ExtInventory) {
+                    InventorySorter.sort(((ExtInventory) wdg).inv);
+                    break;
+                }
             }
         });
         sortbtn.settip("Sort All");
