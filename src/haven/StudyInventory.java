@@ -202,8 +202,9 @@ public class StudyInventory extends Inventory {
     private boolean replacecurio(Window wnd, Resource res, Coord c) {
         try {
             for (Widget invwdg = wnd.lchild; invwdg != null; invwdg = invwdg.prev) {
-                if (invwdg instanceof Inventory) {
-                    for (WItem itm : ((Inventory) invwdg).wmap.values()) {
+                Inventory inv = Inventory.fromWidget(invwdg);
+                if (inv != null) {
+                    for (WItem itm : inv.wmap.values()) {
                         GItem ngitm = itm.item;
                         Resource nres = ngitm.resource();
                         if (nres != null && nres.name.equals(res.name)) {

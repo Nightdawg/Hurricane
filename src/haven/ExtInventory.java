@@ -10,6 +10,11 @@ import java.util.*;
 import static haven.Inventory.sqsz;
 
 public class ExtInventory extends Widget {
+    public enum TransferMode {
+        GLOBAL,
+        LOCAL
+    }
+
     private static final int MARGIN = UI.scale(5);
     private static final int PANEL_W = UI.scale(180);
     private static final int HEADER_H = UI.scale(20);
@@ -24,6 +29,7 @@ public class ExtInventory extends Widget {
     private static final boolean DEBUG_EXTINV = false;
 
     public final Inventory inv;
+    public final TransferMode transferMode;
     private final QualityPanel panel;
 
     private Coord lastLayoutInvSz = null;
@@ -33,8 +39,13 @@ public class ExtInventory extends Widget {
     private volatile boolean pendingUnresolvedItems = false;
 
     public ExtInventory(Inventory inv) {
+        this(inv, TransferMode.GLOBAL);
+    }
+
+    public ExtInventory(Inventory inv, TransferMode transferMode) {
         super(Coord.z);
         this.inv = inv;
+        this.transferMode = transferMode;
         add(inv, Coord.z);
         this.panel = add(new QualityPanel(inv), new Coord(inv.sz.x + MARGIN, 0));
         setExpanded(false);
@@ -130,11 +141,7 @@ public class ExtInventory extends Widget {
     }
 
     private static Inventory inventory(Widget w) {
-        if (w instanceof Inventory)
-            return (Inventory) w;
-        if (w instanceof ExtInventory)
-            return ((ExtInventory) w).inv;
-        return null;
+        return Inventory.fromWidget(w);
     }
 
     private static boolean isInPlayerInventory(WItem item) {
@@ -313,6 +320,12 @@ public class ExtInventory extends Widget {
     }
 
     private void transferGroupSmart(List<WItem> items, boolean reverse) {
+        if (transferMode == TransferMode.LOCAL) {
+            List<WItem> ordered = new ArrayList<>(items);
+            processGroup(ordered, reverse, "transfer", sqsz.div(2));
+            return;
+        }
+
         List<Integer> externalInventoryIds = getExternalInventoryIds(ui);
 
         if (externalInventoryIds.isEmpty()) {
@@ -624,7 +637,6 @@ public class ExtInventory extends Widget {
         QualityPanel(Inventory inv) {
             super(new Coord(PANEL_W, Math.max(inv.sz.y, HEADER_H + (ROW_H * MIN_ROWS))));
             this.inv = inv;
-            rebuild();
         }
 
         private void rebuildHeader() {

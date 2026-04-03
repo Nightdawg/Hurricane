@@ -3008,9 +3008,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		for (Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
 			if (wdg instanceof Window) {
 				for (Widget wdgi = wdg.lchild; wdgi != null; wdgi = wdgi.prev) {
-					if (wdgi instanceof Inventory) {
-						inventories.add((Inventory) wdgi);
-					}
+					Inventory inv = Inventory.fromWidget(wdgi);
+					if (inv != null)
+						inventories.add(inv);
 				}
 			}
 		}

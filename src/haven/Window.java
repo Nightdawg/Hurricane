@@ -154,22 +154,20 @@ public class Window extends Widget {
      }
 
     if (deco instanceof DefaultDeco) {
-        if (cap != null && Arrays.stream(Config.EXCLUDED_INVENTORY_WINDOWS).noneMatch(cap::equals)) {
-            if (((DefaultDeco) deco).stackbtn != null)
-                ((DefaultDeco) deco).stackbtn.visible = true;
-			if (((DefaultDeco) deco).extlistbtn != null)
-				((DefaultDeco) deco).extlistbtn.visible = ((DefaultDeco) deco).findExtInventory() != null;;
-            if (((DefaultDeco) deco).unstackbtn != null)
-                ((DefaultDeco) deco).unstackbtn.visible = true;
-            if (((DefaultDeco) deco).sortbtn != null)
-                ((DefaultDeco) deco).sortbtn.visible = true;
-        }
+        ((DefaultDeco) deco).refreshInventoryButtons();
     }
 
     }
 
     public void chcap(String cap) {
 	this.cap = cap;
+	attachLocalExtInventory(getchild(Inventory.class));
+	if(deco instanceof DefaultDeco)
+	    ((DefaultDeco) deco).refreshInventoryButtons();
+    }
+
+    private boolean shouldHaveInventoryButtons() {
+	return cap != null && Arrays.stream(Config.EXCLUDED_INVENTORY_WINDOWS).noneMatch(cap::equals);
     }
 
     public void chdeco(Deco deco) {
@@ -425,6 +423,25 @@ public class Window extends Widget {
 		return 0;
 	}
 
+	private boolean shouldShowInventoryButtons() {
+		return (parent instanceof Window) && ((Window) parent).shouldHaveInventoryButtons();
+	}
+
+	private void refreshInventoryButtons() {
+		boolean visible = shouldShowInventoryButtons();
+		boolean hasInventory = findInventory() != null;
+		boolean hasExtInventory = findExtInventory() != null;
+
+		if (stackbtn != null)
+			stackbtn.visible = visible && hasInventory;
+		if (unstackbtn != null)
+			unstackbtn.visible = visible && hasInventory;
+		if (sortbtn != null)
+			sortbtn.visible = visible && hasInventory;
+		if (extlistbtn != null)
+			extlistbtn.visible = visible && hasExtInventory;
+	}
+
 	public void addExtListBtn() {
 		if (extlistbtn != null)
 			return;
@@ -437,6 +454,7 @@ public class Window extends Widget {
 		});
 		extlistbtn.settip("Extended View");
 		extlistbtn.visible = false;
+		refreshInventoryButtons();
 	}
 
     public void addStackBtn() {
@@ -451,9 +469,13 @@ public class Window extends Widget {
 		});
 		stackbtn.settip("Stack All");
 		stackbtn.visible = false;
+		refreshInventoryButtons();
 	}
 
     public void addSortBtn() {
+		if (sortbtn != null)
+			return;
+
         sortbtn = add(new IButton(sortbtni[0], sortbtni[1], sortbtni[2])).action(() -> {
             for (Widget wdg = this; wdg != null; wdg = wdg.next) {
                 if (wdg instanceof Inventory) {
@@ -468,6 +490,7 @@ public class Window extends Widget {
         });
         sortbtn.settip("Sort All");
         sortbtn.visible = false;
+        refreshInventoryButtons();
     }
 
     public void addUnstackBtn() {
@@ -482,6 +505,7 @@ public class Window extends Widget {
 		});
 		unstackbtn.settip("Unstack All");
 		unstackbtn.visible = false;
+		refreshInventoryButtons();
 	}
 
     }
@@ -891,8 +915,32 @@ public class Window extends Widget {
         return(child);
     }
 
+	private boolean shouldAttachLocalExtInventory(Inventory inv) {
+		if (inv == null || getchild(ExtInventory.class) != null || cap == null)
+			return false;
+		if (Inventory.PLAYER_INVENTORY_NAMES.contains(cap))
+			return false;
+		return shouldHaveInventoryButtons();
+	}
+
+	private boolean attachLocalExtInventory(Inventory inv) {
+		if (!shouldAttachLocalExtInventory(inv))
+			return false;
+
+		Coord invc = new Coord(inv.c);
+		inv.unlink();
+		childseq++;
+
+		add(new ExtInventory(inv, ExtInventory.TransferMode.LOCAL), invc);
+		pack();
+		return true;
+	}
+
     private <T extends Widget> void enhanceWidgets(T child) {
         try {
+            if (child instanceof Inventory && attachLocalExtInventory((Inventory) child))
+                return;
+
             if (child instanceof Inventory || child instanceof ExtInventory) {
                 if (deco instanceof DefaultDeco) {
 					try {
@@ -917,6 +965,7 @@ public class Window extends Widget {
 							e.printStackTrace();
 						}
 					}
+					((DefaultDeco) deco).refreshInventoryButtons();
 
 				}
             }
