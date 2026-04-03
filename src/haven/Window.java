@@ -256,13 +256,13 @@ public class Window extends Widget {
 		int anchor = sz.x - extra;
 		cbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(9), -UI.scale(10));
 		if (extlistbtn != null)
-			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(78), -UI.scale(10));
+			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(68), -UI.scale(10));
 		if (stackbtn != null)
-			stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(59), -UI.scale(10));
+			stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(49), -UI.scale(10));
 		if (unstackbtn != null)
-			unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(40), -UI.scale(10));
+			unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(30), -UI.scale(10));
         if (sortbtn != null)
-            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(78), - UI.scale(10));
+            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(90), - UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
@@ -435,7 +435,7 @@ public class Window extends Widget {
 				ext.togglePanel();
 			}
 		});
-		extlistbtn.settip("Quality List");
+		extlistbtn.settip("Extended View");
 		extlistbtn.visible = false;
 	}
 
@@ -462,7 +462,7 @@ public class Window extends Widget {
                 }
             }
         });
-        sortbtn.settip("Sort");
+        sortbtn.settip("Sort All");
         sortbtn.visible = false;
     }
 
