@@ -385,10 +385,9 @@ public class Window extends Widget {
 		for (Widget w = wnd.child; w != null; w = w.next) {
 			if (w == wnd.deco)
 				continue;
-			if (w instanceof Inventory)
-				return (Inventory) w;
-			if (w instanceof ExtInventory)
-				return ((ExtInventory) w).inv;
+            Inventory inv = Inventory.fromWidget(w);
+            if (inv != null)
+                return inv;
 		}
 		return null;
 	}
@@ -478,12 +477,9 @@ public class Window extends Widget {
 
         sortbtn = add(new IButton(sortbtni[0], sortbtni[1], sortbtni[2])).action(() -> {
             for (Widget wdg = this; wdg != null; wdg = wdg.next) {
-                if (wdg instanceof Inventory) {
-                    InventorySorter.sort((Inventory) wdg);
-                    break;
-                }
-                if (wdg instanceof ExtInventory) {
-                    InventorySorter.sort(((ExtInventory) wdg).inv);
+                Inventory inv = Inventory.fromWidget(wdg);
+                if (inv != null) {
+                    InventorySorter.sort(inv);
                     break;
                 }
             }

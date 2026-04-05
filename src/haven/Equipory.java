@@ -513,8 +513,9 @@ public class Equipory extends Widget implements DTarget {
 			if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
 			if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
 			for (Widget ww : w.children()) {
-				if (!(ww instanceof Inventory)) continue;
-				belt = (Inventory) ww;
+                Inventory inv = Inventory.fromWidget(ww);
+				if (inv == null) continue;
+				belt = inv;
 			}
 		}
 		return belt;

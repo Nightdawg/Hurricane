@@ -96,13 +96,14 @@ public class RefillWaterContainers implements Runnable {
         for (Widget w = gui.lchild; w != null; w = w.prev) {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
             for (Widget ww : w.children()) {
-                if (!(ww instanceof Inventory)) continue;
-                Coord inventorySize = ((Inventory) ww).isz;
+                Inventory inv = Inventory.fromWidget(ww);
+                if (inv == null) continue;
+                Coord inventorySize = inv.isz;
                 for (int i = 0; i < inventorySize.x; i++) {
                     for (int j = 0; j < inventorySize.y; j++) {
                         Coord indexCoord = new Coord(i, j);
                         Coord calculatedCoord = indexCoord.mul(sqsz).add(1, 1);
-                        for (Map.Entry<GItem, WItem> entry : ((Inventory) ww).wmap.entrySet()) {
+                        for (Map.Entry<GItem, WItem> entry : inv.wmap.entrySet()) {
                             if (entry.getValue().c.equals(calculatedCoord)) {
                                 String resName = entry.getKey().res.get().name;
                                 ItemInfo.Contents.Content content = getContent(entry.getKey());
@@ -128,8 +129,9 @@ public class RefillWaterContainers implements Runnable {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
             if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
-                if (!(ww instanceof Inventory)) continue;
-                belt = (Inventory) ww;
+                Inventory inv = Inventory.fromWidget(ww);
+                if (inv == null) continue;
+                belt = inv;
             }
         }
         return belt;

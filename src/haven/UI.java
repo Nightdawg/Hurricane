@@ -1082,12 +1082,13 @@ public class UI {
 
 	private void processWindowContent(Window pwdg, Widget wdg) {
 		String cap = pwdg.cap;
-		if (wdg instanceof Inventory && (cap.contains("Study Desk"))) {
-			initStudydeskUi(pwdg, (Inventory) wdg);
+        Inventory inv = Inventory.fromWidget(wdg);
+		if (inv != null && (cap.contains("Study Desk"))) {
+			initStudydeskUi(pwdg, inv);
 		}
-		if (wdg instanceof Inventory && cap.equals("Table")) {
-			if (!((Inventory)wdg).isz.equals(3, 3) && !((Inventory)wdg).isz.equals(1, 2))
-				initTableUi(pwdg, (Inventory) wdg);
+		if (inv != null && cap.equals("Table")) {
+			if (!inv.isz.equals(3, 3) && !inv.isz.equals(1, 2))
+				initTableUi(pwdg, inv);
 		}
 	}
 

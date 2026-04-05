@@ -1187,7 +1187,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			}
 		};
 		
-		maininv = (Inventory) child;
+		maininv = Inventory.fromWidget(child);
 		maininvext = new ExtInventory(maininv);
 
 		invwnd.add(maininvext, Coord.z);

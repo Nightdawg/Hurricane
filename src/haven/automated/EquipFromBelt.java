@@ -109,15 +109,16 @@ public class EquipFromBelt implements Runnable {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
             if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
-                if (!(ww instanceof Inventory)) continue;
-                Coord inventorySize = ((Inventory) ww).isz;
-                belt = (Inventory) ww;
+                Inventory inv = Inventory.fromWidget(ww);
+                if (inv == null) continue;
+                Coord inventorySize = (inv).isz;
+                belt = inv;
                 for (int i = 0; i < inventorySize.x; i++) {
                     for (int j = 0; j < inventorySize.y; j++) {
                         Coord indexCoord = new Coord(i, j);
                         Coord calculatedCoord = indexCoord.mul(sqsz).add(1, 1);
                         Map<GItem, Coord> finalItems = items;
-                        ((Inventory) ww).wmap.entrySet().stream()
+                        (inv).wmap.entrySet().stream()
                                 .filter(entry -> entry.getValue().c.equals(calculatedCoord) &&
                                         (entry.getKey().res.get().name.equals(resourcePath)))
                                 .forEach(entry -> finalItems.put(entry.getKey(), indexCoord));
@@ -174,15 +175,16 @@ public class EquipFromBelt implements Runnable {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
             if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
-                if (!(ww instanceof Inventory)) continue;
-                Coord inventorySize = ((Inventory) ww).isz;
-                belt = (Inventory) ww;
+                Inventory inv = Inventory.fromWidget(ww);
+                if (inv == null) continue;
+                Coord inventorySize = (inv).isz;
+                belt = inv;
                 for (int i = 0; i < inventorySize.x; i++) {
                     for (int j = 0; j < inventorySize.y; j++) {
                         Coord indexCoord = new Coord(i, j);
                         Coord calculatedCoord = indexCoord.mul(sqsz).add(1, 1);
                         Map<GItem, Coord> finalItems = items;
-                        ((Inventory) ww).wmap.entrySet().stream()
+                        (inv).wmap.entrySet().stream()
                                 .filter(entry -> entry.getValue().c.equals(calculatedCoord) &&
                                         (entry.getKey().res.get().name.equals(resourcePath)))
                                 .forEach(entry -> finalItems.put(entry.getKey(), indexCoord));
@@ -280,21 +282,22 @@ public class EquipFromBelt implements Runnable {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
             if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
-                if (!(ww instanceof Inventory)) continue;
-                Coord inventorySize = ((Inventory) ww).isz;
-                belt = (Inventory) ww;
+                Inventory inv = Inventory.fromWidget(ww);
+                if (inv == null) continue;
+                Coord inventorySize = (inv).isz;
+                belt = inv;
                 for (int i = 0; i < inventorySize.x; i++) {
                     for (int j = 0; j < inventorySize.y; j++) {
                         Coord indexCoord = new Coord(i, j);
                         Coord calculatedCoord = indexCoord.mul(sqsz).add(1, 1);
                         Map<GItem, Coord> finalFirstItems = firstItemInBelt;
-                        ((Inventory) ww).wmap.entrySet().stream()
+                        (inv).wmap.entrySet().stream()
                                 .filter(entry -> entry.getValue().c.equals(calculatedCoord) &&
                                         (entry.getKey().res.get().name.equals(firstResourcePath)))
                                 .forEach(entry -> finalFirstItems.put(entry.getKey(), indexCoord));
 
                         Map<GItem, Coord> finalSecondItems = secondItemInBelt;
-                        ((Inventory) ww).wmap.entrySet().stream()
+                        (inv).wmap.entrySet().stream()
                                 .filter(entry -> entry.getValue().c.equals(calculatedCoord) &&
                                         (entry.getKey().res.get().name.equals(secondResourcePath)))
                                 .forEach(entry -> finalSecondItems.put(entry.getKey(), indexCoord));

@@ -744,9 +744,10 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 				}
 				if (feastingWindow != null) {
 					for(Widget wdg : feastingWindow.children()) {
-						if (wdg instanceof Inventory) {
-							if (((Inventory)wdg).isz.equals(3, 3) || ((Inventory)wdg).isz.equals(1, 2)) {
-								for (WItem item : ((Inventory)wdg).wmap.values()) {
+                        Inventory inv = Inventory.fromWidget(wdg);
+						if (inv != null) {
+							if (inv.isz.equals(3, 3) || inv.isz.equals(1, 2)) {
+								for (WItem item : inv.wmap.values()) {
                                     try {
                                         for (ItemInfo ii : item.item.info()) {
                                             if (ii instanceof Wear) {
