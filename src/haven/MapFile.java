@@ -44,7 +44,6 @@ public class MapFile {
     public final String filename;
     public final Collection<Long> knownsegs = new HashSet<>();
     public final Collection<Marker> markers = new ArrayList<>();
-    public final Map<Long, SMarker> smarkers = new HashMap<>();
     public int markerseq = 0;
     public final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Random rnd = new Random();
@@ -103,8 +102,6 @@ public class MapFile {
 		for(int i = 0, no = data.int32(); i < no; i++) {
 		    Marker mark = loadmarker(data);
 		    file.markers.add(mark);
-		    if((mark instanceof SMarker) && (((SMarker)mark).oid != 0))
-			file.smarkers.put(((SMarker)mark).oid, (SMarker)mark);
 		}
 	    } else {
 		throw(new IOException(String.format("unknown mapfile index version: %d", ver)));
@@ -291,17 +288,23 @@ public class MapFile {
     public static class SMarker extends Marker {
 	public long oid;
 	public Resource.Saved res;
+	public byte[] data;
 
-	public SMarker(long seg, Coord tc, String nm, long oid, Resource.Saved res) {
+	public SMarker(long seg, Coord tc, String nm, long oid, Resource.Saved res, byte[] data) {
 	    super(seg, tc, nm);
 	    this.oid = oid;
 	    this.res = res;
+	    this.data = data;
+	}
+
+	public SMarker(long seg, Coord tc, String nm, long oid, Resource.Saved res) {
+	    this(seg, tc, nm, oid, res, new byte[0]);
 	}
     }
 
     private static Marker loadmarker(Message fp) {
 	int ver = fp.uint8();
-	if((ver >= 1) && (ver <= 2)) {
+	if((ver >= 1) && (ver <= 3)) {
 	    long seg = fp.int64();
 	    Coord tc = fp.coord();
 	    String nm = fp.string();
@@ -314,7 +317,10 @@ public class MapFile {
 	    case 's':
 		long oid = fp.int64();
 		Resource.Saved res = new Resource.Saved(Resource.remote(), fp.string(), fp.uint16());
-		return(new SMarker(seg, tc, nm, oid, res));
+		byte[] data = new byte[0];
+		if(ver >= 3)
+		    data = fp.bytes(fp.uint8());
+		return(new SMarker(seg, tc, nm, oid, res, data));
 	    default:
 		throw(new Message.FormatError("Unknown marker type: " + (int)type));
 	    }
@@ -324,7 +330,7 @@ public class MapFile {
     }
 
     private static void savemarker(Message fp, Marker mark) {
-	fp.adduint8(2);
+	fp.adduint8(3);
 	fp.addint64(mark.seg);
 	fp.addcoord(mark.tc);
 	fp.addstring(mark.nm);
@@ -339,6 +345,7 @@ public class MapFile {
 	    fp.addint64(sm.oid);
 	    fp.addstring(sm.res.name);
 	    fp.adduint16(sm.res.savever());
+	    fp.adduint8(sm.data.length).addbytes(sm.data);
 	} else {
 	    throw(new ClassCastException("Can only save PMarkers and SMarkers"));
 	}
@@ -348,8 +355,6 @@ public class MapFile {
 	lock.writeLock().lock();
 	try {
 	    if(markers.add(mark)) {
-		if((mark instanceof SMarker) && (((SMarker)mark).oid != 0))
-		    smarkers.put(((SMarker)mark).oid, (SMarker)mark);
 		defersave();
 		markerseq++;
 	    }
@@ -362,8 +367,6 @@ public class MapFile {
 	lock.writeLock().lock();
 	try {
 	    if(markers.remove(mark)) {
-		if((mark instanceof SMarker) && (((SMarker)mark).oid != 0))
-		    smarkers.remove(((SMarker)mark).oid, (SMarker)mark);
 		defersave();
 		markerseq++;
 	    }
