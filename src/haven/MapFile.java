@@ -36,6 +36,7 @@ import java.awt.image.WritableRaster;
 import haven.render.*;
 import haven.Defer.Future;
 import static haven.MCache.cmaps;
+import static haven.PType.*;
 
 public class MapFile {
     public static final Config.Variable<java.net.URI> mapbase = Config.Variable.propu("haven.mapbase", "");
@@ -286,19 +287,15 @@ public class MapFile {
     }
 
     public static class SMarker extends Marker {
-	public long oid;
+	public UID oid;
 	public Resource.Saved res;
 	public byte[] data;
 
-	public SMarker(long seg, Coord tc, String nm, long oid, Resource.Saved res, byte[] data) {
+	public SMarker(long seg, Coord tc, String nm, UID oid, Resource.Saved res, byte[] data) {
 	    super(seg, tc, nm);
 	    this.oid = oid;
 	    this.res = res;
 	    this.data = data;
-	}
-
-	public SMarker(long seg, Coord tc, String nm, long oid, Resource.Saved res) {
-	    this(seg, tc, nm, oid, res, new byte[0]);
 	}
     }
 
@@ -315,7 +312,7 @@ public class MapFile {
 		boolean onmap = (ver >= 2) ? fp.uint8() != 0 : false;
 		return(new PMarker(seg, tc, nm, color, onmap));
 	    case 's':
-		long oid = fp.int64();
+		UID oid = UID.of(fp.int64());
 		Resource.Saved res = new Resource.Saved(Resource.remote(), fp.string(), fp.uint16());
 		byte[] data = new byte[0];
 		if(ver >= 3)
@@ -324,31 +321,49 @@ public class MapFile {
 	    default:
 		throw(new Message.FormatError("Unknown marker type: " + (int)type));
 	    }
+	} else if(ver >= 4) {
+	    @SuppressWarnings("unchecked") Map<Object, Object> enc = (Map<Object, Object>)fp.tto();
+	    long seg = UNIQID.of(enc.get("seg")).bits;
+	    Coord tc = COORD.of(enc.get("c"));
+	    String nm = STR.of(enc.get("nm"));
+	    if(enc.containsKey("col")) {
+		Color color = COLOR.of(enc.get("col"));
+		boolean onmap = BOOL.of(enc.getOrDefault("md", 0));
+		return(new PMarker(seg, tc, nm, color, onmap));
+	    } else if(enc.containsKey("res")) {
+		UID oid = UNIQID.of(enc.get("oid"));
+		Resource.Named res = (Resource.Named)enc.get("res");
+		byte[] data = BYTES.of(enc.getOrDefault("dat", new byte[0]));
+		return(new SMarker(seg, tc, nm, oid, new Resource.Saved(Resource.remote(), res.name, res.ver), data));
+	    } else {
+		throw(new Message.FormatError("Unknown marker type: " + enc));
+	    }
 	} else {
 	    throw(new Message.FormatError("Unknown marker version: " + ver));
 	}
     }
 
     private static void savemarker(Message fp, Marker mark) {
-	fp.adduint8(3);
-	fp.addint64(mark.seg);
-	fp.addcoord(mark.tc);
-	fp.addstring(mark.nm);
+	Map<Object, Object> enc = new HashMap<>();
+	enc.put("seg", UID.of(mark.seg));
+	enc.put("c", mark.tc);
+	enc.put("nm", mark.nm);
 	if(mark instanceof PMarker) {
 	    PMarker pm = (PMarker)mark;
-	    fp.adduint8('p');
-	    fp.addcolor(pm.color);
-	    fp.adduint8(pm.onmap ? 1 : 0);
+	    enc.put("col", pm.color);
+	    if(pm.onmap)
+		enc.put("md", 1);
 	} else if(mark instanceof SMarker) {
 	    SMarker sm = (SMarker)mark;
-	    fp.adduint8('s');
-	    fp.addint64(sm.oid);
-	    fp.addstring(sm.res.name);
-	    fp.adduint16(sm.res.savever());
-	    fp.adduint8(sm.data.length).addbytes(sm.data);
+	    enc.put("oid", sm.oid);
+	    enc.put("res", sm.res);
+	    if(sm.data.length > 0)
+		enc.put("dat", sm.data);
 	} else {
 	    throw(new ClassCastException("Can only save PMarkers and SMarkers"));
 	}
+	fp.adduint8(4);
+	fp.addtto(enc);
     }
 
     public void add(Marker mark) {

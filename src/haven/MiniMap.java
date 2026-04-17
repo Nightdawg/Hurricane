@@ -32,6 +32,7 @@ import haven.render.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.function.*;
+import java.awt.image.*;
 import java.awt.Color;
 import haven.MapFile.Segment;
 import haven.MapFile.DataGrid;
@@ -412,62 +413,114 @@ public class MiniMap extends Widget {
 	}
     }
 
-    public static class DisplayMarker {
-	public static final Resource.Image flagbg, flagfg;
-	public static final Coord flagcc;
-	public final Marker m;
-	public final Text tip;
-	public Area hit;
-	private Resource.Image img;
-	private Coord imgsz;
-	private Coord cc;
-	public static HashMap<String, Tex> titleTexMap = new HashMap<String, Tex>();
+    public static class Flag extends GobIcon.Icon {
+	public static final Resource res = Resource.local().loadwait("gfx/hud/mmap/flag");
+	public static final Resource.Image fg = res.flayer(Resource.imgc, 0);
+	public static final Resource.Image bg = res.flayer(Resource.imgc, 1);
+	public static final Coord cc = UI.scale(res.flayer(Resource.negc).cc);
+	public final Color col;
+	public final String name;
 
-	static {
-	    Resource flag = Resource.local().loadwait("gfx/hud/mmap/flag");
-	    flagbg = flag.layer(Resource.imgc, 1);
-	    flagfg = flag.layer(Resource.imgc, 0);
-	    flagcc = UI.scale(flag.layer(Resource.negc).cc);
+	public Flag(OwnerContext owner, Color col, String name) {
+	    super(owner, res);
+	    this.col = col;
+	    this.name = name;
 	}
 
-	public DisplayMarker(Marker marker) {
-	    this.m = marker;
-	    this.tip = Text.render(m.nm);
-		if (!titleTexMap.containsKey(tip.text))
-			titleTexMap.put(tip.text, Text.renderstroked(tip.text, Color.white, Color.BLACK, Text.num12boldFnd).tex());
-	    if(marker instanceof PMarker)
-		this.hit = Area.sized(flagcc.inv(), UI.scale(flagbg.sz));
+	public String name() {
+	    return(name);
+	}
+
+	public BufferedImage image() {
+	    WritableRaster buf = PUtils.imgraster(bg.sz);
+	    PUtils.colmul(PUtils.blit(buf, fg.img.getRaster(), fg.o), col);
+	    PUtils.alphablit(buf, bg.img.getRaster(), bg.o);
+	    return(PUtils.rasterimg(buf));
 	}
 
 	public void draw(GOut g, Coord c) {
-	    if(m instanceof PMarker) {
-		Coord ul = c.sub(flagcc);
-		g.chcolor(((PMarker)m).color);
-		g.image(flagfg, ul);
-		g.chcolor();
-		g.image(flagbg, ul);
-	    } else if(m instanceof SMarker) {
-		SMarker sm = (SMarker)m;
-		try {
-		    if(cc == null) {
-			Resource res = sm.res.get();
-			img = res.flayer(Resource.imgc);
-			Resource.Neg neg = res.layer(Resource.negc);
-			cc = (neg != null) ? neg.cc : img.ssz.div(2);
-			if(hit == null)
-			    hit = Area.sized(cc.inv(), img.ssz);
-		    }
-		} catch(Loading l) {
-		} catch(Exception e) {
-		    cc = Coord.z;
+	    Coord ul = c.sub(cc);
+	    g.chcolor(col);
+	    g.image(fg, ul);
+	    g.chcolor();
+	    g.image(bg, ul);
+	}
+
+	public boolean checkhit(Coord c) {
+	    return(c.isect(cc.inv(), bg.ssz));
+	}
+
+	public Object[] id() {
+	    return(new Object[] {col});
+	}
+    }
+
+    public static class DisplayMarker implements ItemInfo.Owner, ItemInfo.Name.Dynamic {
+	public final Widget wdg;
+	public final Marker m;
+    public static HashMap<String, Tex> titleTexMap = new HashMap<String, Tex>();
+
+	public DisplayMarker(Widget wdg, Marker marker) {
+	    this.wdg = wdg;
+	    this.m = marker;
+        if (!titleTexMap.containsKey(tip.text))
+            titleTexMap.put(tip.text, Text.renderstroked(tip.text, Color.white, Color.BLACK, Text.num12boldFnd).tex());
+	}
+
+	private static final OwnerContext.ClassResolver<DisplayMarker> ctxr = new OwnerContext.ClassResolver<DisplayMarker>()
+	    .add(Marker.class, m -> m.m)
+	    .add(Widget.class, m -> m.wdg)
+	    .add(UI.class, m -> m.wdg.ui)
+	    .add(Glob.class, m -> m.wdg.ui.sess.glob)
+	    .add(Session.class, m -> m.wdg.ui.sess);
+	public <T> T context(Class<T> cl) {
+	    return(ctxr.context(cl, this));
+	}
+
+	private GobIcon.Icon icon = null;
+	public GobIcon.Icon icon() {
+	    if(icon == null) {
+		if(m instanceof PMarker) {
+		    icon = new Flag(this, ((PMarker)m).color, m.nm);
+		} else {
+		    SMarker sm = (SMarker)m;
+		    Resource res = sm.res.get();
+		    icon = GobIcon.getfac(res).create(this, res, new MessageBuf(sm.data));
 		}
-		if(img != null)
-		    g.image(img, c.sub(cc));
 	    }
+	    return(icon);
+	}
+
+	public void draw(GOut g, Coord c) {
+	    try {
+		icon().draw(g, c);
+	    } catch(Loading l) {}
+	}
+
+	public String name() {
+	    return(m.nm);
+	}
+
+	private List<ItemInfo> info = null;
+	public List<ItemInfo> info() {
+	    if(info == null) {
+		Object[] raw = icon().info(this);
+		info = ItemInfo.buildinfo(this, raw);
+	    }
+	    return(info);
+	}
+
+	private BufferedImage tooltip = null;
+	public BufferedImage tooltip() {
+	    if(tooltip == null) {
+		tooltip = ItemInfo.longtip(info());
+	    }
+	    return(tooltip);
 	}
     }
 
     public static class DisplayGrid {
+	public final Widget wdg;
 	public final MapFile file;
 	public final Segment seg;
 	public final Coord sc;
@@ -478,7 +531,8 @@ public class MiniMap extends Widget {
 	private Tex img = null;
 	private Defer.Future<Tex> nextimg = null;
 
-	public DisplayGrid(Segment seg, Coord sc, int lvl, Indir<? extends DataGrid> gref) {
+	public DisplayGrid(Widget wdg, Segment seg, Coord sc, int lvl, Indir<? extends DataGrid> gref) {
+	    this.wdg = wdg;
 	    this.file = seg.file();
 	    this.seg = seg;
 	    this.sc = sc;
@@ -599,7 +653,7 @@ public class MiniMap extends Widget {
 			ArrayList<DisplayMarker> marks = new ArrayList<>();
 			for(Marker mark : file.markers) {
 			    if((mark.seg == this.seg.id) && mapext.contains(mark.tc))
-				marks.add(new DisplayMarker(mark));
+				marks.add(new DisplayMarker(wdg, mark));
 			}
 			marks.trimToSize();
 			markers = (marks.size() == 0) ? Collections.emptyList() : marks;
@@ -675,7 +729,7 @@ public class MiniMap extends Widget {
 			int lvl = dlvl < 1f ? 0 : 31-Integer.numberOfLeadingZeros(dlvl);
 		for(Coord c : dgext) {
 		    if(display[dgext.ri(c)] == null)
-			display[dgext.ri(c)] = new DisplayGrid(dloc.seg, c, lvl, dloc.seg.grid(lvl, c.mul(dlvl)));
+			display[dgext.ri(c)] = new DisplayGrid(this, dloc.seg, c, lvl, dloc.seg.grid(lvl, c.mul(dlvl)));
 		}
 	    } finally {
 		file.lock.readLock().unlock();
@@ -1021,9 +1075,11 @@ public class MiniMap extends Widget {
 	    if(dgrid == null)
 		continue;
 	    for(DisplayMarker mark : dgrid.markers(false)) {
+        try {
 		if((mark.hit != null) && mark.hit.contains(tc.sub(mark.m.tc).div(scalef())) && !filter(mark))
 		    return(mark);
-	    }
+	    } catch(Loading l){}
+        }
 	}
 	return(null);
     }
@@ -1033,8 +1089,10 @@ public class MiniMap extends Widget {
 	    try {
 		if(icon.markchecked)
 		    continue;
+		GobIcon aicon = icon.attr;
+		Resource res = aicon.res.get();
 		GobIcon.Icon micon = icon.icon;
-		if(!icon.conf.getmarkablep() || !(micon instanceof GobIcon.ImageIcon)) {
+		if(!icon.conf.getmarkablep()) {
 		    icon.markchecked = true;
 		    continue;
 		}
@@ -1048,16 +1106,19 @@ public class MiniMap extends Widget {
 		    if(info == null)
 			continue;
 		    Coord sc = tc.add(info.sc.sub(obg.gc).mul(cmaps));
-		    SMarker prev = file.smarker(micon.res.name, info.seg, sc);
+		    SMarker prev = file.smarker(res.name, info.seg, sc);
 		    if(prev == null) {
 			if(icon.conf.getmarkp()) {
-			    Resource.Tooltip tt = micon.res.flayer(Resource.tooltip);
-			    mid = new SMarker(info.seg, sc, tt.t, 0, new Resource.Saved(Resource.remote(), micon.res.name, micon.res.ver));
+			    mid = new SMarker(info.seg, sc, micon.name(), UID.nil, new Resource.Saved(Resource.remote(), res.name, res.ver), aicon.sdt);
 			    file.add(mid);
 			} else {
 			    mid = null;
 			}
 		    } else {
+			if(!Arrays.equals(prev.data, aicon.sdt)) {
+			    prev.data = aicon.sdt;
+			    file.update(prev);
+			}
 			mid = prev;
 		    }
 		} finally {
@@ -1183,10 +1244,14 @@ public class MiniMap extends Widget {
 	return(true);
     }
 
-    private Text lasttip = null;
+    private String lasttname = null;
+    private Object lastobjid = null;
+    private Tex lasttip = null;
     public Object tooltip(Coord c, Widget prev) {
 	DisplayGrid grid = gridat(c);
-	String tname = null, oname = null;
+	String tname = null;
+	Object objid = null;
+	Supplier<BufferedImage> objtip = null;
 	try {
 	    if((grid != null) && (grid.dc != null)) {
 		DataGrid dgrid = grid.gref.get();
@@ -1210,24 +1275,23 @@ public class MiniMap extends Widget {
 	    DisplayIcon icon = iconat(c);
 	    DisplayMarker mark = markerat(mloc.tc);
 	    if(icon != null) {
-		if(icon.icon != null)
-		    oname = icon.icon.name();
+		if(icon.icon != null) {
+		    objid = icon.icon;
+		    objtip = () -> Text.render(icon.icon.name()).img;
+		}
 	    } else if(mark != null) {
-		oname = mark.tip.text;
+		objid = mark;
+		objtip = mark::tooltip;
 	    }
 	}
-	if((tname != null) || (oname != null)) {
-	    StringBuilder buf = new StringBuilder();
-	    if(oname != null)
-		buf.append(RichText.Parser.quote(oname));
-	    if(tname != null) {
-		if(buf.length() > 0)
-		    buf.append("\n");
-		buf.append("Terrain: $col[255,255,128]{" + RichText.Parser.quote(tname) + "}");
+	if((tname != null) || (objid != null)) {
+	    if((tname != lasttname) || (objid != lastobjid)) {
+		BufferedImage tip = ItemInfo.catimgs(0,
+		    (objid == null) ? null : objtip.get(),
+		    (tname == null) ? null : RichText.render("Terrain: $col[255,255,128]{" + RichText.Parser.quote(tname) + "}", 0).img);
+		lasttip = new TexI(tip);
+		lasttname = tname; lastobjid = objid;
 	    }
-	    String tip = buf.toString();
-	    if((lasttip == null) || !lasttip.text.equals(tip))
-		lasttip = RichText.render(tip, 0);
 	} else {
 	    lasttip = null;
 	}
