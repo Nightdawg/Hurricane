@@ -458,11 +458,13 @@ public class MiniMap extends Widget {
     public static class DisplayMarker implements ItemInfo.Owner, ItemInfo.Name.Dynamic {
 	public final Widget wdg;
 	public final Marker m;
+    public final Text tip;
     public static HashMap<String, Tex> titleTexMap = new HashMap<String, Tex>();
 
 	public DisplayMarker(Widget wdg, Marker marker) {
 	    this.wdg = wdg;
 	    this.m = marker;
+        this.tip = Text.render(m.nm);
         if (!titleTexMap.containsKey(tip.text))
             titleTexMap.put(tip.text, Text.renderstroked(tip.text, Color.white, Color.BLACK, Text.num12boldFnd).tex());
 	}
@@ -1076,7 +1078,7 @@ public class MiniMap extends Widget {
 		continue;
 	    for(DisplayMarker mark : dgrid.markers(false)) {
         try {
-		if((mark.hit != null) && mark.hit.contains(tc.sub(mark.m.tc).div(scalef())) && !filter(mark))
+		if(mark.icon().checkhit(tc.sub(mark.m.tc).div(scalef())) && !filter(mark))
 		    return(mark);
 	    } catch(Loading l){}
         }
