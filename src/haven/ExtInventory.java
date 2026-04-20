@@ -817,14 +817,37 @@ public class ExtInventory extends Widget {
                 return false;
             }
 
-            if (ui.modshift) {
+            if (ui.modshift && !ui.modmeta && !ui.modctrl) { // ND: Transfer only one item of the clicked quality
+                // Transfer only one item (smart about external inventories)
+                WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
+                if (sample != null && sample.parent != null) {
+                    // If LOCAL mode, just send a normal transfer
+                    if (ExtInventory.this.transferMode == TransferMode.LOCAL) {
+                        sample.item.wdgmsg("transfer", sqsz.div(2));
+                    } else {
+                        // GLOBAL mode: try to send to external inventories if any, otherwise fallback to transfer
+                        List<Integer> externalInventoryIds = ExtInventory.getExternalInventoryIds(ui);
+                        if (externalInventoryIds.isEmpty()) {
+                            sample.item.wdgmsg("transfer", sqsz.div(2));
+                        } else {
+                            // Send invxf2 for the single item to all external inventories
+                            for (Integer externalInventoryId : externalInventoryIds) {
+                                sendInvxf2(sample.item, 1, externalInventoryId);
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+
+            if (ui.modmeta && !ui.modctrl) { // ND: Transfer all items of the clicked quality
                 final String rowName = row.key.name;
                 final String rowResname = row.key.resname;
                 final Double rowQ = row.key.q;
                 final Grouping rowGrouping = grouping;
                 final boolean reverse = (ev.b == 3);
 
-                dbg("shift-click row: %s", row.text());
+                dbg("alt-click row: %s", row.text());
                 dbg("  row item count=%d pending=%s", row.items.size(), pendingUnresolvedItems);
 
                 new Thread(() -> ExtInventory.this.transferRowWithRetries(
@@ -834,7 +857,18 @@ public class ExtInventory extends Widget {
                 return true;
             }
 
-            if (ui.modctrl) {
+            if (ui.modctrl && !ui.modmeta && !ui.modshift) { // ND: Drop only one item of the clicked quality
+                // Drop only one item of the clicked quality
+                WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
+                if (sample != null && sample.parent != null) {
+                    List<WItem> single = new ArrayList<>();
+                    single.add(sample);
+                    processGroup(single, ev.b == 3, "drop", sqsz.div(2));
+                }
+                return true;
+            }
+
+            if (ui.modctrl && ui.modmeta && !ui.modshift) { // ND: Drop all items of the clicked quality
                 List<WItem> ordered = new ArrayList<>(row.items);
                 processGroup(ordered, ev.b == 3, "drop", sqsz.div(2));
                 return true;
