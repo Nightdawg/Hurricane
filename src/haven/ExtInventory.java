@@ -528,6 +528,12 @@ public class ExtInventory extends Widget {
             Grouping[] vals = values();
             return vals[(ordinal() + 1) % vals.length];
         }
+
+        public Grouping previous() {
+            Grouping[] vals = values();
+            return vals[(ordinal() - 1 + vals.length) % vals.length];
+        }
+
     }
 
     private static final class GroupKey {
@@ -816,9 +822,16 @@ public class ExtInventory extends Widget {
             }
 
             if (ev.c.y < HEADER_H) {
-                grouping = grouping.next();
-                rebuild();
-                return true;
+                if (ev.b == 1) {
+                    grouping = grouping.next();
+                    rebuild();
+                    return true;
+                } else if (ev.b == 3) {
+                    grouping = grouping.previous();
+                    rebuild();
+                    return true;
+                }
+
             }
 
             GroupRow row = rowAt(ev.c);
