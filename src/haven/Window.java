@@ -254,13 +254,13 @@ public class Window extends Widget {
 		int anchor = sz.x;
 		cbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(9), -UI.scale(10));
 		if (extlistbtn != null)
-			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(68), -UI.scale(10));
-		if (stackbtn != null)
-			stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(49), -UI.scale(10));
-		if (unstackbtn != null)
-			unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(30), -UI.scale(10));
+			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(29), -UI.scale(10));
         if (sortbtn != null)
-            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(87), - UI.scale(10));
+            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(49), - UI.scale(10));
+        if (unstackbtn != null)
+            unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(69), -UI.scale(10));
+        if (stackbtn != null)
+            stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(88), -UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
