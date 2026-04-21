@@ -628,6 +628,7 @@ public class ExtInventory extends Widget {
     private final class QualityPanel extends Widget implements DTarget {
         private final Inventory inv;
         private final List<GroupRow> rows = new ArrayList<>();
+        public final Scrollbar sb;
 
         private Grouping grouping = Grouping.Q1;
         private int scroll = 0;
@@ -637,6 +638,13 @@ public class ExtInventory extends Widget {
         QualityPanel(Inventory inv) {
             super(new Coord(PANEL_W, Math.max(inv.sz.y, HEADER_H + (ROW_H * MIN_ROWS))));
             this.inv = inv;
+            this.sb = adda(new Scrollbar(sz.y-ROW_H, 0, 0){
+                @Override
+                public void changed() {
+                    scroll = val;
+                    super.changed();
+                }
+            }, sz.x, ROW_H, 1, 0);
         }
 
         private void rebuildHeader() {
@@ -676,7 +684,7 @@ public class ExtInventory extends Widget {
             }
 
             Collections.sort(rows, new GroupRowComparator());
-            scroll = Math.max(0, Math.min(scroll, maxScroll()));
+            sb.val = scroll = Math.max(0, Math.min(scroll, maxScroll()));
             rebuildHeader();
         }
 
@@ -736,6 +744,7 @@ public class ExtInventory extends Widget {
         }
 
         private int maxScroll() {
+            sb.max = rows.size() - visibleRows();
             return Math.max(0, rows.size() - visibleRows());
         }
 
@@ -796,7 +805,7 @@ public class ExtInventory extends Widget {
         @Override
         public boolean mousewheel(MouseWheelEvent ev) {
             int ns = scroll + ((ev.a > 0) ? 1 : -1);
-            scroll = Math.max(0, Math.min(ns, maxScroll()));
+            sb.val = scroll = Math.max(0, Math.min(ns, maxScroll()));
             return true;
         }
 
@@ -816,69 +825,71 @@ public class ExtInventory extends Widget {
             if (row == null || row.items.isEmpty()) {
                 return false;
             }
-
-            if (ui.modshift && !ui.modmeta && !ui.modctrl) { // ND: Transfer only one item of the clicked quality
-                // Transfer only one item (smart about external inventories)
-                WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
-                if (sample != null && sample.parent != null) {
-                    // If LOCAL mode, just send a normal transfer
-                    if (ExtInventory.this.transferMode == TransferMode.LOCAL) {
-                        sample.item.wdgmsg("transfer", sqsz.div(2));
-                    } else {
-                        // GLOBAL mode: try to send to external inventories if any, otherwise fallback to transfer
-                        List<Integer> externalInventoryIds = ExtInventory.getExternalInventoryIds(ui);
-                        if (externalInventoryIds.isEmpty()) {
+            if (sb.max <= 0 || (ev.c.x < sb.c.x)) {
+                if (ui.modshift && !ui.modmeta && !ui.modctrl) { // ND: Transfer only one item of the clicked quality
+                    // Transfer only one item (smart about external inventories)
+                    WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
+                    if (sample != null && sample.parent != null) {
+                        // If LOCAL mode, just send a normal transfer
+                        if (ExtInventory.this.transferMode == TransferMode.LOCAL) {
                             sample.item.wdgmsg("transfer", sqsz.div(2));
                         } else {
-                            // Send invxf2 for the single item to all external inventories
-                            for (Integer externalInventoryId : externalInventoryIds) {
-                                sendInvxf2(sample.item, 1, externalInventoryId);
+                            // GLOBAL mode: try to send to external inventories if any, otherwise fallback to transfer
+                            List<Integer> externalInventoryIds = ExtInventory.getExternalInventoryIds(ui);
+                            if (externalInventoryIds.isEmpty()) {
+                                sample.item.wdgmsg("transfer", sqsz.div(2));
+                            } else {
+                                // Send invxf2 for the single item to all external inventories
+                                for (Integer externalInventoryId : externalInventoryIds) {
+                                    sendInvxf2(sample.item, 1, externalInventoryId);
+                                }
                             }
                         }
                     }
+                    return true;
                 }
-                return true;
-            }
 
-            if (ui.modmeta && !ui.modctrl) { // ND: Transfer all items of the clicked quality
-                final String rowName = row.key.name;
-                final String rowResname = row.key.resname;
-                final Double rowQ = row.key.q;
-                final Grouping rowGrouping = grouping;
-                final boolean reverse = (ev.b == 3);
+                if (ui.modmeta && !ui.modctrl) { // ND: Transfer all items of the clicked quality
+                    final String rowName = row.key.name;
+                    final String rowResname = row.key.resname;
+                    final Double rowQ = row.key.q;
+                    final Grouping rowGrouping = grouping;
+                    final boolean reverse = (ev.b == 3);
 
-                dbg("alt-click row: %s", row.text());
-                dbg("  row item count=%d pending=%s", row.items.size(), pendingUnresolvedItems);
+                    dbg("alt-click row: %s", row.text());
+                    dbg("  row item count=%d pending=%s", row.items.size(), pendingUnresolvedItems);
 
-                new Thread(() -> ExtInventory.this.transferRowWithRetries(
-                        rowName, rowResname, rowQ, rowGrouping, reverse
-                )).start();
+                    new Thread(() -> ExtInventory.this.transferRowWithRetries(
+                            rowName, rowResname, rowQ, rowGrouping, reverse
+                    )).start();
 
-                return true;
-            }
+                    return true;
+                }
 
-            if (ui.modctrl && !ui.modmeta && !ui.modshift) { // ND: Drop only one item of the clicked quality
-                // Drop only one item of the clicked quality
+                if (ui.modctrl && !ui.modmeta && !ui.modshift) { // ND: Drop only one item of the clicked quality
+                    // Drop only one item of the clicked quality
+                    WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
+                    if (sample != null && sample.parent != null) {
+                        List<WItem> single = new ArrayList<>();
+                        single.add(sample);
+                        processGroup(single, ev.b == 3, "drop", sqsz.div(2));
+                    }
+                    return true;
+                }
+
+                if (ui.modctrl && ui.modmeta && !ui.modshift) { // ND: Drop all items of the clicked quality
+                    List<WItem> ordered = new ArrayList<>(row.items);
+                    processGroup(ordered, ev.b == 3, "drop", sqsz.div(2));
+                    return true;
+                }
+
                 WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
                 if (sample != null && sample.parent != null) {
-                    List<WItem> single = new ArrayList<>();
-                    single.add(sample);
-                    processGroup(single, ev.b == 3, "drop", sqsz.div(2));
+                    sample.item.wdgmsg("take", sqsz.div(2));
                 }
                 return true;
             }
-
-            if (ui.modctrl && ui.modmeta && !ui.modshift) { // ND: Drop all items of the clicked quality
-                List<WItem> ordered = new ArrayList<>(row.items);
-                processGroup(ordered, ev.b == 3, "drop", sqsz.div(2));
-                return true;
-            }
-
-            WItem sample = (ev.b == 3) ? row.lowSample : row.highSample;
-            if (sample != null && sample.parent != null) {
-                sample.item.wdgmsg("take", sqsz.div(2));
-            }
-            return true;
+            return false;
         }
 
         @Override
