@@ -260,7 +260,7 @@ public class Window extends Widget {
 		if (unstackbtn != null)
 			unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(30), -UI.scale(10));
         if (sortbtn != null)
-            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(90), - UI.scale(10));
+            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(87), - UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
