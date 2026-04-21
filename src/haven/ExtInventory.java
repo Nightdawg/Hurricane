@@ -608,7 +608,7 @@ public class ExtInventory extends Widget {
 
         Tex tex() {
             if (tex == null) {
-                tex = Text.render(text()).tex();
+                tex = new TexI(Utils.outline2(Text.render(text()).img, Color.BLACK, true));
             }
             return tex;
         }
@@ -654,7 +654,7 @@ public class ExtInventory extends Widget {
         }
 
         private void rebuildHeader() {
-            headerTex = Text.render("Group: " + grouping.label + "  (click to cycle)").tex();
+            headerTex = new TexI(Utils.outline2(Text.render("Group by: " + grouping.label + "  (click to cycle)").img, Color.BLACK, true));
         }
 
         private void rebuild() {
