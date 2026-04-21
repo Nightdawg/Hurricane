@@ -21,10 +21,10 @@ public class ExtInventory extends Widget {
     private static final int ROW_H = UI.scale(20);
     private static final int MIN_ROWS = 8;
 
-    private static final Color BG = new Color(16, 16, 16, 128);
+    private static final Color BG = new Color(16, 16, 16, 0);
     private static final Color ROW_EVEN = new Color(255, 255, 255, 16);
     private static final Color ROW_ODD = new Color(255, 255, 255, 32);
-    private static final Color HEADER = new Color(255, 255, 255, 64);
+    private static final Color HEADER = new Color(8, 8, 8, 196);
 
     private static final boolean DEBUG_EXTINV = false;
 
