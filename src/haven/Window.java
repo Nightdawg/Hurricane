@@ -250,8 +250,8 @@ public class Window extends Widget {
 	    resize(wsz);
 	    ca = Area.sized(tlm, csz);
 	    aa = Area.sized(ca.ul.add(mrgn), asz);
-		int extra = inventoryExtraWidth();
-		int anchor = sz.x - extra;
+//		int extra = inventoryExtraWidth();
+		int anchor = sz.x;
 		cbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(9), -UI.scale(10));
 		if (extlistbtn != null)
 			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(68), -UI.scale(10));
