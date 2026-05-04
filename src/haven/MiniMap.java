@@ -81,7 +81,7 @@ public class MiniMap extends Widget {
     protected DisplayGrid[] display = {};
     protected Area dgext, dtext;
     protected Segment dseg;
-    protected int dlvl, dmag;
+    protected int dlvl;
     protected Location dloc;
 	public boolean compact;
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
@@ -550,10 +550,9 @@ public class MiniMap extends Widget {
 		return(true);
 	    return(false);
 	}
-
-		public Object tooltip() {
-			return icon.tooltip();
-		}
+    public Object tooltip() {
+        return icon.tooltip();
+    }
     }
 
     public static class MarkerID extends GAttrib {
@@ -806,20 +805,12 @@ public class MiniMap extends Widget {
 	return(UI.unscale((zoomlevel)));
     }
 
-    private Coord l2dscale(Coord c) {
-	return(c.mul(dmag).div(1 << dlvl));
-    }
-
     private Coord scalec(Coord c) {
-        int f = dlvl - dmag;
+        int f = dlvl - 1;
         if(f < 0)
             return(c.div(1 << -f));
         else
             return(c.mul(1 << f));
-    }
-
-    private Coord d2lscale(Coord c) {
-        return(c.mul(1 << dlvl).div(dmag));
     }
 
     public Coord st2c(Coord tc) {
@@ -1413,59 +1404,21 @@ public class MiniMap extends Widget {
 	return(ret);
     }
 
-    private String lasttname = null;
     private Object lastobjid = null;
     private Tex lasttip = null;
     public Object tooltip(Coord c, Widget prev) {
-	DisplayGrid grid = gridat(c);
-	String tname = null;
-	Object objid = null;
-	Supplier<BufferedImage> objtip = null;
-	try {
-	    if((grid != null) && (grid.dc != null)) {
-		DataGrid dgrid = grid.gref.get();
-		if(dgrid != null) {
-            Coord gc = c.sub(grid.dc).div(1 << dmag);
-		    gc = Area.sized(cmaps).closest(gc); /* XXX: This should not be necessary. */
-		    TileInfo tile = dgrid.tilesets[dgrid.gettile(gc)];
-		    if(tile != null) {
-			Resource tres = tile.res.get();
-			Resource.Tooltip tt = tres.layer(Resource.tooltip);
-			if(tt != null)
-			    tname = tt.t;
-		    }
-		}
-	    }
-	} catch(Loading l) {
-	    tname = "...";
-	}
-	Location mloc = xlate(c);
-	if(mloc != null) {
-	    DisplayIcon icon = iconat(c);
-	    DisplayMarker mark = markerat(mloc.tc);
-	    if(icon != null) {
-		if(icon.icon != null) {
-		    objid = icon.icon;
-		    objtip = () -> Text.render(icon.icon.name()).img;
-		}
-	    } else if(mark != null) {
-		objid = mark;
-		objtip = mark::tooltip;
-	    }
-	}
-	if((tname != null) || (objid != null)) {
-	    if((tname != lasttname) || (objid != lastobjid)) {
-		BufferedImage tip = ItemInfo.catimgs(0,
-		    (objid == null) ? null : objtip.get(),
-		    (tname == null) ? null : RichText.render("Terrain: $col[255,255,128]{" + RichText.Parser.quote(tname) + "}", 0).img);
-		lasttip = new TexI(tip);
-		lasttname = tname; lastobjid = objid;
-	    }
-	} else {
-	    lasttip = null;
-	}
-	if(lasttip != null)
-	    return(lasttip);
+        if(dloc != null) {
+            Coord tc = c.sub(sz.div(2)).mul(scalef()).add(dloc.tc);
+            DisplayMarker mark = markerat(tc);
+            if(mark != null) {
+                return(mark.tip);
+            }
+
+            DisplayIcon icon = iconat(c);
+            if(icon != null) {
+                return icon.tooltip();
+            }
+        }
 	return(super.tooltip(c, prev));
     }
 
