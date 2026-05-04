@@ -84,7 +84,7 @@ public class MiniMap extends Widget {
     protected int dlvl;
     protected Location dloc;
 	public boolean compact;
-	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
+	private static final Color BIOME_BG = new Color(0, 0, 0, 164);
 	private String biome;
 	private Tex biometex;
     public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
