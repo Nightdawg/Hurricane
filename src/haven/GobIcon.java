@@ -159,7 +159,7 @@ public class GobIcon extends GAttrib {
 
 	public void draw(GOut g, Coord cc) {
 		if (img.tex.sz().x != size || img.tex.sz().y != size) {
-			Resource.Image rimg = res.layer(Resource.imgc);
+			Resource.Image rimg = img.res.layer(Resource.imgc);
 			BufferedImage imgScaled = rimg.scaled();
 			BufferedImage buf = imgScaled;
 			buf = PUtils.rasterimg(PUtils.blurmask2(buf.getRaster(), 1, 1, Color.BLACK));
