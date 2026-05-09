@@ -550,9 +550,6 @@ public class MiniMap extends Widget {
 		return(true);
 	    return(false);
 	}
-    public Object tooltip() {
-        return icon.tooltip();
-    }
     }
 
     public static class MarkerID extends GAttrib {
@@ -1404,20 +1401,32 @@ public class MiniMap extends Widget {
 	return(ret);
     }
 
-    private Object lastobjid = null;
     private Tex lasttip = null;
+    private Object lastobjid = null;
     public Object tooltip(Coord c, Widget prev) {
+        Location mloc = xlate(c);
+        Supplier<BufferedImage> objtip = null;
+        Object objid = null;
         if(dloc != null) {
-            Coord tc = c.sub(sz.div(2)).mul(scalef()).add(dloc.tc);
-            DisplayMarker mark = markerat(tc);
-            if(mark != null) {
-                return(mark.tip);
-            }
-
+            DisplayMarker mark = markerat(mloc.tc);
             DisplayIcon icon = iconat(c);
             if(icon != null) {
-                return icon.tooltip();
+                if(icon.icon != null) {
+                    objid = icon.icon;
+                    objtip = () -> Text.render(icon.icon.name()).img;
+                }
+            } else if(mark != null) {
+                objid = mark;
+                objtip = mark::tooltip;
             }
+            if (objtip != null) {
+                if (lasttip == null || lastobjid != objid) {
+                    lasttip = new TexI(ItemInfo.catimgs(0, objtip.get()));
+                    lastobjid = objid;
+                }
+                return(lasttip);
+            } else
+                lasttip = null;
         }
 	return(super.tooltip(c, prev));
     }

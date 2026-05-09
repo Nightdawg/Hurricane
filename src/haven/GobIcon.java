@@ -88,15 +88,6 @@ public class GobIcon extends GAttrib {
 	    public Icon create(OwnerContext owner, Resource res, Message sdt);
 	    public Collection<? extends Icon> enumerate(OwnerContext owner, Resource res, Message sdt);
 	}
-
-		public String tooltip() {
-			String tt = name();
-			try {
-				Resource.Tooltip name = res.layer(Resource.tooltip);
-				tt = (name == null) ? res.name : name.t;
-			} catch (Resource.Loading ignored) {}
-			return tt;
-		}
     }
 
     public static class Image {
