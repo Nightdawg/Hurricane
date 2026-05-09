@@ -27,7 +27,6 @@
 package haven;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -56,7 +55,7 @@ public class LoginScreen extends Widget {
 	AccountList accounts;
 	private String lastUser = "";
 	private String lastPass = "";
-	public static HSlider themeSongVolumeSlider;
+	public static HSlider loginScreenMusicVolumeSlider;
 	static public final List<Resource> themes = new ArrayList<>() {{
 		add(Resource.local().loadwait("customclient/sfx/rogueTheme"));
 		add(Resource.local().loadwait("customclient/sfx/knightTheme"));
@@ -183,16 +182,16 @@ public class LoginScreen extends Widget {
 	}
 	mainThemeStopped = false;
 	playMainTheme(themes.get(bgIndex-1));
-	add(themeSongVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("themeSongVolume", 40)) {
+	add(loginScreenMusicVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("loginScreenMusicVolume", 40)) {
 		protected void attach(UI ui) {
 			super.attach(ui);
 		}
 		public void changed() {
-			OptWnd.themeSongVolumeSlider.val = val;
-			OptWnd.themeSongVolumeSlider.changed();
+            if (LoginScreen.mainThemeClip != null) ((Audio.VolAdjust) LoginScreen.mainThemeClip).vol = val/100d;
+            Utils.setprefi("loginScreenMusicVolume", val);
 		}
 	}, bg.sz().x - UI.scale(230) , bg.sz().y - UI.scale(28));
-	add(new Label("Background Music Volume"), bg.sz().x - UI.scale(180) , bg.sz().y - UI.scale(44));
+	add(new Label("Login Screen Music Volume"), bg.sz().x - UI.scale(190) , bg.sz().y - UI.scale(44));
 	add(new Label("Login Screen Style:"), bg.sz().x - UI.scale(200) , bg.sz().y - UI.scale(60));
 	add(backgroundDropBox, bg.sz().x - UI.scale(100) , bg.sz().y - UI.scale(60));
 	GameUI.swimmingToggled = false;
@@ -657,7 +656,7 @@ public class LoginScreen extends Widget {
 	private void playMainTheme(Resource theme) {
 		if (!mainThemeStopped &&(mainThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(mainThemeClip))) {
 				Audio.CS klippi = fromres(theme);
-				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("loginScreenMusicVolume", 40)/100d);
 				Audio.play(mainThemeClip);
 		}
 	}

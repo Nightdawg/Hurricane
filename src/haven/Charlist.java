@@ -45,7 +45,7 @@ public class Charlist extends Widget {
     public Avaview avalink;
     private boolean dirty;
     private boolean showdisc;
-	public static HSlider themeSongVolumeSlider;
+	public static HSlider charSelectionScreenVolumeSlider;
 
     @RName("charlist")
     public static class $_ implements Factory {
@@ -174,16 +174,16 @@ public class Charlist extends Widget {
 	parent.resize(UI.scale(new Coord(1067, 600)));
 	charSelectThemeStopped = false;
 	playCharSelectTheme();
-	parent.add(themeSongVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("themeSongVolume", 40)) {
+	parent.add(charSelectionScreenVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("charSelectionScreenVolume", 40)) {
 		protected void attach(UI ui) {
 			super.attach(ui);
 		}
 		public void changed() {
-			OptWnd.themeSongVolumeSlider.val = val;
-			OptWnd.themeSongVolumeSlider.changed();
+            if (LoginScreen.charSelectThemeClip != null) ((Audio.VolAdjust) LoginScreen.charSelectThemeClip).vol = val/100d;
+            Utils.setprefi("charSelectionScreenVolume", val);
 		}
 	}, parent.sz.x - UI.scale(230) , parent.sz.y - UI.scale(20));
-	parent.add(new Label("Background Music Volume"), parent.sz.x - UI.scale(184) , parent.sz.y - UI.scale(36));
+	parent.add(new Label("Character Screen Music Volume"), parent.sz.x - UI.scale(200) , parent.sz.y - UI.scale(36));
 	for(Widget wdg : parent.children(Widget.class)) {
 		if (wdg instanceof Img) {
 			if (wdg.tooltip instanceof KeyboundTip) {
@@ -352,7 +352,7 @@ public class Charlist extends Widget {
 			Audio.CS klippi = fromres(charSelectTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(charSelectTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(charSelectThemeLegacy);
-			charSelectThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			charSelectThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("charSelectionScreenVolume", 40)/100d);
 			Audio.play(charSelectThemeClip);
 		}
 	}

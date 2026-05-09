@@ -3340,7 +3340,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			Audio.CS klippi = fromres(caveTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(caveTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(caveThemeLegacy);
-			caveThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			caveThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
 			Audio.play(caveThemeClip);
 		}
 	}
@@ -3355,7 +3355,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			Audio.CS klippi = fromres(cabinTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(cabinTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(cabinThemeLegacy);
-			cabinThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			cabinThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
 			Audio.play(cabinThemeClip);
 		}
 	}
@@ -3370,7 +3370,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			Audio.CS klippi = fromres(fishingTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(fishingTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(fishingThemeLegacy);
-			fishingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			fishingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
 			Audio.play(fishingThemeClip);
 		}
 	}
@@ -3385,7 +3385,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			Audio.CS klippi = fromres(hookahTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(hookahTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(hookahThemeLegacy);
-			hookahThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			hookahThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
 			Audio.play(hookahThemeClip);
 		}
 	}
@@ -3400,7 +3400,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			Audio.CS klippi = fromres(feastingTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(feastingTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(feastingThemeLegacy);
-			feastingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			feastingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
 			Audio.play(feastingThemeClip);
 		}
 	}
