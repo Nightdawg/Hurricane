@@ -11,7 +11,7 @@ import java.awt.image.*;
 
 @haven.FromResource(name = "gfx/hud/mmap/plo", version = 12)
 public class DeadPlayer extends GobIcon.ImageIcon {
-    public static final Resource img = Loading.waitfor(Resource.classres(DeadPlayer.class).pool.load("gfx/invobjs/small/corpse", 1));
+    public static final Resource img = Resource.local().loadwait("customclient/mapicons/playerDead");
     public static final Object[] id = new Object[] {"dead"};
 
     public DeadPlayer(OwnerContext owner, Resource res) {
