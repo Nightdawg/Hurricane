@@ -630,7 +630,7 @@ public class CheckpointManager extends Window implements Runnable {
             for (Widget w : this.children()) {
                 if (w instanceof CheckpointList) {
                     if (w.children().size() > 0) {
-                        w.mousewheel(new MouseWheelEvent(Coord.z, -(w.children().size())));
+                        w.mousewheel(new MouseWheelEvent(Coord.z, -(w.children().size()), 1));
                     }
                 }
             }
