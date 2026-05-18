@@ -230,7 +230,7 @@ public class CharWnd extends Window {
 	}
 
 	public boolean mousewheel(MouseWheelEvent ev) {
-	    sb.ch(ev.a * 20);
+	    sb.ch(ev.s * 20);
 	    return(true);
 	}
 
