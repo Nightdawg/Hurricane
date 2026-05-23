@@ -151,12 +151,16 @@ public class FishingBot extends Window implements Runnable {
         int hand = -1;
         for (int slot : new int[]{6, 7}) {
             WItem it = eq.slots[slot];
-            if (it != null && it.item != null) {
-                String name = it.item.getname();
-                if (poleSel.equals(name)) {
-                    hand = slot;
-                    break;
+            try {
+                if (it != null && it.item != null) {
+                    String name = it.item.getname();
+                    if (poleSel.equals(name)) {
+                        hand = slot;
+                        break;
+                    }
                 }
+            } catch (Loading l) { // ND: Hand item might still be loading, but it could be the fishing pole/rod, so return and try again.
+                return;
             }
         }
         if (hand == -1) {
