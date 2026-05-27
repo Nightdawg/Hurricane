@@ -642,7 +642,7 @@ public class MiniMap extends Widget {
 	    if(mm.dloc == null)
 		this.sc = null;
 	    else
-		this.sc = mm.l2dscale(m.tc).sub(mm.l2dscale(mm.dloc.tc)).add(mm.sz.div(2));
+        this.sc = m.tc.sub(mm.dloc.tc).div(mm.scalef()).add(mm.sz.div(2));
 	}
 
 	public void draw(GOut g, Coord c) {
@@ -821,6 +821,26 @@ public class MiniMap extends Widget {
         else
             return(c.mul(1 << f));
     }
+
+    // ND: For future me, this is regarding l2dscale(), which loftar replaced scalef() with. I have no clue what l2dscale does.
+    // Anyway, here are a few examples of the old code, which I replaced it back with:
+    //
+    // for the xlate() method:
+    //      return(l2dscale(loc.tc.sub(dloc.tc)).add(sz.div(2)));
+    //      return(loc.tc.sub(dloc.tc).div(scalef()).add(sz.div(2)));
+    //
+    // for the st2c() method:
+    //      return(l2dscale(tc.add(sessloc.tc).sub(dloc.tc)).add(sz.div(2)));
+    //      return(UI.scale(tc.add(sessloc.tc).sub(dloc.tc).div(zoomlevel)).add(sz.div(2)));
+    //
+    // for the markerat() method:
+    //      if(mark.icon().checkhit(l2dscale(tc).sub(l2dscale(mark.m.tc))) && !filter(mark))
+    //      if(mark.icon().checkhit(tc.sub(mark.m.tc).div(scalef())) && !filter(mark))
+    //
+    // and for dispupdate(), but I am not sure if it breaks anything yet:
+    // 		this.sc = mm.l2dscale(m.tc).sub(mm.l2dscale(mm.dloc.tc)).add(mm.sz.div(2));
+    //      this.sc = m.tc.sub(mm.dloc.tc).div(mm.scalef()).add(mm.sz.div(2));
+
 
     public Coord st2c(Coord tc) {
 	return(UI.scale(tc.add(sessloc.tc).sub(dloc.tc).div(zoomlevel)).add(sz.div(2)));
