@@ -335,7 +335,7 @@ public class OptWnd extends Window {
 				if(!done[0])
 				    return;
 				try {
-				    ui.setgprefs(prefs = prefs.update(null, prefs.syncmode, JOGLPanel.SyncMode.values()[btn]));
+				    ui.setgprefs(prefs = prefs.update(null, prefs.syncmode, GSettings.SyncMode.values()[btn]));
 				} catch(GSettings.SettingException e) {
 				    error(e.getMessage());
 				    return;

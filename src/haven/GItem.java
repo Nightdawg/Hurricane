@@ -27,6 +27,7 @@
 package haven;
 
 import java.util.*;
+import java.util.function.*;
 
 import haven.automated.cookbook.FoodService;
 import haven.render.*;
@@ -35,6 +36,7 @@ import haven.res.ui.tt.q.quality.Quality;
 import haven.res.ui.tt.wear.Wear;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owner, RandomSource {
@@ -71,6 +73,25 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 
     public interface RStateInfo {
 	public Pipe.Op rstate();
+
+	public static final Function<List<ItemInfo>, Supplier<Pipe.Op>> combine = info -> {
+	    ArrayList<GItem.RStateInfo> ols = new ArrayList<>();
+	    for(ItemInfo inf : info) {
+		if(inf instanceof GItem.RStateInfo)
+		    ols.add((GItem.RStateInfo)inf);
+	    }
+	    if(ols.size() == 0)
+		return(() -> null);
+	    if(ols.size() == 1) {
+		Pipe.Op op = ols.get(0).rstate();
+		return(() -> op);
+	    }
+	    Pipe.Op[] ops = new Pipe.Op[ols.size()];
+	    for(int i = 0; i < ops.length; i++)
+		ops[i] = ols.get(0).rstate();
+	    Pipe.Op cmp = Pipe.Op.compose(ops);
+	    return(() -> cmp);
+	};
     }
 
     public interface ColorInfo extends RStateInfo {
@@ -316,16 +337,6 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	public void propagate(List<ItemInfo> buf, ItemInfo.Owner outer);
     }
 
-    /* XXX: Please remove me some time, some day, when custom clients
-     * can be expected to have merged ContentsInfo. */
-    private static void propagate(ItemInfo inf, List<ItemInfo> buf, ItemInfo.Owner outer) {
-	try {
-	    java.lang.reflect.Method mth = inf.getClass().getMethod("propagate", List.class, ItemInfo.Owner.class);
-	    Utils.invoke(mth, inf, buf, outer);
-	} catch(NoSuchMethodException e) {
-	}
-    }
-
     private int lastcontseq;
     private List<Pair<GItem, Integer>> lastcontinfo = null;
     private void updcontinfo() {
@@ -370,8 +381,6 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		    for(ItemInfo inf : ((GItem)ch).info()) {
 			if(inf instanceof ContentsInfo)
 			    ((ContentsInfo)inf).propagate(buf, this);
-			else
-			    propagate(inf, buf, this);
 		    }
 		}
 	    }

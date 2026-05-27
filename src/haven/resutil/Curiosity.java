@@ -28,6 +28,7 @@ package haven.resutil;
 
 import haven.*;
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
@@ -44,15 +45,16 @@ public class Curiosity extends ItemInfo.Tip implements GItem.ColorInfo {
 	this.time = time;
 	this.lph = (exp > 0 && time > 0) ? (int)((3600 * exp / time)* GameUI.gameTimeSpeedMultiplier) : 0;
 	UI ui = null;
-	if(owner instanceof Widget) {
-	    Widget wdg = (Widget)owner;
-	    if(wdg.getparent(CharWnd.class) != null)
-		ui = wdg.ui;
-	}
-	if (owner instanceof GItem) {
-		((GItem) owner).studytime = this.time / GameUI.gameTimeSpeedMultiplier / 60;
-	}
+	Widget wdg = owner.fcontext(Widget.class, false);
+	if(wdg != null && (wdg.getparent(SAttrWnd.class) != null))
+	    ui = wdg.ui;
+    if (owner instanceof GItem) {
+        ((GItem) owner).studytime = this.time / GameUI.gameTimeSpeedMultiplier / 60;
+    }
 	this.ui = ui;
+    if (owner instanceof GItem) {
+        ((GItem) owner).studytime = this.time / GameUI.gameTimeSpeedMultiplier / 60;
+    }
     }
 
     static String[] units = {"s", "m", "h", "d"};
