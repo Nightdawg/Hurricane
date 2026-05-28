@@ -28,7 +28,6 @@ public class ExpWnd extends Window {
     protected void added() {
 	if(c.equals(0, 0))
 	    c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
-	Audio.play(sfx);
 	super.added();
 	ui.sfx(sfx);
     }
