@@ -4,7 +4,7 @@ package haven.res.ui.expwnd;
 import haven.*;
 
 /* >wdg: ExpWnd */
-@haven.FromResource(name = "ui/expwnd", version = 23)
+@haven.FromResource(name = "ui/expwnd", version = 24)
 public class ExpWnd extends Window {
     public static Resource sfx = Loading.waitfor(Resource.classres(ExpWnd.class).pool.load("sfx/exp", 1));
     public static final RichText.Foundry fnd = new RichText.Foundry();
@@ -30,6 +30,7 @@ public class ExpWnd extends Window {
 	    c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
 	Audio.play(sfx);
 	super.added();
+	ui.sfx(sfx);
     }
 
     public void tick(double dt) {
