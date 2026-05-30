@@ -67,8 +67,9 @@ public class LoginScreen extends Widget {
 		add(Resource.local().loadwait("customclient/sfx/berserkerTheme"));
 		add(Resource.local().loadwait("customclient/sfx/beastmasterTheme"));
 		add(Resource.local().loadwait("customclient/sfx/dryadTheme"));
+        add(Resource.local().loadwait("customclient/sfx/druidTheme"));
 	}};
-	private static List<String> backgrounds = new ArrayList<>() {{
+	private static final List<String> backgrounds = new ArrayList<>() {{
 		add(haven.MainFrame.gameDir + "res/customclient/rogueScreen.png");
 		add(haven.MainFrame.gameDir + "res/customclient/knightScreen.png");
 		add(haven.MainFrame.gameDir + "res/customclient/vikingScreen.png");
@@ -79,6 +80,7 @@ public class LoginScreen extends Widget {
 		add(haven.MainFrame.gameDir + "res/customclient/berserkerScreen.png");
 		add(haven.MainFrame.gameDir + "res/customclient/beastmasterScreen.png");
 		add(haven.MainFrame.gameDir + "res/customclient/dryadScreen.png");
+        add(haven.MainFrame.gameDir + "res/customclient/druidScreen.png");
 	}};
 	final List<String> keys = new ArrayList<>(){{
 		add("Random!");
@@ -92,6 +94,7 @@ public class LoginScreen extends Widget {
 		add("Berserker");
 		add("Beastmaster");
 		add("Dryad");
+        add("Druid");
 	}};
 	private OldDropBox backgroundDropBox;
 	static public int bgIndex = 1;
@@ -152,7 +155,8 @@ public class LoginScreen extends Widget {
 			} else {
 				bgIndex = selindex;
 			}
-			changeLoginScreen(themes.get(bgIndex-1), backgrounds.get(bgIndex-1));
+            ee = false;
+			changeLoginScreen(backgrounds.get(bgIndex-1));
 		}
 	};
 	add(new CircleFadein(0.5));
@@ -254,7 +258,16 @@ public class LoginScreen extends Widget {
 			}
 
         }
-	}, new Coord(this.sz.x + UI.scale(-60), 10));
+
+        @Override
+        public boolean mousedown(MouseDownEvent ev) {
+            if (ev.b == 3) {
+                changeLoginScreen(haven.MainFrame.gameDir + "res/customclient/nd.png");
+                ee = true;
+            }
+            return super.mousedown(ev);
+        }
+    }, new Coord(this.sz.x + UI.scale(-60), 10));
     Config.setPlayerName(null);
     GameUI.gameTimeSpeedMultiplier = 3.29f;
     }
@@ -655,7 +668,7 @@ public class LoginScreen extends Widget {
 
 	private void playMainTheme(Resource theme) {
 		if (!mainThemeStopped &&(mainThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(mainThemeClip))) {
-				Audio.CS klippi = fromres(theme);
+				Audio.CS klippi = ee ? fromres(eeTheme) : fromres(theme);
 				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("loginScreenMusicVolume", 40)/100d);
 				Audio.play(mainThemeClip);
 		}
@@ -667,8 +680,9 @@ public class LoginScreen extends Widget {
 			mainThemeStopped = true;
 		}
 	}
-
-	private void changeLoginScreen(Resource theme, String imgPath){
+    boolean ee = false;
+    Resource eeTheme = Resource.local().loadwait("customclient/sfx/ndTheme");
+	private void changeLoginScreen(String imgPath){
 		stopMainTheme();
 		mainThemeStopped = false;
 		backgroundImg.setimg(bg(imgPath));
