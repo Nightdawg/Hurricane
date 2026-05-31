@@ -68,6 +68,8 @@ public class LoginScreen extends Widget {
 		add(Resource.local().loadwait("customclient/sfx/beastmasterTheme"));
 		add(Resource.local().loadwait("customclient/sfx/dryadTheme"));
         add(Resource.local().loadwait("customclient/sfx/druidTheme"));
+        add(Resource.local().loadwait("customclient/sfx/nomadTheme"));
+        add(Resource.local().loadwait("customclient/sfx/sageTheme"));
 	}};
 	private static final List<String> backgrounds = new ArrayList<>() {{
 		add(haven.MainFrame.gameDir + "res/customclient/rogueScreen.png");
@@ -81,6 +83,8 @@ public class LoginScreen extends Widget {
 		add(haven.MainFrame.gameDir + "res/customclient/beastmasterScreen.png");
 		add(haven.MainFrame.gameDir + "res/customclient/dryadScreen.png");
         add(haven.MainFrame.gameDir + "res/customclient/druidScreen.png");
+        add(haven.MainFrame.gameDir + "res/customclient/nomadScreen.png");
+        add(haven.MainFrame.gameDir + "res/customclient/sageScreen.png");
 	}};
 	final List<String> keys = new ArrayList<>(){{
 		add("Random!");
@@ -95,6 +99,8 @@ public class LoginScreen extends Widget {
 		add("Beastmaster");
 		add("Dryad");
         add("Druid");
+        add("Nomad");
+        add("Sage");
 	}};
 	private OldDropBox backgroundDropBox;
 	static public int bgIndex = 1;
