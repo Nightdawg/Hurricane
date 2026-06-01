@@ -23,7 +23,6 @@ public class StackAllItems implements Runnable {
 
     @Override
     public void run() {
-        // TODO: ND: Gotta make this crap ignore "quantity" items, like Seeds, Flour, Coins, etc.
         try {
             if (gui.vhand != null) {
                 gui.error("Can't stack items with an occupied cursor!");
@@ -39,6 +38,9 @@ public class StackAllItems implements Runnable {
                 // The only valuable "double" item you can hold in your inventory is usually just a pair of rings. I can't think of anything else right now.
                 if (name.contains("Ring")) continue;
 
+                // ND: Only quantity items contain the decimal point (0.50 kg of Flour, 0.25 l of Slime, etc.)
+                // Quantity items should be skipped
+                if (name.contains(".")) continue;
 
                 if (name.endsWith(stackOfSuffixForRemoval)) { // ND: remove the ", stack of" part, so stacks and unstacked items are considered the same item type
                     name = name.substring(0, name.length() - stackOfSuffixForRemoval.length());
