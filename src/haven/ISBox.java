@@ -155,7 +155,7 @@ public class ISBox extends Widget implements DTarget {
     @Override
     protected void added() {
         if(parent instanceof Window) {
-            boolean isStockpile = "Stockpile".equals(((Window) parent).cap);
+            boolean isStockpile = ((Window) parent).cap.equals("Stockpile") || ((Window) parent).cap.equals("Sack");
             if(isStockpile) {
                 value = new Value(UI.scale(60), ""){
                     @Override
