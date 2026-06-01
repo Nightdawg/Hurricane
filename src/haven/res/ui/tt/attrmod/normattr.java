@@ -19,7 +19,7 @@ public class normattr extends resattr {
 
     public String format(double val) {
 	String bval = (Math.abs(val) >= 10) ?
-	    String.format("%s\u00d7", Utils.odformat2(Math.abs(val), dec)) :
+	    String.format("%s%%", Utils.odformat2(Math.abs(val) / 10, dec)) :
 	    String.format("%s%%", Utils.odformat2(Math.abs(val) * 100, dec));
 	return(String.format("%s{%s%s}",
 			     RichText.Parser.col2a((val < 0) ? debuff : buff),
