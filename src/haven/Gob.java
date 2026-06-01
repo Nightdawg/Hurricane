@@ -116,6 +116,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private Overlay archeryRadius;
 	BarrelContentsGobInfo barrelContentsGobInfo;
 	IconSignGobInfo iconSignGobInfo;
+    ProduceSackGobInfo produceSackGobInfo;
 	GobCheeseRackInfo cheeseRackInfo;
 	public boolean combatFoeHighlighted = false;
 	private GobSpeedInfo gobSpeedInfo;
@@ -1275,6 +1276,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				iconSignGobInfo = new IconSignGobInfo(this);
 				setattr(IconSignGobInfo.class, iconSignGobInfo);
 			}
+            if (res.name.startsWith("gfx/terobjs/producesack") && produceSackGobInfo == null) {
+                produceSackGobInfo = new ProduceSackGobInfo(this);
+                setattr(ProduceSackGobInfo.class, produceSackGobInfo);
+            }
 			if (res.name.startsWith("gfx/terobjs/cheeserack") && cheeseRackInfo == null) {
 				cheeseRackInfo = new GobCheeseRackInfo(this);
 				setattr(GobCheeseRackInfo.class, cheeseRackInfo);
@@ -2547,6 +2552,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if (barrelContentsGobInfo != null) barrelContentsGobInfo.clear();
 		if (cheeseRackInfo != null) cheeseRackInfo.clear();
 		if (iconSignGobInfo != null) iconSignGobInfo.clear();
+        if (produceSackGobInfo != null) produceSackGobInfo.clear();
 		setGobSearchOverlay();
 	}
 

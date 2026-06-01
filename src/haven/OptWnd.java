@@ -2012,6 +2012,7 @@ public class OptWnd extends Window {
 	public static CheckBox showMoundBedsRadiiCheckBox;
 	public static CheckBox showBarrelContentsTextCheckBox;
 	public static CheckBox showIconSignTextCheckBox;
+    public static CheckBox showProduceSackTextCheckBox;
 	public static CheckBox showCheeseRacksTierTextCheckBox;
 	public static CheckBox highlightCliffsCheckBox;
 	public static ColorOptionWidget highlightCliffsColorOptionWidget;
@@ -2783,6 +2784,16 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
 			showIconSignTextCheckBox.tooltip = showIconSignTextTooltip;
+            rightColumn = add(showProduceSackTextCheckBox = new CheckBox("Show Produce Sack Text"){
+                {a = (Utils.getprefb("showProduceSackText", true));}
+                public void changed(boolean val) {
+                    Utils.setprefb("showProduceSackText", val);
+                    if (ui != null && ui.gui != null){
+                        ui.gui.optionInfoMsg("Produce Sack Text is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+                    }
+                }
+            }, rightColumn.pos("bl").adds(0, 2));
+            showProduceSackTextCheckBox.tooltip = showProduceSackTextTooltip;
 			rightColumn = add(showCheeseRacksTierTextCheckBox = new CheckBox("Show Cheese Racks Tier Text"){
 				{a = (Utils.getprefb("showCheeseRacksTierText", false));}
 				public void changed(boolean val) {
@@ -3207,6 +3218,7 @@ public class OptWnd extends Window {
 		y = addbtn(cont, "Show Bee Skep Harvest Icons", GameUI.kb_toggleBeeSkepIcons, y);
 		y = addbtn(cont, "Show Barrel Contents Text", GameUI.kb_toggleBarrelContentsText, y);
 		y = addbtn(cont, "Show Icon Sign Text", GameUI.kb_toggleIconSignText, y);
+        y = addbtn(cont, "Show Produce Sack Text", GameUI.kb_toggleProduceSackText, y);
 		y = addbtn(cont, "Show Cheese Racks Tier Text", GameUI.kb_toggleCheeseRacksTierText, y);
 		y = addbtn(cont, "Show Objects Speed", GameUI.kb_toggleSpeedInfo, y);
 		y = addbtn(cont, "Hide/Show Cursor Item", GameUI.kb_toggleCursorItem, y);
@@ -5359,6 +5371,9 @@ public class OptWnd extends Window {
 	private static final Object showIconSignTextTooltip = RichText.render("This adds text on top of icon signs, that shows the name of the currently displayed icon. Empty signs won't show any text." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
+    private static final Object showProduceSackTextTooltip = RichText.render("This adds text on top of produce sacks, that shows the name of the currently displayed icon. Empty sacks won't show any text." +
+            "\n" +
+            "\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
 	private static final Object showCheeseRacksTierTextTooltip = RichText.render("This adds text on top of each cheese tray inside cheese racks, that shows the current tier of the cheese present in the tray." +
 			"\n" +
 			"\n$col[185,185,185]{Unfortunately, the server only sends the tier info, so the client can't tell which exact cheese is in the trays.}" +
