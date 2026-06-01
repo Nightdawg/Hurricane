@@ -269,6 +269,7 @@ public class CollisionBox extends SlottedNode implements Rendered {
 	private static Resource getResource(Gob gob) {
 		Resource res = gob.getres();
 		if(res == null) {throw new Loading();}
+        res = fix(res);
 		Collection<RenderLink.Res> links = res.layers(RenderLink.Res.class);
 		for (RenderLink.Res link : links) {
 			if(link.l instanceof RenderLink.MeshMat) {
@@ -278,4 +279,13 @@ public class CollisionBox extends SlottedNode implements Rendered {
 		}
 		return res;
 	}
+
+    // TODO: ND: Need to change the other hardcoded collision boxes to be set like this
+    public static Resource fix(Resource res) {
+        if(res.name.startsWith("gfx/terobjs/producesack")) {
+            return Resource.remote().loadwait("gfx/terobjs/producesack");
+        }
+        return res;
+    }
+
 }
