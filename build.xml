@@ -197,6 +197,13 @@
     <copy todir="bin/MapIconsPresets" >
       <fileset dir="MapIconsPresets" includes="**"/>
     </copy>
+    <java classname="haven.BuildManifest" fork="true" failonerror="true">
+      <classpath>
+        <pathelement path="build/classes" />
+      </classpath>
+      <arg value="bin" />
+      <arg value="bin/manifest.json" />
+    </java>
   </target>
 
   <target name="deftgt" depends="jars, bin" />
