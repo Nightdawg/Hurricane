@@ -1,0 +1,8 @@
+validate always
+
+title "Hurricane"
+icon "https://game.havenandhearth.com/java/icon.gif"
+splash-image "https://game.havenandhearth.com/java/splash.gif"
+
+validate always
+include hafen.hl
