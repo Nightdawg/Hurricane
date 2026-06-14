@@ -43,7 +43,7 @@ public class Config {
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public static final Variable<Boolean> exp = Variable.propb("haven.experimental", false);
     public final Properties localprops = getlocalprops(), userprops = getuserprops();
-	public static final String clientVersion = "v1.61";
+	public static final String clientVersion = "v1.62";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
