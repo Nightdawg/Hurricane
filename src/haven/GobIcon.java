@@ -1238,7 +1238,7 @@ public class GobIcon extends GAttrib {
 
 	public static void load() {
 		mapIconPresets.clear();
-		File config = new File(haven.MainFrame.gameDir + "MapIconsPresets/yourSavedPresets");
+		File config = new File(haven.Client.gameDir + "MapIconsPresets/yourSavedPresets");
 		if (!config.exists()) {
 			defaultPresets();
 		} else {
@@ -1265,12 +1265,12 @@ public class GobIcon extends GAttrib {
 
 	public static void defaultPresets() {
 		mapIconPresets.clear();
-		loadPresetsFromFile(new File(haven.MainFrame.gameDir + "MapIconsPresets/defaultPresets"));
+		loadPresetsFromFile(new File(haven.Client.gameDir + "MapIconsPresets/defaultPresets"));
 	}
 
 	public static void savePresetsToFile() {
 		try {
-			BufferedWriter bw = Files.newBufferedWriter(Paths.get(new File(haven.MainFrame.gameDir + "MapIconsPresets/yourSavedPresets").toURI()), StandardCharsets.UTF_8);
+			BufferedWriter bw = Files.newBufferedWriter(Paths.get(new File(haven.Client.gameDir + "MapIconsPresets/yourSavedPresets").toURI()), StandardCharsets.UTF_8);
 			for (int x = 1; x < mapIconPresets.keySet().size(); x++) { // ND: Start at 1, cause 0 is always an empty string added in the code when settings are loaded
 				String presetName = ((String) mapIconPresets.keySet().toArray()[x]);
 				StringBuilder enabledIcons = new StringBuilder();

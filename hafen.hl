@@ -31,7 +31,7 @@ class-path steamworks4j-natives-macosx-universal.jar
 class-path steamworks4j-natives-windows-amd64.jar
 class-path steamworks4j-natives-windows-i586.jar
 
-main-class haven.MainFrame
+main-class haven.Client
 
 validate tls-cert:key:rsa:99118FA7C13D9686021FFDB74F8FFE77CA5EB7D356A8D31BB907A31AFAE04D46
 

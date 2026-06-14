@@ -2217,14 +2217,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					}
 					if (poses.contains("knock") || poses.contains("drowned")) {
 						if (!imDead) {
-							File file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/PlayerKnockedOut.wav");
+							File file = new File(haven.Client.gameDir + "res/customclient/sfx/PlayerKnockedOut.wav");
 							if (file.exists()) {
 								try {
 									AudioInputStream in = AudioSystem.getAudioInputStream(file);
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-									((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, 1));
+                                    glob.sess.ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 1));
 								} catch (UnsupportedAudioFileException e) {
 									e.printStackTrace();
 								} catch (IOException e) {
@@ -2235,9 +2235,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 							isDeadPlayer = true;
 							File file = null;
 							if (playerGender.equals("male")) {
-								file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/MalePlayerKilled.wav");
+								file = new File(haven.Client.gameDir + "res/customclient/sfx/MalePlayerKilled.wav");
 							} else if (playerGender.equals("female")) {
-								file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/FemalePlayerKilled.wav");
+								file = new File(haven.Client.gameDir + "res/customclient/sfx/FemalePlayerKilled.wav");
 							}
 							if (file != null && file.exists() && somethingJustDied) {
 								try {
@@ -2245,7 +2245,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-									((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, 1));
+                                    glob.sess.ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 1));
 								} catch (UnsupportedAudioFileException e) {
 									e.printStackTrace();
 								} catch (IOException e) {
@@ -2384,13 +2384,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private void playPlayerColorAlarm(Boolean enabled, String line, int val) {
 		if (enabled) {
 			try {
-				File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + line + ".wav");
+				File file = new File(haven.Client.gameDir + "AlarmSounds/" + line + ".wav");
 				if (file.exists()) {
 					AudioInputStream in = AudioSystem.getAudioInputStream(file);
 					AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 					AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 					Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-					((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, val / 50.0));
+                    glob.sess.ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, val / 50.0));
 					alarmPlayed.add(id);
 				}
 			} catch (Exception ignored) {

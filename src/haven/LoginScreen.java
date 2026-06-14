@@ -51,7 +51,7 @@ public class LoginScreen extends Widget {
     public Widget loginSteam = null;
     private Text error, progress;
     private Button optbtn;
-	private OptWnd opts = new OptWnd(false); // ND: This needs to be created when the login screen is created, to prevent options nullpointers once we log into a character
+	private OptWnd opts;
 	AccountList accounts;
 	private String lastUser = "";
 	private String lastPass = "";
@@ -72,19 +72,19 @@ public class LoginScreen extends Widget {
         add(Resource.local().loadwait("customclient/sfx/sageTheme"));
 	}};
 	private static final List<String> backgrounds = new ArrayList<>() {{
-		add(haven.MainFrame.gameDir + "res/customclient/rogueScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/knightScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/vikingScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/sorceressScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/huntressScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/alchemistScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/valkyrieScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/berserkerScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/beastmasterScreen.png");
-		add(haven.MainFrame.gameDir + "res/customclient/dryadScreen.png");
-        add(haven.MainFrame.gameDir + "res/customclient/druidScreen.png");
-        add(haven.MainFrame.gameDir + "res/customclient/nomadScreen.png");
-        add(haven.MainFrame.gameDir + "res/customclient/sageScreen.png");
+		add(haven.Client.gameDir + "res/customclient/rogueScreen.png");
+		add(haven.Client.gameDir + "res/customclient/knightScreen.png");
+		add(haven.Client.gameDir + "res/customclient/vikingScreen.png");
+		add(haven.Client.gameDir + "res/customclient/sorceressScreen.png");
+		add(haven.Client.gameDir + "res/customclient/huntressScreen.png");
+		add(haven.Client.gameDir + "res/customclient/alchemistScreen.png");
+		add(haven.Client.gameDir + "res/customclient/valkyrieScreen.png");
+		add(haven.Client.gameDir + "res/customclient/berserkerScreen.png");
+		add(haven.Client.gameDir + "res/customclient/beastmasterScreen.png");
+		add(haven.Client.gameDir + "res/customclient/dryadScreen.png");
+        add(haven.Client.gameDir + "res/customclient/druidScreen.png");
+        add(haven.Client.gameDir + "res/customclient/nomadScreen.png");
+        add(haven.Client.gameDir + "res/customclient/sageScreen.png");
 	}};
 	final List<String> keys = new ArrayList<>(){{
 		add("Random!");
@@ -122,7 +122,7 @@ public class LoginScreen extends Widget {
     }
 
     public LoginScreen(String confname) {
-	super(bg(haven.MainFrame.gameDir + "res/customclient/bgsizer.png").sz());
+	super(bg(haven.Client.gameDir + "res/customclient/bgsizer.png").sz());
     if (Utils.getprefi("loginBgIndex", 0) == 0) {
         Random rand = new Random();
         bgIndex = rand.nextInt(keys.size()-1) + 1; // Generates 0–2, then add 1
@@ -191,7 +191,6 @@ public class LoginScreen extends Widget {
 		throw(new RuntimeException(e));
 	}
 	mainThemeStopped = false;
-	playMainTheme(themes.get(bgIndex-1));
 	add(loginScreenMusicVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("loginScreenMusicVolume", 40)) {
 		protected void attach(UI ui) {
 			super.attach(ui);
@@ -248,7 +247,6 @@ public class LoginScreen extends Widget {
 	});
 	GameUI.verifiedAccount = false;
 	GameUI.subscribedAccount = false;
-	GameUI.stopAllThemes();
 	add(new IButton("customclient/discord", "", "-d", "-h") {
 		{settip("Hurricane Client Discord");}
 		public void click() {
@@ -258,17 +256,19 @@ public class LoginScreen extends Widget {
 			} catch (URISyntaxException e) {
 				return;
 			}
-			try {
-				WebBrowser.sshow(uri.toURL());
-			} catch (MalformedURLException | WebBrowser.BrowserException ignored) {
-			}
-
+            try {
+                ui.wnd.toolkit().browse(uri);
+            } catch(java.net.MalformedURLException e) {
+                getparent(GameUI.class).error("Could not follow link.");
+            } catch(IOException e) {
+                getparent(GameUI.class).error("Could not launch web browser: " + e.getMessage());
+            }
         }
 
         @Override
         public boolean mousedown(MouseDownEvent ev) {
             if (ev.b == 3) {
-                changeLoginScreen(haven.MainFrame.gameDir + "res/customclient/nd.png");
+                changeLoginScreen(haven.Client.gameDir + "res/customclient/nd.png");
                 ee = true;
             }
             return super.mousedown(ev);
@@ -658,6 +658,10 @@ public class LoginScreen extends Widget {
     protected void added() {
 	presize();
 	parent.setfocus(this);
+    opts = new OptWnd(false); // ND: This needs to be created when the login screen is created, to prevent options nullpointers once we log into a character
+    playMainTheme(themes.get(bgIndex-1));
+    if (ui != null)
+        GameUI.stopAllThemes(ui);
     }
 
 	public void dispose() {
@@ -673,16 +677,16 @@ public class LoginScreen extends Widget {
     }
 
 	private void playMainTheme(Resource theme) {
-		if (!mainThemeStopped &&(mainThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(mainThemeClip))) {
+		if (!mainThemeStopped &&(mainThemeClip == null || !ui.audio.sys.mixer.playing(mainThemeClip))) {
 				Audio.CS klippi = ee ? fromres(eeTheme) : fromres(theme);
 				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("loginScreenMusicVolume", 40)/100d);
-				Audio.play(mainThemeClip);
+                ui.audio.sys.mixer.add(mainThemeClip);
 		}
 	}
 
 	private void stopMainTheme() {
 		if(mainThemeClip != null){
-			Audio.stop(mainThemeClip);
+            ui.audio.sys.mixer.stop(mainThemeClip);
 			mainThemeStopped = true;
 		}
 	}

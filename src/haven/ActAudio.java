@@ -252,15 +252,19 @@ public class ActAudio extends State {
 	public final double bvol;
     public final double bvolOriginal;
 
+	private static double voladjust(double bvol, HSlider slider) {
+	    return((slider == null) ? bvol : bvol * slider.val / 100d);
+	}
+
 	public Ambience(Resource res, double bvol) {
 	    Audio.Clip clip = res.flayer(Audio.clip, "amb");
 	    if(bvol < 0)
 		bvol = clip.bvol();
         this.bvolOriginal = bvol;
 		if (res.name.equals("sfx/terobjs/cauldron"))
-			bvol = bvol * OptWnd.cauldronSoundVolumeSlider.val/100d;
+			bvol = voladjust(bvol, OptWnd.cauldronSoundVolumeSlider);
         if (res.name.equals("sfx/items/hats/bullfest"))
-            bvol = bvol * OptWnd.grammophoneHatSoundVolumeSlider.val/100d;
+            bvol = voladjust(bvol, OptWnd.grammophoneHatSoundVolumeSlider);
 	    this.res = res;
 	    this.bvol = bvol;
 	}
@@ -304,9 +308,9 @@ public class ActAudio extends State {
 		    double bvol = slot.obj().bvol;
             if (slot.obj().res != null) {
                 if (slot.obj().res.name.equals("sfx/terobjs/cauldron"))
-                    bvol = slot.obj().bvolOriginal * OptWnd.cauldronSoundVolumeSlider.val/100d;
+                    bvol = Ambience.voladjust(slot.obj().bvolOriginal, OptWnd.cauldronSoundVolumeSlider);
                 if (slot.obj().res.name.equals("sfx/items/hats/bullfest"))
-                    bvol = slot.obj().bvolOriginal * OptWnd.grammophoneHatSoundVolumeSlider.val/100d;
+                    bvol = Ambience.voladjust(slot.obj().bvolOriginal, OptWnd.grammophoneHatSoundVolumeSlider);
             }
 		    double svol = Math.min(1.0, 50.0 / Math.hypot(pos.x, pos.y));
 		    acc += svol * bvol;

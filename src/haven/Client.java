@@ -26,9 +26,12 @@
 
 package haven;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.io.*;
 import java.nio.file.*;
+
+import haven.automated.helpers.HitBoxes;
 import haven.render.*;
 import haven.iosys.*;
 import haven.iosys.tk.*;
@@ -42,6 +45,27 @@ public class Client implements Console.Directory {
     private final EventQueue queue = new EventQueue(this);
     private UILoop loop;
     private Thread mt;
+    public static String gameDir = null;
+    public static boolean runningThroughSteam = true;
+
+    static {
+        try {
+            if (gameDir == null) {
+                if((SteamStore.steamsvc.get() != null) && (Steam.get() != null)) {
+                    gameDir = System.getProperty("user.dir") + File.separator + ".." + File.separator + ".." + File.separator + "workshop" + File.separator + "content" + File.separator + "3051280" + File.separator + "3423755273" + File.separator;
+                }
+                else {
+                    gameDir = "";
+                }
+            }
+            FlowerMenu.createDatabaseIfNotExist();
+            FlowerMenu.fillAutoChooseMap();
+            HitBoxes.createDatabaseIfNotExist();
+            HitBoxes.loadCollisionBoxMap();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public Client(Toolkit tk) {
 	this.tk = tk;
@@ -49,7 +73,7 @@ public class Client implements Console.Directory {
 	wnd.title("Haven & Hearth");
 	Coord fsz = Utils.getprefc("mainwnd/locksize", null);
 	if(fsz == null)
-	    wnd.sizing(new Windeye.Sizing().minsize(UI.scale(800, 600)).normsize(Utils.getprefc("mainwnd/size", UI.scale(1024, 768))));
+	    wnd.sizing(new Windeye.Sizing().minsize(UI.scale(1167, 700)).normsize(Utils.getprefc("mainwnd/size", UI.scale(1167, 700))));
 	else
 	    wnd.sizing(new Windeye.Sizing().fixsize(fsz));
 	if(initfullscreen.get())
@@ -189,9 +213,9 @@ public class Client implements Console.Directory {
 		    fun = new Bootstrap();
 		String t= fun.title();
 		if(t == null)
-		    wnd.title("Haven & Hearth");
+		    wnd.title("Hurricane (" + Config.clientVersion + ")");
 		else
-		    wnd.title("Haven & Hearth \u2013 " + t);
+		    wnd.title("Hurricane (" + Config.clientVersion + ") \u2013 " + t);
 		fun = fun.run(newui(fun));
 	    }
 	}
@@ -415,5 +439,11 @@ public class Client implements Console.Directory {
 	}
 	Thread main = new HackThread(g, () -> main2(args), "Haven main thread");
 	main.start();
+    GobIcon.initPresets();
+    AlarmManager.init();
+    String runningThroughSteamValue = System.getProperty("runningThroughSteam");
+    if (runningThroughSteamValue != null) {
+        runningThroughSteam = Boolean.parseBoolean(runningThroughSteamValue);
+    }
     }
 }

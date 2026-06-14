@@ -27,6 +27,7 @@
 package haven;
 
 import haven.automated.pathfinder.Pathfinder;
+import haven.iosys.tk.Windeye;
 import haven.render.*;
 
 import java.awt.image.BufferedImage;
@@ -428,9 +429,10 @@ public class MiniMap extends Widget {
 	}
 	icons = findicons(icons);
 
-		if (GLPanel.Loop.bgmode) {
-			zoomMomentum = 0.0f;
-		} else if (Math.abs(zoomMomentum) > 0.15) {
+        Windeye.Visibility wndvis = ui.wnd.visible();
+        if ((wndvis == Windeye.Visibility.UNKNOWN) ? !ui.wnd.focused() : (wndvis == Windeye.Visibility.NONE)) {
+            zoomMomentum = 0.0f;
+        } else if (Math.abs(zoomMomentum) > 0.15) {
 			double delta = dt*zoomMomentum*(zoomlevel/6f);
 			int nextdlvl = Math.max(Integer.highestOneBit((int)(zoomlevel+delta)),1);
 			if (zoomMomentum > 0 && nextdlvl > dlvl && !allowzoomout()) {

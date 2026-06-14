@@ -39,6 +39,7 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import java.awt.*;
 import java.util.function.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -54,6 +55,7 @@ public class OptWnd extends Window {
     public final Panel main;
 	public final Panel advancedSettings;
     public Panel current;
+	private PButton videoButton, audioButton, keybindButton;
 	private static final ScheduledExecutorService skyboxExecutor = Executors.newSingleThreadScheduledExecutor();
 	private static Future<?> skyboxFuture;
 	public static final Color msgGreen = new Color(8, 211, 0);
@@ -87,11 +89,11 @@ public class OptWnd extends Window {
 	private Panel actual = null;
 	public String newCap; // ND: Used to change the title of the options window
 
-//	public PButton(int w, String title, int key, Supplier<Panel> tgt) {
-//	    super(w, title, false);
-//	    this.tgt = tgt;
-//	    this.key = key;
-//	}
+    public PButton(int w, String title, int key, Supplier<Panel> tgt) {
+        super(w, title, false);
+        this.tgt = tgt;
+        this.key = key;
+    }
 
 	public PButton(int w, String title, int key, Panel tgt) {
 	    super(w, title, false);
@@ -100,17 +102,33 @@ public class OptWnd extends Window {
 	    this.actual = tgt;
 	}
 
-    public PButton(int w, String title, int key, Supplier<Panel> tgt, String newCap) {
+    public PButton(int w, String title, int key, Panel tgt, String newCap) {
         super(w, title, false);
-        this.tgt = tgt;
+        this.tgt = null;
         this.key = key;
+        this.actual = tgt;
         this.newCap = newCap;
     }
 
-	public void click() {
+        public PButton(int w, String title, int key, Supplier<Panel> tgt, String newCap) {
+            super(w, title, false);
+            this.tgt = tgt;
+            this.key = key;
+            this.newCap = newCap;
+        }
+
+	private Panel getpanel() {
 	    if(actual == null)
 		actual = OptWnd.this.add(tgt.get(), Coord.z);
-	    chpanel(actual);
+	    return(actual);
+	}
+
+	public void preload() {
+	    getpanel();
+	}
+
+	public void click() {
+	    chpanel(getpanel());
 		OptWnd.this.cap = newCap;
 	}
 
@@ -514,7 +532,7 @@ public class OptWnd extends Window {
 						Utils.setprefi("backgroundMusicTheme", i);
 					}
 				}
-				GameUI.settingStopAllThemes();
+				GameUI.settingStopAllThemes(ui);
 			}
 		}, leftColumn.pos("ur").adds(0, 1));
 
@@ -792,7 +810,7 @@ public class OptWnd extends Window {
 		leftColumn = add(showFramerateCheckBox = new CheckBox("Show Framerate"){
 			{a = (Utils.getprefb("showFramerate", true));}
 			public void changed(boolean val) {
-				GLPanel.Loop.showFramerate = val;
+				UILoop.showFramerate = val;
 				Utils.setprefb("showFramerate", val);
 			}
 		}, leftColumn.pos("bl").adds(0, 18));
@@ -914,13 +932,13 @@ public class OptWnd extends Window {
 				a = val;
 				if (val) {
 					try {
-						File file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/CurioFinished.wav");
+						File file = new File(haven.Client.gameDir + "res/customclient/sfx/CurioFinished.wav");
 						if (file.exists()) {
 							AudioInputStream in = AudioSystem.getAudioInputStream(file);
 							AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 							AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 							Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-							((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, 0.8));
+                            ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 0.8));
 						}
 					} catch (Exception e) {
 					}
@@ -4711,7 +4729,7 @@ public class OptWnd extends Window {
 				public boolean mousedown(MouseDownEvent ev) {
 					if (ev.b != 1)
 						return true;
-					File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + finalFilename.buf.line() + ".wav");
+					File file = new File(haven.Client.gameDir + "AlarmSounds/" + finalFilename.buf.line() + ".wav");
 					if (!file.exists() || file.isDirectory()) {
 						if (ui != null && ui.gui != null)
 							ui.gui.msg("Error while playing an alarm, file " + file.getAbsolutePath() + " does not exist!", Color.WHITE);
@@ -4722,7 +4740,7 @@ public class OptWnd extends Window {
 						AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 						AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 						Audio.CS clip = new Audio.PCMClip(pcmStream, 2, 2);
-						((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(clip, finalVolume.val / 50.0));
+                        ui.audio.sys.mixer.add(new Audio.VolAdjust(clip, finalVolume.val / 50.0));
 					} catch (UnsupportedAudioFileException | IOException e) {
 						e.printStackTrace();
 					}
@@ -5112,20 +5130,14 @@ public class OptWnd extends Window {
 	autoDropManagerWindow = new AutoDropManagerWindow();
 	flowerMenuAutoSelectManagerWindow = new FlowerMenuAutoSelectManagerWindow();
 	main = add(new Panel());
-	Panel video = add(new VideoPanel(ui, main));
-	Panel audio = add(new AudioPanel(ui, main));
-	Panel keybind = add(new BindingPanel(main));
 
 	int y = UI.scale(6);
 	Widget prev;
 //	y = main.add(new PButton(UI.scale(200), "Interface settings", 'v', () -> new InterfacePanel(main)), 0, y).pos("bl").adds(0, 5).y;
-//	y = main.add(new PButton(UI.scale(200), "Video settings", 'v', () -> new VideoPanel(ui, main)), 0, y).pos("bl").adds(0, 5).y;
-//	y = main.add(new PButton(UI.scale(200), "Audio settings", 'a', () -> new AudioPanel(ui, main)), 0, y).pos("bl").adds(0, 5).y;
-//	y = main.add(new PButton(UI.scale(200), "Keybindings", 'k', () -> new BindingPanel(main)), 0, y).pos("bl").adds(0, 5).y;
 //	y += UI.scale(60);
-	y = main.add(new PButton(UI.scale(200), "Video Settings", -1, video, "Video Settings"), 0, y).pos("bl").adds(0, 5).y;
-	y = main.add(new PButton(UI.scale(200), "Audio Settings", -1, audio, "Audio Settings"), 0, y).pos("bl").adds(0, 5).y;
-	y = main.add(new PButton(UI.scale(200), "Keybindings (Hotkeys)", -1, keybind, "Keybindings (Hotkeys)"), 0, y).pos("bl").adds(0, 5).y;
+	y = main.add(videoButton = new PButton(UI.scale(200), "Video settings", 'v', () -> new VideoPanel(ui, main), "Video Settings"), 0, y).pos("bl").adds(0, 5).y;
+	y = main.add(audioButton = new PButton(UI.scale(200), "Audio settings", 'a', () -> new AudioPanel(ui, main), "Audio Settings"), 0, y).pos("bl").adds(0, 5).y;
+	y = main.add(keybindButton = new PButton(UI.scale(200), "Keybindings", 'k', () -> new BindingPanel(main), "Keybindings (Hotkeys)"), 0, y).pos("bl").adds(0, 5).y;
 	y += UI.scale(20);
 
 	advancedSettings = add(new Panel());
@@ -5618,6 +5630,9 @@ public class OptWnd extends Window {
 		super.attached();
 		if (ui != null)
 			currentgprefs = ui.gprefs;
+		videoButton.preload();
+		audioButton.preload();
+		keybindButton.preload();
 		if (ui.gui != null) {
 			ui.gui.add(autoDropManagerWindow); // ND: this.parent.parent is root widget in login screen or gui in game.
 			autoDropManagerWindow.hide();

@@ -649,7 +649,7 @@ public class Resource implements Serializable {
             if (!uiTheme.equals("Nightdawg Dark")) {
                 String result = name.replaceFirst("^gfx/hud", "");
                 String finalString = "customclient/uiThemes/" + uiTheme + result;
-                File customHudFile = new File(haven.MainFrame.gameDir + "res/" + finalString +".res");
+                File customHudFile = new File(haven.Client.gameDir + "res/" + finalString +".res");
                 if(customHudFile.exists()) {
                     name = finalString;
                 }
@@ -864,7 +864,7 @@ public class Resource implements Serializable {
 	    synchronized(Resource.class) {
 		if(_local == null) {
 //		    Pool local = new Pool(new JarSource("res"));
-			Pool local = new Pool(new FileSource(Utils.path(haven.MainFrame.gameDir + "res"))); // ND: Load custom res files from the client folder
+			Pool local = new Pool(new FileSource(Utils.path(haven.Client.gameDir + "res"))); // ND: Load custom res files from the client folder
 			local.add(new JarSource("res"));
 		    try {
 			if(resdir.get() != null)

@@ -142,7 +142,7 @@ public class Steam {
 
     private static Steam instance = null;
     public static synchronized Steam get() {
-	if (MainFrame.runningThroughSteam) {
+	if (Client.runningThroughSteam) {
 		if (instance == null) {
 			try {
 				if (!API.init())

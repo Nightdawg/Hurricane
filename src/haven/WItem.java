@@ -203,7 +203,7 @@ public class WItem extends Widget implements DTarget {
 		String searchKeyword = InventorySearchWindow.inventorySearchString.toLowerCase();
 		if (searchKeyword.length() > 1) {
 			if (Fuzzy.fuzzyContains(itemName, searchKeyword)) {
-				int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
+				int fps = UILoop.fps > 0 ? UILoop.fps : 1;
 				int colorShiftSpeed = 800/fps;
 				if (searchItemColorShiftUp) {
 					if (searchItemColorValue + colorShiftSpeed <= 255) {

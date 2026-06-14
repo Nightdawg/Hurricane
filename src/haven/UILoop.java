@@ -48,6 +48,7 @@ public abstract class UILoop implements Console.Directory {
     private final Object uilock = new Object();
     private UI lockedui;
     private long frameno = 0;
+    public static boolean showFramerate = Utils.getprefb("showFramerate", true);
 
     public UILoop(Windeye wnd) {
 	this.wnd = wnd;
@@ -157,10 +158,10 @@ public abstract class UILoop implements Console.Directory {
 	    if(pos.y < 0)
 		pos.y = 0;
 	    Coord br = pos.add(sz);
-	    Coord m = UI.scale(2, 2);
-	    g.chcolor(244, 247, 21, 192);
+	    Coord m = UI.scale(3, 3);
+	    g.chcolor(255, 195, 0, 210); // ND: This is the tooltip border color
 	    g.rect2(pos.sub(m).sub(1, 1), br.add(m));
-	    g.chcolor(35, 35, 35, 192);
+	    g.chcolor(5, 5, 5, 230);
 	    g.frect2(pos.sub(m), br.add(m));
 	    g.chcolor();
 	    g.image(tex, pos);
@@ -280,6 +281,9 @@ public abstract class UILoop implements Console.Directory {
 	synchronized(ui) {
 	    ui.draw(g);
 	}
+    if (showFramerate) {
+        FastText.aprintfstroked(g, new Coord(g.sz().x - UI.scale(50), UI.scale(15)), 0, 1, "FPS: " + fps);
+    }
 	if(dbtext.get())
 	    drawstats(ui, g, buf);
 	drawtooltip(ui, g);
@@ -386,7 +390,7 @@ public abstract class UILoop implements Console.Directory {
     }
 
     private final double[] frames = new double[128], waited = new double[frames.length];
-    private int fps;
+    public static int fps;
     private double framelag, uidle;
     protected void updstats(Frame f) {
 	int fi = (int)(f.frameno % frames.length);

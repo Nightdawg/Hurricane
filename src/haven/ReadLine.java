@@ -324,7 +324,7 @@ public interface ReadLine {
 		    return(false);
         } else if((c == 'x') && (mod == C)) { // ND: Used to cut text
         if(mark >= 0) {
-            clipset(java.awt.Toolkit.getDefaultToolkit().getSystemClipboard());
+            clipset(owner.ui().wnd.clipboard(Clipboard.Std.CLIPBOARD));
             rmsel();
         } else
             return(false);

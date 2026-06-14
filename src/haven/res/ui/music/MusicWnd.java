@@ -294,7 +294,7 @@ public class MusicWnd extends Window {
 				@Override
 				public void click() {
 					try {
-						hafenMidiplayer.startPlaying(haven.MainFrame.gameDir + midiEntry.buf.line());
+						hafenMidiplayer.startPlaying(haven.Client.gameDir + midiEntry.buf.line());
 						parent.setfocus(this);
 					} catch (Exception e) {
 //					System.out.println(e);

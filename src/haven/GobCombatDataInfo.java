@@ -331,7 +331,7 @@ public class GobCombatDataInfo extends GobInfo {
     }
 
     private void combatMedAlphaShift(){
-        int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
+        int fps = UILoop.fps > 0 ? UILoop.fps : 1;
         int alphaShiftSpeed = 2400/fps;
         if (combatMedAlphaShiftUp) {
             if (combatMedColorShift + alphaShiftSpeed <= 255) {

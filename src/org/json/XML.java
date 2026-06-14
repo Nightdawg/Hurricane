@@ -25,7 +25,6 @@ SOFTWARE.
 */
 
 import haven.Config;
-import haven.MainFrame;
 
 import java.util.Arrays;
 import java.util.Iterator;

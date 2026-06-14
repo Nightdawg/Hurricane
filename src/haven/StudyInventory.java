@@ -152,13 +152,13 @@ public class StudyInventory extends Inventory {
                     double now = System.currentTimeMillis();
                     if ((now - lastCurioAlertPlayed) > 200){ // ND: Hopefully this will prevent ear rape if multiple curios finish at the same time, lol.
                         try {
-                            File file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/CurioFinished.wav");
+                            File file = new File(haven.Client.gameDir + "res/customclient/sfx/CurioFinished.wav");
                             if (file.exists()) {
                                 AudioInputStream in = AudioSystem.getAudioInputStream(file);
                                 AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
                                 AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
                                 Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-                                ((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, 0.8));
+                                ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 0.8));
                                 lastCurioAlertPlayed = System.currentTimeMillis();
                             }
                         } catch (Exception e) {

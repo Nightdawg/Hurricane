@@ -3339,97 +3339,97 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 	}
 
-	public static void playCaveTheme() {
-		if ((caveThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(caveThemeClip)) && backgroundSong.equals("cave")) {
+	public static void playCaveTheme(UI ui) {
+		if ((caveThemeClip == null || !ui.audio.sys.mixer.playing(caveThemeClip)) && backgroundSong.equals("cave")) {
 			Audio.CS klippi = fromres(caveTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(caveTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(caveThemeLegacy);
 			caveThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-			Audio.play(caveThemeClip);
+            ui.audio.sys.mixer.add(caveThemeClip);
 		}
 	}
-	public static void stopCaveTheme() {
+	public static void stopCaveTheme(UI ui) {
 		if(caveThemeClip != null){
-			Audio.stop(caveThemeClip);
+            ui.audio.sys.mixer.stop(caveThemeClip);
 		}
 	}
 
-	public static void playCabinTheme() {
-		if ((cabinThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(cabinThemeClip)) && backgroundSong.equals("cabin")) {
+	public static void playCabinTheme(UI ui) {
+		if ((cabinThemeClip == null || !ui.audio.sys.mixer.playing(cabinThemeClip)) && backgroundSong.equals("cabin")) {
 			Audio.CS klippi = fromres(cabinTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(cabinTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(cabinThemeLegacy);
 			cabinThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-			Audio.play(cabinThemeClip);
+            ui.audio.sys.mixer.add(cabinThemeClip);
 		}
 	}
-	public static void stopCabinTheme() {
+	public static void stopCabinTheme(UI ui) {
 		if(cabinThemeClip != null){
-			Audio.stop(cabinThemeClip);
+            ui.audio.sys.mixer.stop(cabinThemeClip);
 		}
 	}
 
-	public static void playFishingTheme() {
-		if (fishingThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(fishingThemeClip)) {
+	public static void playFishingTheme(UI ui) {
+		if (fishingThemeClip == null || !ui.audio.sys.mixer.playing(fishingThemeClip)) {
 			Audio.CS klippi = fromres(fishingTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(fishingTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(fishingThemeLegacy);
 			fishingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-			Audio.play(fishingThemeClip);
+            ui.audio.sys.mixer.add(fishingThemeClip);
 		}
 	}
-	public static void stopFishingTheme() {
+	public static void stopFishingTheme(UI ui) {
 		if(fishingThemeClip != null){
-			Audio.stop(fishingThemeClip);
+            ui.audio.sys.mixer.stop(fishingThemeClip);
 		}
 	}
 
-	public static void playHookahTheme() {
-		if (hookahThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(hookahThemeClip)) {
+	public static void playHookahTheme(UI ui) {
+		if (hookahThemeClip == null || !ui.audio.sys.mixer.playing(hookahThemeClip)) {
 			Audio.CS klippi = fromres(hookahTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(hookahTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(hookahThemeLegacy);
 			hookahThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-			Audio.play(hookahThemeClip);
+            ui.audio.sys.mixer.add(hookahThemeClip);
 		}
 	}
-	public static void stopHookahTheme() {
+	public static void stopHookahTheme(UI ui) {
 		if(hookahThemeClip != null){
-			Audio.stop(hookahThemeClip);
+            ui.audio.sys.mixer.stop(hookahThemeClip);
 		}
 	}
 
-	public static void playFeastingTheme() {
-		if (feastingThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(feastingThemeClip)) {
+	public static void playFeastingTheme(UI ui) {
+		if (feastingThemeClip == null || !ui.audio.sys.mixer.playing(feastingThemeClip)) {
 			Audio.CS klippi = fromres(feastingTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(feastingTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(feastingThemeLegacy);
 			feastingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-			Audio.play(feastingThemeClip);
+            ui.audio.sys.mixer.add(feastingThemeClip);
 		}
 	}
-	public static void stopFeastingTheme() {
+	public static void stopFeastingTheme(UI ui) {
 		if(feastingThemeClip != null){
-			Audio.stop(feastingThemeClip);
+            ui.audio.sys.mixer.stop(feastingThemeClip);
 		}
 	}
 
-	public static void stopAllThemes(){
+	public static void stopAllThemes(UI ui){
 		backgroundSong = "";
 		backgroundPoseSong = "";
-		stopCabinTheme();
-		stopCaveTheme();
-		stopFishingTheme();
-		stopHookahTheme();
-		stopFeastingTheme();
+		stopCabinTheme(ui);
+		stopCaveTheme(ui);
+		stopFishingTheme(ui);
+		stopHookahTheme(ui);
+		stopFeastingTheme(ui);
 	}
 
-	public static void settingStopAllThemes(){
-		stopCabinTheme();
-		stopCaveTheme();
-		stopFishingTheme();
-		stopHookahTheme();
-		stopFeastingTheme();
+	public static void settingStopAllThemes(UI ui){
+		stopCabinTheme(ui);
+		stopCaveTheme(ui);
+		stopFishingTheme(ui);
+		stopHookahTheme(ui);
+		stopFeastingTheme(ui);
 	}
 
 	private void handleBackgroundMusic(){ // ND: Calling this spaghetti code would be an understatement
@@ -3449,44 +3449,44 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			playingPoseSong = true;
 		}
 		if (!playingPoseSong) {
-			stopFishingTheme();
-			stopHookahTheme();
-			stopFeastingTheme();
+			stopFishingTheme(ui);
+			stopHookahTheme(ui);
+			stopFeastingTheme(ui);
 			if (backgroundSong.equals("cabin")) {
-				playCabinTheme();
-				stopCaveTheme();
+				playCabinTheme(ui);
+				stopCaveTheme(ui);
 			} else if (backgroundSong.equals("cave")) {
-				playCaveTheme();
-				stopCabinTheme();
+				playCaveTheme(ui);
+				stopCabinTheme(ui);
 			} else {
-				stopCaveTheme();
-				stopCabinTheme();
+				stopCaveTheme(ui);
+				stopCabinTheme(ui);
 			}
 		} else {
-			stopCaveTheme();
-			stopCabinTheme();
+			stopCaveTheme(ui);
+			stopCabinTheme(ui);
 			if (backgroundPoseSong.equals("fishing")){
-				playFishingTheme();
-				stopHookahTheme();
-				stopFeastingTheme();
+				playFishingTheme(ui);
+				stopHookahTheme(ui);
+				stopFeastingTheme(ui);
 				long rightnow = System.currentTimeMillis();
 				if ((rightnow - GameUI.delayedMusicStopTime) > 15000){ // ND: 20 seconds ought to be enough?
 					GameUI.playingPoseSong = false;
 					backgroundPoseSong = "";
 				}
 			} else if (backgroundPoseSong.equals("hookah")){
-				playHookahTheme();
-				stopFishingTheme();
-				stopFeastingTheme();
+				playHookahTheme(ui);
+				stopFishingTheme(ui);
+				stopFeastingTheme(ui);
 			} else if (feasting) {
-				playFeastingTheme();
-				stopFishingTheme();
-				stopHookahTheme();
+				playFeastingTheme(ui);
+				stopFishingTheme(ui);
+				stopHookahTheme(ui);
 			} else {
 				GameUI.playingPoseSong = false;
-				stopFishingTheme();
-				stopHookahTheme();
-				stopFeastingTheme();
+				stopFishingTheme(ui);
+				stopHookahTheme(ui);
+				stopFeastingTheme(ui);
 			}
 		}
 	}

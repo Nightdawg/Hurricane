@@ -27,11 +27,11 @@ public class AlarmManager {
 		Alarm al = alarms.get(resname);
 		if (al != null && al.enabled) {
 			if (gob.knocked == null) {
-				al.play();
+				al.play(gob.glob.sess.ui);
 				return true;
 			}
 			if (al.knocked || gob.knocked != true) {
-				al.play();
+				al.play(gob.glob.sess.ui);
 				return true;
 			}
 		}
@@ -41,7 +41,7 @@ public class AlarmManager {
 	// Load settings from file or use defaults if file does not exist
 	public static void load() {
 		alarms.clear();
-		File config = new File(haven.MainFrame.gameDir + "AlarmSounds/settings/yourSavedConfig");
+		File config = new File(haven.Client.gameDir + "AlarmSounds/settings/yourSavedConfig");
 		if(!config.exists()) {
 			defaultSettings();
 		} else {
@@ -73,7 +73,7 @@ public class AlarmManager {
 	// Save current settings to file
 	public static void save() {
 		try {
-			BufferedWriter bw = Files.newBufferedWriter(Paths.get(new File(haven.MainFrame.gameDir + "AlarmSounds/settings/yourSavedConfig").toURI()), StandardCharsets.UTF_8);
+			BufferedWriter bw = Files.newBufferedWriter(Paths.get(new File(haven.Client.gameDir + "AlarmSounds/settings/yourSavedConfig").toURI()), StandardCharsets.UTF_8);
 			for(Map.Entry<String, Alarm> e : alarms.entrySet()) {
 				bw.write(e.getKey() + ";" + e.getValue().enabled + ";" + e.getValue().alarmName + ";" + e.getValue().filePath.replace(".wav", "") + ";" + e.getValue().volume + ";" + e.getValue().knocked+"\n");
 			}
@@ -97,7 +97,7 @@ public class AlarmManager {
 	// Loads the default settings
 	public static void defaultSettings() {
 		alarms.clear();
-		loadFromFile(new File(haven.MainFrame.gameDir + "AlarmSounds/settings/defaultAlarms"));
+		loadFromFile(new File(haven.Client.gameDir + "AlarmSounds/settings/defaultAlarms"));
 	}
 
 	public static class Alarm {
@@ -114,9 +114,9 @@ public class AlarmManager {
 			this.alarmName = alarmName;
 		}
 
-		public void play() {
+		public void play(UI ui) {
 			String filePath2 = filePath.endsWith(".wav") ? filePath : filePath + ".wav";
-			File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + filePath2);
+			File file = new File(haven.Client.gameDir + "AlarmSounds/" + filePath2);
 			if(!file.exists()) {
 				System.out.println("Error while playing an alarm, file " + file.getAbsolutePath() + " does not exist!");
 				return;
@@ -126,7 +126,7 @@ public class AlarmManager {
 				AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2,4, 44100, false);
 				AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 				Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-				((Audio.Mixer)Audio.player.stream).add(new Audio.VolAdjust(klippi, volume/50.0));
+                ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, volume/50.0));
 			} catch(UnsupportedAudioFileException e) {
 				e.printStackTrace();
 			} catch(IOException e) {

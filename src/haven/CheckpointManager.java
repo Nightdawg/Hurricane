@@ -558,14 +558,14 @@ public class CheckpointManager extends Window implements Runnable {
                     }
                     if (notMovingCounter == 30) {
                         gui.ui.error("Queued Movement PAUSED: I'm stuck!!!");
-                        File file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/ImStuck.wav");
+                        File file = new File(haven.Client.gameDir + "res/customclient/sfx/ImStuck.wav");
                         if (file.exists()) {
                             try {
                                 AudioInputStream in = AudioSystem.getAudioInputStream(file);
                                 AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
                                 AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
                                 Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-                                ((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, 1));
+                                ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 1));
                             } catch (UnsupportedAudioFileException e) {
                                 e.printStackTrace();
                             } catch (IOException e) {

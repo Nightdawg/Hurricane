@@ -95,13 +95,13 @@ public class IMeter extends LayerMeter {
 					if (res != null && res.name.equals("gfx/hud/meter/häst")) {
 						if (OptWnd.ponyPowerSoundEnabledCheckbox.a && meters.get(0).a <= 0.10) {
 							try {
-								File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + OptWnd.ponyPowerSoundFilename.buf.line() + ".wav");
+								File file = new File(haven.Client.gameDir + "AlarmSounds/" + OptWnd.ponyPowerSoundFilename.buf.line() + ".wav");
 								if (file.exists()) {
 									AudioInputStream in = AudioSystem.getAudioInputStream(file);
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-									((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, OptWnd.ponyPowerSoundVolumeSlider.val / 50.0));
+									ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, OptWnd.ponyPowerSoundVolumeSlider.val / 50.0));
 								}
 							} catch (Exception ignored) {
 							}
@@ -117,13 +117,13 @@ public class IMeter extends LayerMeter {
 					if (res != null && res.name.equals("gfx/hud/meter/nrj")) {
 						if (OptWnd.lowEnergySoundEnabledCheckbox.a && meters.get(0).a < 0.25 && meters.get(0).a > 0.20) {
 							try {
-								File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + OptWnd.lowEnergySoundFilename.buf.line() + ".wav");
+								File file = new File(haven.Client.gameDir + "AlarmSounds/" + OptWnd.lowEnergySoundFilename.buf.line() + ".wav");
 								if (file.exists()) {
 									AudioInputStream in = AudioSystem.getAudioInputStream(file);
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-									((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, OptWnd.lowEnergySoundVolumeSlider.val / 50.0));
+									ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, OptWnd.lowEnergySoundVolumeSlider.val / 50.0));
 								}
 							} catch (Exception ignored) {
 							}
@@ -139,13 +139,13 @@ public class IMeter extends LayerMeter {
 					if (res != null && res.name.equals("gfx/hud/meter/nrj")) {
 						if (OptWnd.lowEnergySoundEnabledCheckbox.a && meters.get(0).a <= 0.20) {
 							try {
-								File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + OptWnd.lowEnergySoundFilename.buf.line() + ".wav");
+								File file = new File(haven.Client.gameDir + "AlarmSounds/" + OptWnd.lowEnergySoundFilename.buf.line() + ".wav");
 								if (file.exists()) {
 									AudioInputStream in = AudioSystem.getAudioInputStream(file);
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-									((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, OptWnd.lowEnergySoundVolumeSlider.val / 50.0));
+									ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, OptWnd.lowEnergySoundVolumeSlider.val / 50.0));
 								}
 							} catch (Exception ignored) {
 							}

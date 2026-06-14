@@ -127,13 +127,13 @@ public class Fightsess extends Widget {
 	    int nact = Utils.iv(args[0]);
 		if(OptWnd.combatStartSoundEnabledCheckbox.a) {
 			try {
-				File file = new File(haven.MainFrame.gameDir + "AlarmSounds/" + OptWnd.combatStartSoundFilename.buf.line() + ".wav");
+				File file = new File(haven.Client.gameDir + "AlarmSounds/" + OptWnd.combatStartSoundFilename.buf.line() + ".wav");
 				if(file.exists()) {
 					AudioInputStream in = AudioSystem.getAudioInputStream(file);
 					AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 					AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 					Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-					((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, OptWnd.combatStartSoundVolumeSlider.val/50.0));
+					ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, OptWnd.combatStartSoundVolumeSlider.val/50.0));
 				}
 			} catch(Exception ignored) {
 			}
@@ -1293,7 +1293,7 @@ public class Fightsess extends Widget {
 	}
 
 	private void combatMedAlphaShift(){
-		int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
+		int fps = UILoop.fps > 0 ? UILoop.fps : 1;
 		int alphaShiftSpeed = 2400/fps;
 		if (combatMedAlphaShiftUp) {
 			if (combatMedColorShift + alphaShiftSpeed <= 255) {

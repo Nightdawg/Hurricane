@@ -25,7 +25,6 @@ package org.json;
  */
 
 import haven.Config;
-import haven.MainFrame;
 
 import java.io.IOException;
 import java.io.StringWriter;

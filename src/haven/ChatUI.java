@@ -882,7 +882,7 @@ public class ChatUI extends Widget {
 	private final Map<Integer, Color> pc = new HashMap<Integer, Color>();
 	private Map<Integer, Boolean> muted = null;
 	private Integer mutewait = null;
-	static private final File mapPingFile = new File(haven.MainFrame.gameDir + "res/customclient/sfx/mapPing.wav");
+	static private final File mapPingFile = new File(haven.Client.gameDir + "res/customclient/sfx/mapPing.wav");
 
 	public class NamedMessage extends Message {
 	    public final int from;
@@ -1152,7 +1152,7 @@ public class ChatUI extends Widget {
 			AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 			AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 			Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-			((Audio.Mixer) Audio.player.stream).add(new Audio.VolAdjust(klippi, 0.7));
+            ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 0.7));
 		} catch (UnsupportedAudioFileException | IOException e) {
 			e.printStackTrace();
 		}

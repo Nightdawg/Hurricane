@@ -41,12 +41,13 @@ public class WeatherSound implements Glob.Weather, RenderTree.Node {
 	double vol = 1.0;
 	if(args.length > 0)
 	    vol = ((Number)args[0]).doubleValue() * 0.01;
-	this.vol.setvol(vol * OptWnd.weatherSoundVolumeSlider.val/100d);
+	this.vol.setvol(vol * ((OptWnd.weatherSoundVolumeSlider == null) ? 1.0 : OptWnd.weatherSoundVolumeSlider.val / 100d));
     }
 
     public boolean tick(double dt) {
     if (volumeUpdated){
-        this.vol.setvol(OptWnd.weatherSoundVolumeSlider.val/100d);
+        if(OptWnd.weatherSoundVolumeSlider != null)
+            this.vol.setvol(OptWnd.weatherSoundVolumeSlider.val/100d);
         volumeUpdated = false;
     }
 	return(false);
