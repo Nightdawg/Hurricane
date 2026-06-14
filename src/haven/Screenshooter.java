@@ -307,8 +307,11 @@ public class Screenshooter extends Window {
 	    synchronized(ui) {
 		ui.destroy(btn);
 		btn = add(new Button(125, "Open in browser", false, () -> {
-			    if(WebBrowser.self != null)
-				WebBrowser.self.show(result);
+			    try {
+				ui.wnd.toolkit().browse(result.toURI());
+			    } catch(IOException | URISyntaxException e) {
+				ui.error("Could not open browser: " + e.getMessage());
+			    }
 			}), btnc);
 	    }
 	}

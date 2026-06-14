@@ -24,38 +24,29 @@
  *  Boston, MA 02111-1307 USA
  */
 
-package haven;
+package haven.iosys.tk;
 
-import java.net.URL;
+import haven.*;
+import java.util.*;
 
-public abstract class WebBrowser {
-    public static WebBrowser self;
-
-    public WebBrowser() {}
-    
-    public abstract void show(URL url);
-
-    static {
-	Console.setscmd("browse", new Console.Command() {
-		public void run(Console cons, String[] args) throws Exception {
-		    WebBrowser.sshow(Utils.url(args[1]));
-		}
-	    });
+public interface DropHandler {
+    public enum Action {
+	COPY, MOVE, LINK;
     }
 
-    public static class BrowserException extends RuntimeException {
-	public BrowserException(String msg) {
-	    super(msg);
-	}
-
-	public BrowserException(Throwable cause) {
-	    super(cause);
-	}
+    public interface DropEvent {
+	public Coord wndc();
+	public Set<Action> actions();
+	public Clipboard.Contents contents();
     }
 
-    public static void sshow(URL url) {
-	if(self == null)
-	    throw(new BrowserException("No web browser available"));
-	self.show(url);
+    public interface DropHoverEvent extends DropEvent {
     }
+
+    public interface DroppedEvent extends DropEvent {
+	public void accept(Action act);
+    }
+
+    public Action drophover(DropHoverEvent ev);
+    public boolean dropped(DroppedEvent ev);
 }

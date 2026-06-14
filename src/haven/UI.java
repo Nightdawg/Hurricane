@@ -30,10 +30,8 @@ import java.util.*;
 import java.util.function.*;
 import java.util.concurrent.*;
 import haven.Widget.*;
+import haven.iosys.tk.*;
 import java.awt.Font;
-import java.awt.GraphicsEnvironment;
-import java.awt.GraphicsDevice;
-import java.awt.DisplayMode;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -46,6 +44,7 @@ import haven.res.ui.tt.wear.Wear;
 
 public class UI {
     public static int MOD_SHIFT = KeyMatch.S, MOD_CTRL = KeyMatch.C, MOD_META = KeyMatch.M, MOD_SUPER = KeyMatch.SUPER;
+    public final Windeye wnd;
     public RootWidget root;
     private final List<Grab> grabs = new CopyOnWriteArrayList<Grab>();
     private final Map<Integer, Widget> widgets = new TreeMap<Integer, Widget>();
@@ -60,10 +59,9 @@ public class UI {
     public Widget mouseon;
     public Console cons = new WidgetConsole();
     private Collection<AfterDraw> afterdraws = new LinkedList<AfterDraw>();
-    private final Context uictx;
     public GSettings gprefs = GSettings.load(true);
     private boolean gprefsdirty = false;
-    public final ActAudio.Root audio = new ActAudio.Root();
+    public final ActAudio.Root audio;
     public final Loader loader;
     public final CommandQueue queue = new CommandQueue();
     public static final double scalef;
@@ -97,10 +95,6 @@ public class UI {
 	    public void init(UI ui) {back.init(ui);}
 	    public String title() {return(back.title());}
 	}
-    }
-
-    public interface Context {
-	void setmousepos(Coord c);
     }
 
     public interface AfterDraw {
@@ -184,9 +178,11 @@ public class UI {
 	}
     }
 
-    public UI(Context uictx, Coord sz, Runner fun) {
-	this.uictx = uictx;
+    public UI(Windeye wnd, Audio.Root audio, Coord sz, Runner fun) {
+	this.wnd = wnd;
 	root = new RootWidget(this, sz);
+	this.audio = new ActAudio.Root(audio);
+	cons.add(audio);
 	widgets.put(0, root);
 	rwidgets.put(root, 0);
 	if(fun != null)
@@ -253,6 +249,7 @@ public class UI {
     private static final boolean cmddump = false;
     public class CommandQueue {
 	private final Map<Integer, Command> score = new HashMap<>();
+	private int inflight = 0;
 
 	private CommandQueue() {}
 
@@ -300,6 +297,7 @@ public class UI {
 			wait.add(p.id);
 		    System.err.printf("wait: %s on %s\n", cmd, wait);
 		}
+		inflight++;
 	    }
 	    if(ready)
 		execute(cmd);
@@ -319,9 +317,27 @@ public class UI {
 		    if(score.get(bar) == cmd)
 			score.remove(bar);
 		}
+		if(--inflight == 0)
+		    notifyAll();
 	    }
 	    for(Command next : ready)
 		execute(next);
+	}
+
+	public void drain() {
+	    boolean irq = false;
+	    synchronized(this) {
+		while(inflight > 0) {
+		    double st = Utils.rtime();
+		    try {
+			wait();
+		    } catch(InterruptedException e) {
+			irq = true;
+		    }
+		}
+	    }
+	    if(irq)
+		Thread.currentThread().interrupt();
 	}
     }
 
@@ -888,10 +904,6 @@ public class UI {
     public void mousehover(Coord c) {
 	dispatch(root, new Widget.MouseHoverEvent(c));
     }
-
-    public void setmousepos(Coord c) {
-	uictx.setmousepos(c);
-    }
 	
     public void mousewheel(MouseEvent ev, Coord c, int ia, double sa) {
 	setmods(ev);
@@ -937,8 +949,11 @@ public class UI {
     }
 
     public void destroy() {
-	root.destroy();
-	audio.clear();
+	queue.drain();
+	synchronized(this) {
+	    root.destroy();
+	    audio.clear();
+	}
     }
 
     public void sfx(Audio.CS clip) {
@@ -1028,32 +1043,43 @@ public class UI {
     }
 
     private static double maxscale = -1;
-    public static double maxscale() {
+    private static double defscale;
+    private static void initscale() {
 	synchronized(UI.class) {
 	    if(maxscale < 0) {
 		double fscale = 1.25;
+		double sscale = 1.00;
 		try {
-		    GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		    for(GraphicsDevice dev : env.getScreenDevices()) {
-			DisplayMode mode = dev.getDisplayMode();
-			double scale = Math.min(mode.getWidth() / 800.0, mode.getHeight() / 600.0);
+		    /* XXX: This ain't right, but arguably so isn't
+		     * scaling being static to begin with...? */
+		    Toolkit tk = Toolkit.instance();
+		    for(Monitor dev : tk.monitors()) {
+			Coord res = dev.resolution();
+			double scale = Math.min(res.x / 800.0, res.y / 600.0);
 			fscale = Math.max(fscale, scale);
+			sscale = Math.max(sscale, Math.rint(dev.density() / 5.0) * 0.05);
 		    }
 		} catch(Exception exc) {
 		    new Warning(exc, "could not determine maximum scaling factor").issue();
 		}
 		maxscale = fscale;
+		defscale = Math.min(sscale, fscale);
 	    }
-	    return(maxscale);
 	}
+    }
+
+    public static double maxscale() {
+	initscale();
+	return(maxscale);
     }
 
     public static final Config.Variable<Double> uiscale = Config.Variable.propf("haven.uiscale", null);
     private static double loadscale() {
 	if(uiscale.get() != null)
 	    return(uiscale.get());
-	double scale = Utils.getprefd("uiscale", 1.0);
-	scale = Math.max(Math.min(scale, maxscale()), 1.0);
+	initscale();
+	double scale = Utils.getprefd("uiscale", defscale);
+	scale = Math.max(Math.min(scale, maxscale), 1.0);
 	return(scale);
     }
 

@@ -39,7 +39,7 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.awt.*;
+import java.util.function.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -82,25 +82,35 @@ public class OptWnd extends Window {
     }
 
     public class PButton extends Button {
-	public final Panel tgt;
+	public final Supplier<Panel> tgt;
 	public final int key;
+	private Panel actual = null;
 	public String newCap; // ND: Used to change the title of the options window
 
-//	public PButton(int w, String title, int key, Panel tgt) {
+//	public PButton(int w, String title, int key, Supplier<Panel> tgt) {
 //	    super(w, title, false);
 //	    this.tgt = tgt;
 //	    this.key = key;
 //	}
 
-	public PButton(int w, String title, int key, Panel tgt, String newCap) {
-		super(w, title, false);
-		this.tgt = tgt;
-		this.key = key;
-		this.newCap = newCap;
+	public PButton(int w, String title, int key, Panel tgt) {
+	    super(w, title, false);
+	    this.tgt = null;
+	    this.key = key;
+	    this.actual = tgt;
 	}
 
+    public PButton(int w, String title, int key, Supplier<Panel> tgt, String newCap) {
+        super(w, title, false);
+        this.tgt = tgt;
+        this.key = key;
+        this.newCap = newCap;
+    }
+
 	public void click() {
-	    chpanel(tgt);
+	    if(actual == null)
+		actual = OptWnd.this.add(tgt.get(), Coord.z);
+	    chpanel(actual);
 		OptWnd.this.cap = newCap;
 	}
 
@@ -130,9 +140,10 @@ public class OptWnd extends Window {
 	private final Widget back;
 	private CPanel curcf;
 
-	public VideoPanel(Panel prev) {
+	public VideoPanel(UI ui, Panel prev) {
 	    super();
 		back = add(new PButton(UI.scale(200), "Back", 27, prev, "Options            "));
+        resetcf(ui);
 		pack(); // ND: Fixes top bar not being fully draggable the first time I open the video panel. Idfk.
 	}
 
@@ -272,7 +283,7 @@ public class OptWnd extends Window {
 				    error(e.getMessage());
 				    return;
 				}
-				resetcf();
+				resetcf(ui);
 			    }
 			};
 		    prev = grp.add("Global", prev.pos("bl").adds(5, 2));
@@ -408,11 +419,11 @@ public class OptWnd extends Window {
 
 	public void draw(GOut g) {
 	    if((curcf == null) || (ui.gprefs != curcf.prefs))
-		resetcf();
+		resetcf(ui);
 	    super.draw(g);
 	}
 
-	private void resetcf() {
+	private void resetcf(UI ui) {
 	    if(curcf != null)
 		curcf.destroy();
 	    curcf = add(new CPanel(ui.gprefs), 0, 0);
@@ -441,12 +452,13 @@ public class OptWnd extends Window {
     public static HSlider knarrSoundVolumeSlider;
 
     public class AudioPanel extends Panel {
-	public AudioPanel(Panel back) {
-		Widget leftColumn, rightColumn;
-		leftColumn = add(new Label("Master audio volume"), 179, 0);
-		leftColumn = add(new HSlider(UI.scale(460), 0, 1000, (int)(Audio.volume * 1000)) {
+	public AudioPanel(UI ui, Panel back) {
+        Widget leftColumn, rightColumn;
+	    Audio.Root sys = ui.audio.sys;
+        leftColumn = add(new Label("Master audio volume"), 179, 0);
+        leftColumn = add(new HSlider(UI.scale(460), 0, 1000, (int)(sys.volume() * 1000)) {
 		    public void changed() {
-			Audio.setvolume(val / 1000.0);
+			sys.volume(val / 1000.0);
 		    }
 		}, leftColumn.pos("bl").adds(0, 2).x(0));
 
@@ -545,19 +557,19 @@ public class OptWnd extends Window {
 	    {
 		Label dpy = new Label("");
 		addhlp(leftColumn.pos("bl").adds(0, 2).x(0), UI.scale(5),
-			leftColumn = new HSlider(UI.scale(460-40), Math.round(Audio.fmt.getSampleRate() * 0.05f), Math.round(Audio.fmt.getSampleRate() / 4), Audio.bufsize()) {
-			   protected void added() {
-			   dpy();
-			   }
-			   void dpy() {
-			   dpy.settext(Math.round((this.val * 1000) / Audio.fmt.getSampleRate()) + " ms");
-			   }
-			   public void changed() {
-			   Audio.bufsize(val, true);
-			   dpy();
-			   }
-		   	}, dpy);
-			leftColumn.tooltip = audioLatencyTooltip;
+                leftColumn = new HSlider(UI.scale(420), Math.round(Audio.SAMPLE_RATE * 0.05f), Math.round(Audio.SAMPLE_RATE / 4), sys.bufsize()) {
+			       protected void added() {
+				   dpy();
+			       }
+			       void dpy() {
+				   dpy.settext(Math.round((this.val * 1000) / Audio.SAMPLE_RATE) + " ms");
+			       }
+			       public void changed() {
+				   sys.bufsize(val);
+				   dpy();
+			       }
+			   }, dpy);
+            leftColumn.tooltip = audioLatencyTooltip;
 	    }
 
 		leftColumn = add(new Label("Other Sound Settings"), leftColumn.pos("bl").adds(177, 20));
@@ -761,7 +773,7 @@ public class OptWnd extends Window {
 		final double smin = 1, smax = Math.floor(UI.maxscale() / gran) * gran;
 		final int steps = (int)Math.round((smax - smin) / gran);
 		addhlp(leftColumn.pos("bl").adds(0, 4), UI.scale(5),
-		       leftColumn = new HSlider(UI.scale(160), 0, steps, (int)Math.round(steps * (Utils.getprefd("uiscale", 1.0) - smin) / (smax - smin))) {
+		       leftColumn = new HSlider(UI.scale(160), 0, steps, (int)Math.round(steps * (UI.scale(1.0) - smin) / (smax - smin))) {
 			       protected void added() {
 				   dpy();
 			       }
@@ -1782,7 +1794,7 @@ public class OptWnd extends Window {
                 ChaseVectorSprite.ENEMYCOLOR = enemyVectorColorOptionWidget.currentColor;
             }), enemyVectorColorOptionWidget.pos("ur").adds(16, 0)).tooltip = resetButtonTooltip;
 
-			
+
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 33).x(0));
@@ -5100,12 +5112,17 @@ public class OptWnd extends Window {
 	autoDropManagerWindow = new AutoDropManagerWindow();
 	flowerMenuAutoSelectManagerWindow = new FlowerMenuAutoSelectManagerWindow();
 	main = add(new Panel());
-	Panel video = add(new VideoPanel(main));
-	Panel audio = add(new AudioPanel(main));
+	Panel video = add(new VideoPanel(ui, main));
+	Panel audio = add(new AudioPanel(ui, main));
 	Panel keybind = add(new BindingPanel(main));
 
 	int y = UI.scale(6);
 	Widget prev;
+//	y = main.add(new PButton(UI.scale(200), "Interface settings", 'v', () -> new InterfacePanel(main)), 0, y).pos("bl").adds(0, 5).y;
+//	y = main.add(new PButton(UI.scale(200), "Video settings", 'v', () -> new VideoPanel(ui, main)), 0, y).pos("bl").adds(0, 5).y;
+//	y = main.add(new PButton(UI.scale(200), "Audio settings", 'a', () -> new AudioPanel(ui, main)), 0, y).pos("bl").adds(0, 5).y;
+//	y = main.add(new PButton(UI.scale(200), "Keybindings", 'k', () -> new BindingPanel(main)), 0, y).pos("bl").adds(0, 5).y;
+//	y += UI.scale(60);
 	y = main.add(new PButton(UI.scale(200), "Video Settings", -1, video, "Video Settings"), 0, y).pos("bl").adds(0, 5).y;
 	y = main.add(new PButton(UI.scale(200), "Audio Settings", -1, audio, "Audio Settings"), 0, y).pos("bl").adds(0, 5).y;
 	y = main.add(new PButton(UI.scale(200), "Keybindings (Hotkeys)", -1, keybind, "Keybindings (Hotkeys)"), 0, y).pos("bl").adds(0, 5).y;
