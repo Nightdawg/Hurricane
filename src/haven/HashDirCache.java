@@ -297,6 +297,17 @@ public class HashDirCache implements ResCache {
 		public void close() throws IOException {
 		    st.close();
 		    Utils.ioretry(() -> {
+			    if(Config.windows) {
+				/* Apparently, even though NIO opens files with
+				 * FILE_SHARE_DELETE on Win32, Windows *still* doesn't allow
+				 * atomic overwrites of in-use files even though deletion actually
+				 * is supported, so try to trade atomicity for... non-failure? */
+				try {
+				    Files.delete(path);
+				} catch(IOException e) {
+				    new Warning(e, "weird deletion failure on " + path).issue();
+				}
+			    }
 			    try {
 				return(Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE));
 			    } catch(AtomicMoveNotSupportedException | AccessDeniedException e) {
