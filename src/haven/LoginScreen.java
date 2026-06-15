@@ -252,7 +252,7 @@ public class LoginScreen extends Widget {
 		public void click() {
 			URI uri = null;
 			try {
-				uri = new URI("https://discord.gg/WnEYkeAzja");
+				uri = new URI("https://discord.gg/7Ct4t6uME6");
 			} catch (URISyntaxException e) {
 				return;
 			}

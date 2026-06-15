@@ -18,7 +18,7 @@ Forum Thread:
 https://www.havenandhearth.com/forum/viewtopic.php?t=76544
 
 Discord Server:
-https://discord.gg/WnEYkeAzja
+https://discord.gg/7Ct4t6uME6
 
 Steam Workshop:
 https://steamcommunity.com/sharedfiles/filedetails/?id=3423755273
