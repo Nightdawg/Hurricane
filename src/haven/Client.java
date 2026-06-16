@@ -121,6 +121,10 @@ public class Client implements Console.Directory {
 		return(2);
 	    else if(btn == MouseBtn.Std.RIGHT)
 		return(3);
+	    else if(btn == MouseBtn.Std.BACK)
+		return(4);
+	    else if(btn == MouseBtn.Std.FORWARD)
+		return(5);
 	    return(0);
 	}
 

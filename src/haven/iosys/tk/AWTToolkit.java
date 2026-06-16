@@ -180,6 +180,10 @@ public abstract class AWTToolkit implements Toolkit {
 		return(MouseBtn.Std.MIDDLE);
 	    else if(id == java.awt.event.MouseEvent.BUTTON3)
 		return(MouseBtn.Std.RIGHT);
+	    else if(id == 4)
+		return(MouseBtn.Std.BACK);
+	    else if(id == 5)
+		return(MouseBtn.Std.FORWARD);
 	    return(new MouseBtn() {
 		public String id() {return("awt:" + id);}
 		public String nm() {return("Button " + id);}

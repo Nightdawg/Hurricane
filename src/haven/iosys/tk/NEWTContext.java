@@ -140,6 +140,8 @@ public class NEWTContext implements Toolkit.Factory {
 		case 1: return(MouseBtn.Std.LEFT);
 		case 2: return(MouseBtn.Std.MIDDLE);
 		case 3: return(MouseBtn.Std.RIGHT);
+		case 4: return(MouseBtn.Std.BACK);
+		case 5: return(MouseBtn.Std.FORWARD);
 		}
 		return(null);
 	    }
