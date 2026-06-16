@@ -5,10 +5,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class FilteredListBox<T> extends OldListBox<T> {
+public abstract class FilteredListBox<T> extends OldListBox<T> implements ReadLine.Owner {
     
     private boolean needfilter = false;
-    protected final ReadLine filter = ReadLine.make(null, "");
+    protected final ReadLine filter = ReadLine.make(this, "");
     protected List<T> items = new LinkedList<>();
     protected List<T> filtered = new LinkedList<>();
     protected boolean showFilterText = true;
@@ -68,6 +68,11 @@ public abstract class FilteredListBox<T> extends OldListBox<T> {
     public void needfilter() {
 	needfilter = true;
 	sb.val = 0;
+    }
+    
+    @Override
+    public void changed(ReadLine buf) {
+	needfilter();
     }
     
     @Override
