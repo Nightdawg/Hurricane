@@ -2224,7 +2224,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-                                    glob.sess.ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 1));
+                                    glob.sess.ui.globalSfxPlay(new Audio.VolAdjust(klippi, 1));
 								} catch (UnsupportedAudioFileException e) {
 									e.printStackTrace();
 								} catch (IOException e) {
@@ -2245,7 +2245,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 									AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 									AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 									Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-                                    glob.sess.ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, 1));
+                                    glob.sess.ui.globalSfxPlay(new Audio.VolAdjust(klippi, 1));
 								} catch (UnsupportedAudioFileException e) {
 									e.printStackTrace();
 								} catch (IOException e) {
@@ -2390,7 +2390,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
 					AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
 					Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
-                    glob.sess.ui.audio.sys.mixer.add(new Audio.VolAdjust(klippi, val / 50.0));
+                    glob.sess.ui.globalSfxPlay(new Audio.VolAdjust(klippi, val / 50.0));
 					alarmPlayed.add(id);
 				}
 			} catch (Exception ignored) {

@@ -31,7 +31,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.function.*;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.image.WritableRaster;
@@ -3006,77 +3005,77 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	}
 
 	public static void playCaveTheme(UI ui) {
-		if ((caveThemeClip == null || !ui.audio.sys.mixer.playing(caveThemeClip)) && backgroundSong.equals("cave")) {
+		if ((caveThemeClip == null || !ui.globalSfxIsPlaying(caveThemeClip)) && backgroundSong.equals("cave")) {
 			Audio.CS klippi = fromres(caveTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(caveTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(caveThemeLegacy);
 			caveThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-            ui.audio.sys.mixer.add(caveThemeClip);
+            ui.globalSfxPlay(caveThemeClip);
 		}
 	}
 	public static void stopCaveTheme(UI ui) {
 		if(caveThemeClip != null){
-            ui.audio.sys.mixer.stop(caveThemeClip);
+            ui.globalSfxStop(caveThemeClip);
 		}
 	}
 
 	public static void playCabinTheme(UI ui) {
-		if ((cabinThemeClip == null || !ui.audio.sys.mixer.playing(cabinThemeClip)) && backgroundSong.equals("cabin")) {
+		if ((cabinThemeClip == null || !ui.globalSfxIsPlaying(cabinThemeClip)) && backgroundSong.equals("cabin")) {
 			Audio.CS klippi = fromres(cabinTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(cabinTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(cabinThemeLegacy);
 			cabinThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-            ui.audio.sys.mixer.add(cabinThemeClip);
+            ui.globalSfxPlay(cabinThemeClip);
 		}
 	}
 	public static void stopCabinTheme(UI ui) {
 		if(cabinThemeClip != null){
-            ui.audio.sys.mixer.stop(cabinThemeClip);
+            ui.globalSfxStop(cabinThemeClip);
 		}
 	}
 
 	public static void playFishingTheme(UI ui) {
-		if (fishingThemeClip == null || !ui.audio.sys.mixer.playing(fishingThemeClip)) {
+		if (fishingThemeClip == null || !ui.globalSfxIsPlaying(fishingThemeClip)) {
 			Audio.CS klippi = fromres(fishingTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(fishingTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(fishingThemeLegacy);
 			fishingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-            ui.audio.sys.mixer.add(fishingThemeClip);
+            ui.globalSfxPlay(fishingThemeClip);
 		}
 	}
 	public static void stopFishingTheme(UI ui) {
 		if(fishingThemeClip != null){
-            ui.audio.sys.mixer.stop(fishingThemeClip);
+            ui.globalSfxStop(fishingThemeClip);
 		}
 	}
 
 	public static void playHookahTheme(UI ui) {
-		if (hookahThemeClip == null || !ui.audio.sys.mixer.playing(hookahThemeClip)) {
+		if (hookahThemeClip == null || !ui.globalSfxIsPlaying(hookahThemeClip)) {
 			Audio.CS klippi = fromres(hookahTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(hookahTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(hookahThemeLegacy);
 			hookahThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-            ui.audio.sys.mixer.add(hookahThemeClip);
+            ui.globalSfxPlay(hookahThemeClip);
 		}
 	}
 	public static void stopHookahTheme(UI ui) {
 		if(hookahThemeClip != null){
-            ui.audio.sys.mixer.stop(hookahThemeClip);
+            ui.globalSfxStop(hookahThemeClip);
 		}
 	}
 
 	public static void playFeastingTheme(UI ui) {
-		if (feastingThemeClip == null || !ui.audio.sys.mixer.playing(feastingThemeClip)) {
+		if (feastingThemeClip == null || !ui.globalSfxIsPlaying(feastingThemeClip)) {
 			Audio.CS klippi = fromres(feastingTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(feastingTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(feastingThemeLegacy);
 			feastingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("customClientMusicVolume", 40)/100d);
-            ui.audio.sys.mixer.add(feastingThemeClip);
+            ui.globalSfxPlay(feastingThemeClip);
 		}
 	}
 	public static void stopFeastingTheme(UI ui) {
 		if(feastingThemeClip != null){
-            ui.audio.sys.mixer.stop(feastingThemeClip);
+            ui.globalSfxStop(feastingThemeClip);
 		}
 	}
 

@@ -31,7 +31,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.List;
@@ -677,16 +676,16 @@ public class LoginScreen extends Widget {
     }
 
 	private void playMainTheme(Resource theme) {
-		if (!mainThemeStopped &&(mainThemeClip == null || !ui.audio.sys.mixer.playing(mainThemeClip))) {
+		if (!mainThemeStopped &&(mainThemeClip == null || !ui.globalSfxIsPlaying(mainThemeClip))) {
 				Audio.CS klippi = ee ? fromres(eeTheme) : fromres(theme);
 				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("loginScreenMusicVolume", 40)/100d);
-                ui.audio.sys.mixer.add(mainThemeClip);
+                ui.globalSfxPlay(mainThemeClip);
 		}
 	}
 
 	private void stopMainTheme() {
 		if(mainThemeClip != null){
-            ui.audio.sys.mixer.stop(mainThemeClip);
+            ui.globalSfxStop(mainThemeClip);
 			mainThemeStopped = true;
 		}
 	}

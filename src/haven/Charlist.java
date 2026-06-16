@@ -349,18 +349,18 @@ public class Charlist extends Widget {
     }
 
 	public void playCharSelectTheme() {
-		if (!charSelectThemeStopped &&(charSelectThemeClip == null || !ui.audio.sys.mixer.playing(charSelectThemeClip))) {
+		if (!charSelectThemeStopped &&(charSelectThemeClip == null || !ui.globalSfxIsPlaying(charSelectThemeClip))) {
 			Audio.CS klippi = fromres(charSelectTheme);
 			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(charSelectTheme);
 			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(charSelectThemeLegacy);
 			charSelectThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("charSelectionScreenVolume", 40)/100d);
-            ui.audio.sys.mixer.add(charSelectThemeClip);
+            ui.globalSfxPlay(charSelectThemeClip);
 		}
 	}
 
 	public void stopCharSelectTheme() {
 		if(charSelectThemeClip != null){
-            ui.audio.sys.mixer.stop(charSelectThemeClip);
+            ui.globalSfxStop(charSelectThemeClip);
 			charSelectThemeStopped = true;
 		}
 	}

@@ -40,7 +40,6 @@ import java.io.Serializable;
 
 import haven.render.Environment;
 import haven.render.Render;
-import haven.res.ui.tt.wear.Wear;
 
 public class UI {
     public static int MOD_SHIFT = KeyMatch.S, MOD_CTRL = KeyMatch.C, MOD_META = KeyMatch.M, MOD_SUPER = KeyMatch.SUPER;
@@ -965,6 +964,18 @@ public class UI {
     public void sfx(Resource clip) {
 	sfx(Audio.fromres(clip));
     }
+
+	public void globalSfxPlay(Audio.CS clip) {
+		audio.sys.mixer.add(clip);
+	}
+
+	public boolean globalSfxIsPlaying(Audio.CS clip){
+		return audio.sys.mixer.playing(clip);
+	}
+
+	public void globalSfxStop(Audio.CS clip) {
+		audio.sys.mixer.stop(clip);
+	}
 
     public final Map<Audio.Clip, Double> lastmsgsfx = new HashMap<>();
     public void sfxrl(Audio.Clip clip) {
