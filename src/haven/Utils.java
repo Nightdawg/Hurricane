@@ -402,7 +402,12 @@ public class Utils {
 			Preferences node = Preferences.userNodeForPackage(Utils.class);
 			if(prefspec.get() != null)
 			    node = node.node(prefspec.get());
-			prefs = node;
+			Path base = Config.localdir();
+			if(base == null) {
+			    prefs = node;
+			} else {
+			    prefs = XmlPrefs.create(Utils.pj(base, "Hurricane-prefs.xml"), node);
+			}
 		    }
 		}
 	    }
