@@ -447,7 +447,7 @@ public class UI {
 	}
 
 	public String toString() {
-	    return(String.format("#<newwdg %d %s %s>", id, (typenm == null) ? type : typenm, Arrays.asList(cargs)));
+	    return(String.format("#<newwdg %d %s %s>", id, (typenm == null) ? type : typenm, Arrays.deepToString(cargs)));
 	}
     }
 
@@ -488,7 +488,7 @@ public class UI {
 	}
 
 	public String toString() {
-	    return(String.format("#<addwdg %d @ %d %s>", id, parent, Arrays.asList(pargs)));
+	    return(String.format("#<addwdg %d @ %d %s>", id, parent, Arrays.deepToString(pargs)));
 	}
     }
 
@@ -720,7 +720,7 @@ public class UI {
 	}
 
 	public String toString() {
-	    return(String.format("#<wdgmsg %d %s %s>", id, msg, Arrays.asList(args)));
+	    return(String.format("#<wdgmsg %d %s %s>", id, msg, Arrays.deepToString(args)));
 	}
     }
 

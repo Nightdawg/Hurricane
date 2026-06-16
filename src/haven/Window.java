@@ -671,8 +671,13 @@ public class Window extends Widget {
 	return(super.keydown(ev));
     }
 
+    private Runnable reqclose = () -> wdgmsg("close");
+    public Window reqclose(Runnable reqclose) {
+	this.reqclose = reqclose;
+	return(this);
+    }
     public void reqclose() {
-	wdgmsg("close");
+	reqclose.run();
     }
 
     public static interface Animation {

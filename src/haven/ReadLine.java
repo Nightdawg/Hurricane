@@ -393,9 +393,13 @@ public interface ReadLine {
 	}
 
 	private String cliptext(Clipboard c) {
-	    Clipboard.Item<CharSequence> item = c.fetch().find(Clipboard.Format.TEXT);
-	    if(item != null)
-		return(item.fetch().toString());
+	    try {
+		Clipboard.Item<CharSequence> item = c.fetch().find(Clipboard.Format.TEXT);
+		if(item != null)
+		    return(item.fetch().toString());
+	    } catch(Exception e) {
+		owner.ui().error("Clipboard error: " + e.getMessage());
+	    }
 	    return("");
 	}
 

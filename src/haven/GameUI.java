@@ -31,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.function.*;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.image.WritableRaster;
@@ -596,7 +597,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		    if(menu == null)
 			return;
 		    if(srchwnd == null) {
-			srchwnd = new MenuSearch(menu){
+			srchwnd = new MenuSearch.Main(menu){
 				@Override
 				public void wdgmsg(String msg, Object... args) {
 					super.wdgmsg(msg, args);
@@ -624,8 +625,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			} else {
 				Utils.setprefc("wndc-icon",iconwnd.c); // ND: Add this to save the icon settings window location
 				iconwnd.show(!iconwnd.visible());
-//				ui.destroy(iconwnd);
-//				iconwnd = null;
 			}
 		});
 		brpanel.add(new MenuCheckBox("lbtn-claim", kb_claim, "Display Personal Claims on Ground"), bg.c).state(() -> visol("cplot")).click(() -> {
@@ -658,119 +657,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		});
     }
 
-    /* Ice cream */
-//    private final IButton[] fold_br = new IButton[4];
-//    private final IButton[] fold_bl = new IButton[4];
-//    private void updfold(boolean reset) {
-//	int br;
-//	if(brpanel.tvis && menupanel.tvis)
-//	    br = 0;
-//	else if(brpanel.tvis && !menupanel.tvis)
-//	    br = 1;
-//	else if(!brpanel.tvis && !menupanel.tvis)
-//	    br = 2;
-//	else
-//	    br = 3;
-//	for(int i = 0; i < fold_br.length; i++)
-//	    fold_br[i].show(i == br);
-//
-//	int bl;
-//	if(blpanel.tvis && mapmenupanel.tvis)
-//	    bl = 0;
-//	else if(blpanel.tvis && !mapmenupanel.tvis)
-//	    bl = 1;
-//	else if(!blpanel.tvis && !mapmenupanel.tvis)
-//	    bl = 2;
-//	else
-//	    bl = 3;
-//	for(int i = 0; i < fold_bl.length; i++)
-//	    fold_bl[i].show(i == bl);
-//
-//	if(reset)
-//	    resetui();
-//    }
-//
-//    private void foldbuttons() {
-//	final Tex rdnbg = Resource.loadtex("gfx/hud/rbtn-maindwn");
-//	final Tex rupbg = Resource.loadtex("gfx/hud/rbtn-upbg");
-//	fold_br[0] = new IButton("gfx/hud/rbtn-dwn", "", "-d", "-h") {
-//		public void draw(GOut g) {g.image(rdnbg, Coord.z); super.draw(g);}
-//		public void click() {
-//		    menupanel.cshow(false);
-//		    updfold(true);
-//		}
-//	    };
-//	fold_br[1] = new IButton("gfx/hud/rbtn-dwn", "", "-d", "-h") {
-//		public void draw(GOut g) {g.image(rdnbg, Coord.z); super.draw(g);}
-//		public void click() {
-//		    brpanel.cshow(false);
-//		    updfold(true);
-//		}
-//	    };
-//	fold_br[2] = new IButton("gfx/hud/rbtn-up", "", "-d", "-h") {
-//		public void draw(GOut g) {g.image(rupbg, Coord.z); super.draw(g);}
-//		public void click() {
-//		    menupanel.cshow(true);
-//		    updfold(true);
-//		}
-//		public void presize() {
-//		    this.c = parent.sz.sub(this.sz);
-//		}
-//	    };
-//	fold_br[3] = new IButton("gfx/hud/rbtn-dwn", "", "-d", "-h") {
-//		public void draw(GOut g) {g.image(rdnbg, Coord.z); super.draw(g);}
-//		public void click() {
-//		    brpanel.cshow(true);
-//		    updfold(true);
-//		}
-//	    };
-//	menupanel.add(fold_br[0], 0, 0);
-//	fold_br[0].lower();
-//	brpanel.adda(fold_br[1], brpanel.sz.x, UI.scale(32), 1, 1);
-//	adda(fold_br[2], 1, 1);
-//	fold_br[2].lower();
-//	menupanel.add(fold_br[3], 0, 0);
-//	fold_br[3].lower();
-//
-//	final Tex ldnbg = Resource.loadtex("gfx/hud/lbtn-bgs");
-//	final Tex lupbg = Resource.loadtex("gfx/hud/lbtn-upbg");
-//	fold_bl[0] = new IButton("gfx/hud/lbtn-dwn", "", "-d", "-h") {
-//		public void click() {
-//		    mapmenupanel.cshow(false);
-//		    updfold(true);
-//		}
-//	    };
-//	fold_bl[1] = new IButton("gfx/hud/lbtn-dwn", "", "-d", "-h") {
-//		public void draw(GOut g) {g.image(ldnbg, Coord.z); super.draw(g);}
-//		public void click() {
-//		    blpanel.cshow(false);
-//		    updfold(true);
-//		}
-//	    };
-//	fold_bl[2] = new IButton("gfx/hud/lbtn-up", "", "-d", "-h") {
-//		public void draw(GOut g) {g.image(lupbg, Coord.z); super.draw(g);}
-//		public void click() {
-//		    mapmenupanel.cshow(true);
-//		    updfold(true);
-//		}
-//		public void presize() {
-//		    this.c = new Coord(0, parent.sz.y - sz.y);
-//		}
-//	    };
-//	fold_bl[3] = new IButton("gfx/hud/lbtn-dwn", "", "-d", "-h") {
-//		public void click() {
-//		    blpanel.cshow(true);
-//		    updfold(true);
-//		}
-//	    };
-//	mapmenupanel.add(fold_bl[0], 0, 0);
-//	blpanel.adda(fold_bl[1], 0, UI.scale(33), 0, 1);
-//	adda(fold_bl[2], 0, 1);
-//	fold_bl[2].lower();
-//	mapmenupanel.add(fold_bl[3], 0, 0);
-//
-//	updfold(false);
-//    }
+
 
     protected void added() {
 	resize(parent.sz);
@@ -905,12 +792,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    super(sz, cap);
 	}
 
-	public void wdgmsg(Widget sender, String msg, Object... args) {
-	    if((sender == this) && msg.equals("close")) {
-		this.hide();
-		return;
-	    }
-	    super.wdgmsg(sender, msg, args);
+	public void reqclose() {
+	    hide();
 	}
     }
 
@@ -1135,16 +1018,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		MapFile file;
 		try {
 		    file = MapFile.load(mapstore, mapfilename());
-//			if(OptWnd.uploadMapTilesCheckBox.a && MappingClient.getInstance() != null) {
-//				MappingClient.getInstance().ProcessMap(file, (m) -> {
-//					if(m instanceof MapFile.PMarker) {
-//						Color markerColor = ((MapFile.PMarker)m).color;
-//						Boolean isColorEnabled = OptWnd.colorCheckboxesMap.get(markerColor);
-//						return isColorEnabled != null && isColorEnabled;
-//					}
-//					return true;
-//				});
-//			}
 		} catch(java.io.IOException e) {
 		    /* XXX: Not quite sure what to do here. It's
 		     * certainly not obvious that overwriting the
@@ -1187,7 +1060,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 				pack();
 			}
 		};
-		
+
 		maininv = Inventory.fromWidget(child);
 		maininvext = new ExtInventory(maininv);
 
@@ -1210,7 +1083,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		miniStudy = add(new MiniStudy(), Utils.getprefc("wndc-miniStudy", new Coord(300, 50)));
 		if (!OptWnd.alwaysOpenMiniStudyOnLoginCheckBox.a) miniStudy.hide();
 	    chrwdg = add((CharWnd)child, Utils.getprefc("wndc-chr", new Coord(300, 50)));
-	    chrwdg.hide();
+	    chrwdg.reqclose(chrwdg::hide).hide();
 	} else if(place == "craft") {
 	    String cap = "";
 	    Widget mkwdg = child;
@@ -1256,32 +1129,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(place == "qq") {
 	    if(qqview != null)
 		qqview.reqdestroy();
-	    final Widget cref = qqview = child;
-//		add(new AlignPanel() {
-//		    {add(cref);}
-//
-//		    protected Coord getc() {
-//			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 26)));
-//		    }
-//
-//		    public void cdestroy(Widget ch) {
-//			qqview = null;
-//			destroy();
-//		    }
-//
-//			@Override
-//			public void draw(GOut g) {
-//				if (showUI)
-//					super.draw(g);
-//			}
-//
-//			@Override
-//			public boolean mousedown(MouseDownEvent ev) {
-//				if (!showUI)
-//					return(false);
-//				return super.mousedown(ev);
-//			}
-//		});
 		questObjectivesWindow.add(child, Coord.z);
 		questObjectivesWindow.resetDeco();
 		questObjectivesWindow.show();
@@ -1490,7 +1337,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
         g.image(mapperWarning2, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning2.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y + mapperWarning2.sz().y));
     }
     }
-    
+
     private String iconconfname() {
 	StringBuilder buf = new StringBuilder();
 	buf.append("data/mm-icons-2");
@@ -1723,10 +1570,15 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    polowners.put(id, o);
 	} else if(msg == "showhelp") {
 	    Indir<Resource> res = ui.sess.getresv(args[0]);
-	    if(help == null)
-		help = adda(new HelpWnd(res), 0.5, 0.25);
-	    else
+	    if(help == null) {
+		(help = adda(new HelpWnd(res), 0.5, 0.25)).reqclose(() -> {
+		    if(help != null)
+		        help.reqdestroy();
+		    help = null;
+		});
+	    } else {
 		help.set(res);
+	    }
 	} else if(msg == "map-mark") {
 	    long gobid = UINT.of(args[0]);
 	    UID oid = UNIQID.of(args[1]);
@@ -1758,17 +1610,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    mapfile.hide();
 //	    Utils.setprefb("wndvis-map", false);
 	    return;
-	} else if((sender == help) && (msg == "close")) {
-	    ui.destroy(help);
-	    help = null;
-	    return;
 	} else if((sender == srchwnd) && (msg == "close")) {
 	    ui.destroy(srchwnd);
 	    srchwnd = null;
 	    return;
 	} else if((sender == iconwnd) && (msg == "close")) {
-	    ui.destroy(iconwnd);
-	    iconwnd = null;
+		iconwnd.show(!iconwnd.visible());
 	    return;
 	}
 	super.wdgmsg(sender, msg, args);
@@ -1858,28 +1705,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    }
 	}
 
-	public MapMenu() {
-	    super(mapmenubg.sz());
-	    add(new MenuCheckBox("lbtn-claim", kb_claim, "Display personal claims"), 0, 0).changed(a -> toggleol("cplot", a));
-	    add(new MenuCheckBox("lbtn-vil", kb_vil, "Display village claims"), 0, 0).changed(a -> toggleol("vlg", a));
-	    add(new MenuCheckBox("lbtn-rlm", kb_rlm, "Display provinces"), 0, 0).changed(a -> toggleol("prov", a));
-	    add(new MenuCheckBox("lbtn-map", kb_map, "Map")).state(() -> wndstate(mapfile)).click(() -> {
-		    togglewnd(mapfile);
-		    if(mapfile != null)
-			Utils.setprefb("wndvis-map", mapfile.visible());
-		});
-	    add(new MenuCheckBox("lbtn-ico", kb_ico, "Icon settings"), 0, 0).state(() -> wndstate(iconwnd)).click(() -> {
-		    if(iconconf == null)
-			return;
-		    if(iconwnd == null) {
-			iconwnd = new GobIcon.SettingsWindow(iconconf);
-			fitwdg(GameUI.this.add(iconwnd, Utils.getprefc("wndc-icon", new Coord(200, 200))));
-		    } else {
-			ui.destroy(iconwnd);
-			iconwnd = null;
-		    }
-		});
-	}
+
 
 	public void draw(GOut g) {
 	    g.image(mapmenubg, Coord.z);
@@ -2352,152 +2178,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	wdgmsg("act", al);
     }
 
-//    public class FKeyBelt extends Belt implements DTarget, DropTarget {
-//	public final int beltkeys[] = {KeyEvent.VK_F1, KeyEvent.VK_F2, KeyEvent.VK_F3, KeyEvent.VK_F4,
-//				       KeyEvent.VK_F5, KeyEvent.VK_F6, KeyEvent.VK_F7, KeyEvent.VK_F8,
-//				       KeyEvent.VK_F9, KeyEvent.VK_F10, KeyEvent.VK_F11, KeyEvent.VK_F12};
-//	public int curbelt = 0;
-//
-//	public FKeyBelt() {
-//	    super(UI.scale(new Coord(450, 34)));
-//	}
-//
-//	private Coord beltc(int i) {
-//	    return(new Coord((((invsq.sz().x + UI.scale(2)) * i) + (10 * (i / 4))), 0));
-//	}
-//
-//	public int beltslot(Coord c) {
-//	    for(int i = 0; i < 12; i++) {
-//		if(c.isect(beltc(i), invsq.sz()))
-//		    return(i + (curbelt * 12));
-//	    }
-//	    return(-1);
-//	}
-//
-//	public void draw(GOut g) {
-//	    for(int i = 0; i < 12; i++) {
-//		int slot = i + (curbelt * 12);
-//		Coord c = beltc(i);
-//		g.image(invsq, beltc(i));
-//		try {
-//		    if(belt[slot] != null)
-//			belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
-//		} catch(Loading e) {}
-//		g.chcolor(156, 180, 158, 255);
-//		FastText.aprintf(g, c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1, "F%d", i + 1);
-//		g.chcolor();
-//	    }
-//	}
-//
-//	public boolean globtype(char key, KeyEvent ev) {
-//	    boolean M = (ev.getModifiersEx() & (KeyEvent.META_DOWN_MASK | KeyEvent.ALT_DOWN_MASK)) != 0;
-//	    for(int i = 0; i < beltkeys.length; i++) {
-//		if(ev.getKeyCode() == beltkeys[i]) {
-//		    if(M) {
-//			curbelt = i;
-//			return(true);
-//		    } else {
-//			keyact(i + (curbelt * 12));
-//			return(true);
-//		    }
-//		}
-//	    }
-//	    return(false);
-//	}
-//    }
 
-//    private static final Tex nkeybg = Resource.loadtex("gfx/hud/hb-main");
-//    public class NKeyBelt extends Belt {
-//	public int curbelt = 0;
-//	final Coord pagoff = UI.scale(new Coord(5, 25));
-//
-//	public NKeyBelt() {
-//	    super(nkeybg.sz());
-//	    adda(new IButton("gfx/hud/hb-btn-chat", "", "-d", "-h") {
-//		    Tex glow;
-//		    {
-//			this.tooltip = RichText.render("Chat ($col[255,200,0]{Ctrl+C})", 0); // ND: Chat button tooltip
-//			glow = new TexI(PUtils.rasterimg(PUtils.blurmask(up.getRaster(), UI.scale(2), UI.scale(2), Color.WHITE)));
-//		    }
-//
-//		    public void click() {
-//			if(chat.targetshow) {
-//			    chat.sshow(false);
-//			} else {
-//			    chat.sshow(true);
-//			    setfocus(chat);
-//			}
-//			Utils.setprefb("chatvis", chat.targetshow);
-//		    }
-//
-//		    public void draw(GOut g) {
-//			super.draw(g);
-//			Color urg = chat.urgcols[chat.urgency];
-//			if(urg != null) {
-//			    GOut g2 = g.reclipl2(UI.scale(-4, -4), g.sz().add(UI.scale(4, 4)));
-//			    g2.chcolor(urg.getRed(), urg.getGreen(), urg.getBlue(), 128);
-//			    g2.image(glow, Coord.z);
-//			}
-//		    }
-//		}, sz, 1, 1);
-//	}
-//
-//	private Coord beltc(int i) {
-//	    return(pagoff.add(UI.scale((36 * i) + (10 * (i / 5))), 0));
-//	}
-//
-//	public int beltslot(Coord c) {
-//	    for(int i = 0; i < 10; i++) {
-//		if(c.isect(beltc(i), invsq.sz()))
-//		    return(i + (curbelt * 12));
-//	    }
-//	    return(-1);
-//	}
-//
-//	public void draw(GOut g) {
-//	    g.image(nkeybg, Coord.z);
-//	    for(int i = 0; i < 10; i++) {
-//		int slot = i + (curbelt * 12);
-//		Coord c = beltc(i);
-//		g.image(invsq, beltc(i));
-//		try {
-//		    if(belt[slot] != null) {
-//			belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
-//		    }
-//		} catch(Loading e) {}
-//		g.chcolor(156, 180, 158, 255);
-//		FastText.aprintf(g, c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1, "%d", (i + 1) % 10);
-//		g.chcolor();
-//	    }
-//	    super.draw(g);
-//	}
-//
-//	public boolean globtype(char key, KeyEvent ev) {
-//	    int c = ev.getKeyCode();
-//	    if((c < KeyEvent.VK_0) || (c > KeyEvent.VK_9))
-//		return(false);
-//	    int i = Utils.floormod(c - KeyEvent.VK_0 - 1, 10);
-//	    boolean M = (ev.getModifiersEx() & (KeyEvent.META_DOWN_MASK | KeyEvent.ALT_DOWN_MASK)) != 0;
-//	    if(M) {
-//		curbelt = i;
-//	    } else {
-//		keyact(i + (curbelt * 12));
-//	    }
-//	    return(true);
-//	}
-//    }
-
-    {
-//	String val = Utils.getpref("belttype", "n");
-//	if(val.equals("n")) {
-//	    beltwdg = add(new NKeyBelt());
-//	} else if(val.equals("f")) {
-//	    beltwdg = add(new FKeyBelt());
-//	} else {
-//	    beltwdg = add(new NKeyBelt());
-//	}
-    }
-    
     private Map<String, Console.Command> cmdmap = new TreeMap<String, Console.Command>();
     {
 	cmdmap.put("afk", new Console.Command() {
@@ -2513,21 +2194,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		    wdgmsg("act", ad);
 		}
 	    });
-//	cmdmap.put("belt", new Console.Command() {
-//		public void run(Console cons, String[] args) {
-//		    if(args[1].equals("f")) {
-//			beltwdg.destroy();
-//			beltwdg = add(new FKeyBelt());
-//			Utils.setpref("belttype", "f");
-//			resize(sz);
-//		    } else if(args[1].equals("n")) {
-//			beltwdg.destroy();
-//			beltwdg = add(new NKeyBelt());
-//			Utils.setpref("belttype", "n");
-//			resize(sz);
-//		    }
-//		}
-//	    });
 	cmdmap.put("chrmap", new Console.Command() {
 		public void run(Console cons, String[] args) {
 		    Utils.setpref("mapfile/" + chrid, args[1]);

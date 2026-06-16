@@ -244,6 +244,10 @@ public abstract class XLib {
 	public String toString() {
 	    return("#" + Long.toUnsignedString(bits, 16));
 	}
+
+	public long bits() {
+	    return(bits);
+	}
     }
 
     public static class Atom {

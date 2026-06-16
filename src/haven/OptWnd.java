@@ -5217,13 +5217,9 @@ public class OptWnd extends Window {
 	this(true);
     }
 
-    public void wdgmsg(Widget sender, String msg, Object... args) {
-	if((sender == this) && (msg == "close")) {
-	    hide();
-		cap = "Options            ";
-	} else {
-	    super.wdgmsg(sender, msg, args);
-	}
+    public void reqclose() {
+	hide();
+	cap = "Options            ";
     }
 
     public void show() {

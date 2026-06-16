@@ -945,25 +945,31 @@ public class GobIcon extends GAttrib {
 		protected List<NotificationSetting> items() {return(items);}
 		protected Widget makeitem(NotificationSetting item, int idx, Coord sz) {return(SListWidget.TextItem.of(sz, Text.std, () -> item.name));}
 
-		private void selectwav() {
+		private void selectwav(NotificationSetting prev) {
 		    FilePicker dialog = ui.wnd.toolkit().picker().make(FilePicker.Mode.OPEN, ui.wnd);
 		    dialog.filter("PCM wave file", "wav");
-		    dialog.show().map(Promise.cnonnull(path -> {
-			for(Iterator<NotificationSetting> i = items.iterator(); i.hasNext();) {
-			    NotificationSetting item = i.next();
-			    if(item.wav != null)
-				i.remove();
+		    dialog.show().map(path -> {
+			Debug.dump(path, prev.name);
+			if(path == null) {
+			    super.change(prev);
+			} else {
+			    for(Iterator<NotificationSetting> i = items.iterator(); i.hasNext();) {
+				NotificationSetting item = i.next();
+				if(item.wav != null)
+				    i.remove();
+			    }
+			    NotificationSetting ws = new NotificationSetting(path);
+			    items.add(items.indexOf(NotificationSetting.other), ws);
+			    change(ws);
 			}
-			NotificationSetting ws = new NotificationSetting(path);
-			items.add(items.indexOf(NotificationSetting.other), ws);
-			change(ws);
-		    })).report(ui);
+		    }).report(ui);
 		}
 
 		public void change(NotificationSetting item) {
+		    NotificationSetting prev = sel;
 		    super.change(item);
 		    if(item == NotificationSetting.other) {
-			selectwav();
+			selectwav(prev);
 		    } else {
 			conf.resns = item.res;
 			conf.filens = item.wav;
