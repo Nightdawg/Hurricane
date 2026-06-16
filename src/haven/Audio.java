@@ -625,6 +625,7 @@ public class Audio {
 	}
 
 	public void bufsize(int nsz) {
+	    bufsize = nsz;
 	    player.stop(true);
 	    open();
 	    Utils.setprefi("audiobuf", nsz);
