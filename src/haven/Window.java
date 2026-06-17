@@ -105,6 +105,11 @@ public class Window extends Widget {
     private Pipe.Op gbasic;
     public UI.Grab dm = null;
     private Coord doff;
+    private boolean drawcacheDirty = true;
+    private int drawcacheSeq = Integer.MIN_VALUE;
+    private Coord drawcacheSize = null;
+    private long drawcacheHits = 0;
+    private long drawcacheRedraws = 0;
     public boolean large = false;
 
     @RName("wnd")
@@ -141,6 +146,52 @@ public class Window extends Widget {
 	return(new DefaultDeco(this.large));
     }
 
+    @Override
+    public void redraw() {
+	drawcacheDirty = true;
+	super.redraw();
+    }
+
+    @Override
+    public void childredraw(Widget child) {
+	drawcacheDirty = true;
+	super.childredraw(child);
+    }
+
+    protected boolean cacheWindowDraw() {
+	if(!visible())
+	    return false;
+	if(deco == null)
+	    return false;
+	if(dm != null)
+	    return false;
+	if(anim != null)
+	    return false;
+	if(hasDynamicDrawChild(this))
+	    return false;
+	return true;
+    }
+
+    private boolean hasDynamicDrawChild(Widget w) {
+	for(Widget ch = w.child; ch != null; ch = ch.next) {
+	    if(!ch.visible())
+		continue;
+	    if(isDynamicDrawWidget(ch))
+		return true;
+	    if(hasDynamicDrawChild(ch))
+		return true;
+	}
+	return false;
+    }
+
+    private boolean isDynamicDrawWidget(Widget w) {
+	return (w instanceof MapView) ||
+	       (w instanceof MiniMap) ||
+	       (w instanceof MapWnd) ||
+	       (w instanceof GameUI) ||
+	       (w instanceof Progress);
+    }
+
     protected void added() {
 	super.added();
 	if(visible())
@@ -165,6 +216,7 @@ public class Window extends Widget {
 	attachLocalExtInventory(getchild(Inventory.class));
 	if(deco instanceof DefaultDeco)
 	    ((DefaultDeco) deco).refreshInventoryButtons();
+	redraw();
     }
 
     private boolean shouldHaveInventoryButtons() {
@@ -190,6 +242,7 @@ public class Window extends Widget {
 	this.c = this.c.add(coff);
 	if(dm != null)
 	    this.doff = this.doff.sub(coff);
+	redraw();
     }
 
     public static abstract class Deco extends Widget {
@@ -536,11 +589,29 @@ public class Window extends Widget {
     }
 
     public void draw(GOut og) {
+	boolean usecache = cacheWindowDraw();
+
 	if(animst != "dest") {
-	    GOut g = new GOut(og.out, og.basicstate().prep(gbasic()), this.sz);
-	    g.out.clear(g.state(), FragColor.fragcol, FColor.BLACK_T);
-	    drawbuf(g);
+	    boolean sizeChanged = (gbuf == null) || (drawcacheSize == null) || !Utils.eq(drawcacheSize, this.sz);
+	    boolean seqChanged  = (drawcacheSeq != this.drawseq);
+	    boolean needsRedraw = !usecache || drawcacheDirty || seqChanged || sizeChanged;
+
+	    if(needsRedraw) {
+		GOut g = new GOut(og.out, og.basicstate().prep(gbasic()), this.sz);
+		g.out.clear(g.state(), FragColor.fragcol, FColor.BLACK_T);
+		drawbuf(g);
+
+		drawcacheDirty = false;
+		drawcacheSeq   = this.drawseq;
+		drawcacheSize  = new Coord(this.sz);
+
+		if(usecache)
+		    drawcacheRedraws++;
+	    } else {
+		drawcacheHits++;
+	    }
 	}
+
 	if(gbuf != null)
 	    drawfin(og, gbuf);
     }
@@ -583,18 +654,22 @@ public class Window extends Widget {
 	}
 	for(Widget ch = child; ch != null; ch = ch.next)
 	    ch.presize();
+	redraw();
     }
 
     public void resize(Coord sz) {
 	resize2(sz);
+	redraw();
     }
 
     public void uimsg(String msg, Object... args) {
 	if(msg == "cap") {
 	    String cap = (String)args[0];
 	    chcap(cap.equals("") ? null : cap);
+	    redraw();
 	} else if(msg == "dhide") {
 	    chdeco(Utils.bv(args[0]) ? null : makedeco());
+	    redraw();
 	} else {
 	    super.uimsg(msg, args);
 	}
@@ -708,6 +783,7 @@ public class Window extends Widget {
 		}
 		anim = null;
 		animst = null;
+		redraw();
 	    }
 	}
     }
@@ -750,10 +826,12 @@ public class Window extends Widget {
 	if(animst == null) {
 	    anim = trans.show(this, null);
 	    animst = "show";
+	    drawcacheDirty = true;
 	} else if(animst == "show") {
 	} else if(animst == "hide") {
 	    anim = show0(trans, anim);
 	    animst = "show";
+	    drawcacheDirty = true;
 	} else if(animst == "dest") {
 	} else {
 	    throw(new AssertionError(animst));
@@ -768,9 +846,11 @@ public class Window extends Widget {
 	if(animst == null) {
 	    anim = trans.hide(this, null);
 	    animst = "hide";
+	    drawcacheDirty = true;
 	} else if(animst == "show") {
 	    anim = hide0(trans, anim);
 	    animst = "hide";
+	    drawcacheDirty = true;
 	} else if(animst == "hide") {
 	} else if(animst == "dest") {
 	} else {

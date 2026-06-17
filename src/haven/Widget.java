@@ -48,6 +48,7 @@ public class Widget {
     public Object tooltip = null;
     public KeyMatch gkey;
     public KeyBinding kb_gkey;
+    protected int drawseq = 0;
     static Map<String, Factory> types = new TreeMap<String, Factory>();
 
     @dolda.jglob.Discoverable
@@ -217,6 +218,16 @@ public class Widget {
 	this.attached = true;
     }
 
+    public void redraw() {
+	drawseq++;
+	if(parent != null)
+	    parent.childredraw(this);
+    }
+
+    public void childredraw(Widget child) {
+	redraw();
+    }
+
     protected void attach(UI ui) {
 	this.ui = ui;
 	for(Widget ch = child; ch != null; ch = ch.next)
@@ -240,6 +251,7 @@ public class Widget {
 	child.link();
 	child.added();
 	childseq++;
+	redraw();
 	if(attached)
 	    child.attached();
 	if(((Widget)child).canfocus && child.visible)
@@ -555,6 +567,7 @@ public class Widget {
     /* XXX: Should be renamed to cremove at this point. */
     public void cdestroy(Widget w) {
 	childseq++;
+	redraw();
     }
 
     public int wdgid() {
@@ -1435,13 +1448,18 @@ public class Widget {
     }
     
     public void move(Coord c) {
+	if(Utils.eq(this.c, c))
+	    return;
 	this.c = c;
+	if(parent != null)
+	    parent.childredraw(this);
     }
 
     public void resize(Coord sz) {
 	if(Utils.eq(this.sz, sz))
 	    return;
 	this.sz = sz;
+	redraw();
 	for(Widget ch = child; ch != null; ch = ch.next)
 	    ch.presize();
 	if(parent != null)
@@ -1454,6 +1472,7 @@ public class Widget {
 	    if(parent != null) {
 		unlink();
 		link();
+		parent.childredraw(this);
 	    }
 	}
     }
@@ -1927,15 +1946,23 @@ public class Widget {
     }
 
     public void hide() {
+	if(!visible)
+	    return;
 	visible = false;
-	if(parent != null)
+	if(parent != null) {
 	    parent.delfocusable(this);
+	    parent.childredraw(this);
+	}
     }
 
     public void show() {
+	if(visible)
+	    return;
 	visible = true;
-	if(parent != null)
+	if(parent != null) {
 	    parent.newfocusable(this);
+	    parent.childredraw(this);
+	}
     }
 
     public boolean show(boolean show) {
