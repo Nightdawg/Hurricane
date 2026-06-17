@@ -315,7 +315,7 @@ public class TileHighlight {
 	    
 	    add(new CategoryList(UI.scale(125), 4, elh), 0, h).sel = category;
 	    
-	    list = add(new TileList(UI.scale(220), UI.unscale(12)), UI.scale(135), h);
+	    list = add(new TileList(UI.scale(220), 12), UI.scale(135), h);
 	    filter = adda(new Label(FILTER_DEFAULT), list.pos("ur").y(0), 1, 0);
 	    pack();
 	    setfocus(list);
@@ -333,7 +333,7 @@ public class TileHighlight {
 	
 	private void updateFilter(String text) {
 	    filter.settext((text == null || text.isEmpty()) ? FILTER_DEFAULT : text);
-	    filter.c = list.pos("ur").y(0).adds(-filter.sz.x, 0);
+	    filter.c = list.pos("ur").y(0).add(-filter.sz.x, 0);
 	}
 	
 	@Override
