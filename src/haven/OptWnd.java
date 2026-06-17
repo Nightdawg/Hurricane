@@ -473,7 +473,7 @@ public class OptWnd extends Window {
 	public AudioPanel(UI ui, Panel back) {
         Widget leftColumn, rightColumn;
 	    Audio.Root sys = ui.audio.sys;
-        leftColumn = add(new Label("Master audio volume"), 179, 0);
+        leftColumn = add(new Label("Master audio volume"), UI.scale(179, 0));
         leftColumn = add(new HSlider(UI.scale(460), 0, 1000, (int)(sys.volume() * 1000)) {
 		    public void changed() {
 			sys.volume(val / 1000.0);
@@ -3119,8 +3119,8 @@ public class OptWnd extends Window {
 		Label topNote = new Label("Don't use the same keys on multiple Keybinds!");
 		topNote.setcolor(Color.RED);
 		y = adda(topNote, UI.scale(155), y, 0.5, 0.0).pos("bl").adds(0, 5).y;
-		y = adda(new Label("If you do that, only one of them will work. God knows which."), 310 / 2, y, 0.5, 0.0).pos("bl").adds(0, 5).y;
-		Scrollport scroll = add(new Scrollport(UI.scale(new Coord(310, 360))), 0, 60);
+		y = adda(new Label("If you do that, only one of them will work. God knows which."), UI.scale(155), y, 0.5, 0.0).pos("bl").adds(0, 5).y;
+		Scrollport scroll = add(new Scrollport(UI.scale(310, 360)), UI.scale(0, 60));
 	    Widget cont = scroll.cont;
 	    Widget prev;
 	    y = 0;
