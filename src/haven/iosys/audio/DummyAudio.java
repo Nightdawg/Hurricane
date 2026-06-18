@@ -70,6 +70,10 @@ public class DummyAudio implements AudioSystem {
 		Thread.currentThread().interrupt();
 	    }
 	}
+
+	public String toString() {
+	    return("Dummy player");
+	}
     }
 
     public static class DummySink implements SinkLine {

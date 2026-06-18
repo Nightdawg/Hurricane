@@ -105,6 +105,7 @@ public abstract class LibC {
     }
 
     public abstract String strerror(int errnum);
+    public abstract void free(MemorySegment mem);
     public abstract int getpid();
     public abstract void close(int fd);
     public abstract byte[] read(int fd, int count);
@@ -170,6 +171,15 @@ public abstract class LibC {
 		throw(new RuntimeException(t));
 	    }
 	    return(nullp(ret) ? null : ret.reinterpret(Long.MAX_VALUE).getString(0, C_CHARSET));
+	}
+
+	private final MethodHandle free = ld.downcallHandle(libc.find("free").get(), FunctionDescriptor.ofVoid(ADDRESS));
+	public void free(MemorySegment mem) {
+	    try {
+		free.invoke(mem);
+	    } catch(Throwable t) {
+		throw(new RuntimeException(t));
+	    }
 	}
 
 	private final MethodHandle getpid = ld.downcallHandle(libc.find("getpid").get(), FunctionDescriptor.of(PID_T));

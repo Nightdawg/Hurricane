@@ -136,20 +136,20 @@ public class FUtils {
 	throw(new RuntimeException(String.valueOf(type)));
     }
 
-    public static void setint(MemorySegment mem, long offset, MemoryLayout type, long value) {
+    public static MemorySegment setint(MemorySegment mem, long offset, MemoryLayout type, long value) {
 	switch((int)type.byteSize()) {
 	case 1:
 	    mem.set(ValueLayout.JAVA_BYTE, offset, (byte)value);
-	    return;
+	    return(mem);
 	case 2:
 	    mem.set(ValueLayout.JAVA_SHORT, offset, (short)value);
-	    return;
+	    return(mem);
 	case 4:
 	    mem.set(ValueLayout.JAVA_INT, offset, (int)value);
-	    return;
+	    return(mem);
 	case 8:
 	    mem.set(ValueLayout.JAVA_LONG, offset, value);
-	    return;
+	    return(mem);
 	}
 	throw(new RuntimeException(String.valueOf(type)));
     }
