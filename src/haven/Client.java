@@ -73,7 +73,7 @@ public class Client implements Console.Directory {
 	wnd.title("Haven & Hearth");
 	Coord fsz = Utils.getprefc("mainwnd/locksize", null);
 	if(fsz == null)
-	    wnd.sizing(new Windeye.Sizing().minsize(UI.scale(1167, 700)).normsize(Utils.getprefc("mainwnd/size", UI.scale(1167, 700))));
+	    wnd.sizing(new Windeye.Sizing().minsize(new Coord(1167, 700)).normsize(Utils.getprefc("mainwnd/size", new Coord(1167, 700))));
 	else
 	    wnd.sizing(new Windeye.Sizing().fixsize(fsz));
 	if(initfullscreen.get())
@@ -294,7 +294,7 @@ public class Client implements Console.Directory {
 			    wnd.sizing(new Windeye.Sizing().fixsize(sz));
 			} else {
 			    Utils.setprefc("mainwnd/locksize", null);
-			    wnd.sizing(new Windeye.Sizing().minsize(UI.scale(800, 600)).normsize(sz));
+			    wnd.sizing(new Windeye.Sizing().minsize(new Coord(800, 600)).normsize(sz));
 			}
 		    }
 		}
