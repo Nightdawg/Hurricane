@@ -65,7 +65,6 @@ public class OptWnd extends Window {
 	public static FlowerMenuAutoSelectManagerWindow flowerMenuAutoSelectManagerWindow;
 	public static AutoDropManagerWindow autoDropManagerWindow;
 	AlarmWindow alarmWindow;
-	public static GSettings currentgprefs;
 	public static final Map<String, Color> improvedOpeningsImageColor =	new ConcurrentHashMap<>(4);
 
     public void chpanel(Panel p) {
@@ -5624,8 +5623,6 @@ public class OptWnd extends Window {
 	@Override
 	protected void attached() {
 		super.attached();
-		if (ui != null)
-			currentgprefs = ui.gprefs;
 		videoButton.preload();
 		audioButton.preload();
 		keybindButton.preload();
