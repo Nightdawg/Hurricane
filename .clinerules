@@ -1,0 +1,21 @@
+# Hurricane — Cline Rules
+
+Canonical guide: AGENTS.md. Full knowledge base: ai-docs/Home.md. RAG tool: rag/README.md.
+
+Project: custom Java client for *Haven & Hearth*, fork of Loftar's `hafen-client` (v1.63b). Entry
+point `haven.Client`. Build with Apache **Ant** (`ant jar` to compile-check, `ant run` to launch).
+No Maven/Gradle. No unit-test suite. Java 17–21 (level 15).
+
+Rules:
+1. Keep core `haven.*` edits surgical and additive — the fork merges the LoftarSeatribe upstream;
+   match existing indentation and don't reformat whole files.
+2. Use the widget-message protocol: wdgmsg(...) = client→server, uimsg(...) = server→client. Never
+   hand-build network packets.
+3. haven.Loading is control flow (lazy resource loading), not an error — catch and retry.
+4. World state (OCache/MCache/Glob) mutates on the network thread; always
+   `synchronized (gui.map.glob.oc)` to iterate Gobs and never block the UI/render thread.
+5. Automation lives in haven.automated.* (Window+Runnable), launched from GameUI keybindings or the
+   MenuGrid menu. See ai-docs/guides/Adding-a-New-Bot.md.
+6. No telemetry or new outbound network calls; don't change the build system.
+
+If a rule conflicts with the code, the code wins — then update the docs.

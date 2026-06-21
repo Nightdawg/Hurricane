@@ -1,0 +1,59 @@
+# Hurricane Client
+
+> Hurricane is a custom Java desktop **game client** for *Haven & Hearth* ("hafen"), forked from
+> Loftar/Seatribe's open-source "Vanilla" `hafen-client` and maintained by Nightdawg (version
+> `v1.63b`). It adds a large custom automation layer (`haven.automated.*`), quality-of-life UI, and
+> opt-in integrations. This file is an AI-oriented index (see https://llmstxt.org). All paths are
+> relative to the repository root.
+
+Key facts for an assistant: build with **Apache Ant** (`build.xml`) — not Maven/Gradle; Java
+**17–21** (source level 15); entry point is **`haven.Client`** (`src/haven/Client.java`); there is
+**no unit-test suite** (validate with `ant jar`). The codebase is a fork that periodically merges the
+`LoftarSeatribe` upstream, so core edits should be **surgical and additive**. Game logic also lives
+in **resources** (`haven.res.*`, `@FromResource`), not only in `src/`.
+
+## Start here
+
+- [AGENTS.md](AGENTS.md): Canonical agent instructions — build/run commands and the non-negotiable rules.
+- [AI knowledge vault (Home)](ai-docs/Home.md): Map of Content linking every architecture & subsystem note.
+- [Project Overview](ai-docs/Project-Overview.md): What Hurricane is, fork lineage, 30-second mental model.
+- [Build and Run](ai-docs/guides/Build-and-Run.md): Ant targets, runtime flags, resource-code CLI.
+- [Common Tasks & FAQ](ai-docs/guides/Common-Tasks-and-FAQ.md): Copy-pasteable recipes and "how do I…" answers.
+
+## Architecture
+
+- [Architecture Overview](ai-docs/architecture/Architecture-Overview.md): Layers, threads, data/control flow (Mermaid).
+- [Startup and Lifecycle](ai-docs/architecture/Startup-and-Lifecycle.md): `main()` → threads → login → in-game.
+- [Networking and Protocol](ai-docs/architecture/Networking-and-Protocol.md): Session/Connection, `MSG_*` message types, reliability.
+- [Game State Model](ai-docs/architecture/Game-State-Model.md): `Glob`, `OCache`, `Gob`/`GAttrib`, `MCache`.
+- [UI and Widget System](ai-docs/architecture/UI-and-Widget-System.md): The `Widget` tree and the `wdgmsg`/`uimsg` protocol.
+- [Rendering Pipeline](ai-docs/architecture/Rendering-Pipeline.md): `haven.render`, GL/JOGL/LWJGL backends, shaders.
+- [Resource System](ai-docs/architecture/Resource-System.md): `.res` files, `haven.res.*`, `FromResource`, lazy `Loading`.
+
+## Subsystems (Hurricane custom)
+
+- [Automation Bots](ai-docs/subsystems/Automation-Bots.md): The `haven.automated` package — bot pattern, triggering, `AUtils`, full catalog.
+- [Pathfinding](ai-docs/subsystems/Pathfinding.md): A* navigation engine.
+- [Combat System](ai-docs/subsystems/Combat-System.md): Fight UI + aggro/targeting scripts.
+- [Mapper and MappingClient](ai-docs/subsystems/Mapper-and-MappingClient.md): Opt-in web-map grid upload.
+- [Cookbook Integration](ai-docs/subsystems/Cookbook-Integration.md): Opt-in food-stats service.
+
+## Reference
+
+- [Package Map](ai-docs/reference/Package-Map.md): Every package and what lives in it.
+- [Key Classes](ai-docs/reference/Key-Classes.md): The ~40 classes you'll touch most, with line counts.
+- [Class Index (generated)](ai-docs/reference/Class-Index.md): All ~840 types → package, kind, supertypes, lines.
+- [Glossary](ai-docs/reference/Glossary.md): Domain & codebase vocabulary.
+- [Coding Conventions](ai-docs/guides/Coding-Conventions.md): Patterns you MUST follow (threading, `Loading`, `wdgmsg`).
+- [Adding a New Bot](ai-docs/guides/Adding-a-New-Bot.md): Step-by-step recipe.
+
+## Tools
+
+- [RAG retrieval tool](rag/README.md): `java rag/HurricaneRAG.java query "..."` — local TF-IDF retrieval over these docs.
+- [Code map generator](rag/CodeMap.java): `java rag/CodeMap.java` — emits `rag/code-map.jsonl` (full API) + Class-Index.md.
+
+## Optional
+
+- [llms-full.txt](llms-full.txt): The entire knowledge base concatenated into one file (generate with `java rag/HurricaneRAG.java bundle`).
+- [README.md](README.md): End-user readme (install, launch, links).
+- [doc/resource-code](doc/resource-code): How resource-bundled Java code works (`get-code` / `find-updates`).

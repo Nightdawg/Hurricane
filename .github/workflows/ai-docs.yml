@@ -1,0 +1,92 @@
+name: AI Docs & RAG
+
+# Validates the AI knowledge base (ai-docs/) and (re)builds the RAG retrieval index,
+# the structured code map, and the llms-full.txt bundle. Runs only when the docs or the
+# rag/ tooling change, so it never interferes with normal client development.
+
+on:
+  push:
+    paths:
+      - 'ai-docs/**'
+      - 'rag/**'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.github/copilot-instructions.md'
+      - 'llms.txt'
+      - '.github/workflows/ai-docs.yml'
+  pull_request:
+    paths:
+      - 'ai-docs/**'
+      - 'rag/**'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.github/copilot-instructions.md'
+      - 'llms.txt'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Compile RAG tools (syntax check)
+        run: javac -d "$RUNNER_TEMP/ragbuild" rag/HurricaneRAG.java rag/CodeMap.java rag/DepGraph.java
+
+      - name: Validate wikilinks in ai-docs/
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          declare -A valid
+          for f in ai-docs/**/*.md; do valid["$(basename "$f" .md)"]=1; done
+          for f in ai-docs/**/*.canvas; do b="$(basename "$f")"; valid["$b"]=1; valid["${b%.canvas}"]=1; done
+          broken=0
+          for f in ai-docs/**/*.md; do
+            content="$(sed 's/`[^`]*`//g' "$f")"
+            while IFS= read -r link; do
+              target="${link%%|*}"        # strip alias
+              target="${target%%#*}"      # strip heading anchor
+              target="${target%\\}"       # strip trailing backslash (escaped pipe in tables)
+              target="$(echo "$target" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+              [ -z "$target" ] && continue
+              if [ -z "${valid[$target]:-}" ]; then echo "BROKEN: $f -> [[$target]]"; broken=1; fi
+            done < <(printf '%s' "$content" | grep -oP '(?<=\[\[)[^]]+(?=\]\])' || true)
+          done
+          if [ "$broken" -ne 0 ]; then echo "::error::Broken wikilinks found"; exit 1; fi
+          echo "Wikilinks OK across $(ls ai-docs/**/*.md | wc -l) notes."
+
+      - name: Build RAG index
+        run: java rag/HurricaneRAG.java index --source
+
+      - name: Generate code map
+        run: java rag/CodeMap.java
+
+      - name: Generate dependency graph + metrics
+        run: java rag/DepGraph.java
+
+      - name: Generate llms-full.txt bundle
+        run: java rag/HurricaneRAG.java bundle
+
+      - name: Smoke-test a query
+        run: java rag/HurricaneRAG.java query -k 3 "how are automation bots triggered"
+
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hurricane-ai-knowledge
+          path: |
+            rag/rag-index.txt
+            rag/code-map.jsonl
+            rag/import-graph.jsonl
+            ai-docs/reference/Class-Index.md
+            ai-docs/reference/Code-Metrics.md
+            llms-full.txt
+          if-no-files-found: error
+          retention-days: 14

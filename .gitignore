@@ -5,3 +5,6 @@
 /build.properties
 /.idea
 *~
+
+# AI knowledge base — generated artifacts (regenerate via rag/ tools)
+/llms-full.txt

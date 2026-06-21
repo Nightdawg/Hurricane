@@ -1,0 +1,37 @@
+---
+description: Hurricane client (Haven & Hearth Java client) — core rules for all code in this repo.
+globs:
+  - "src/**/*.java"
+  - "rag/**"
+  - "ai-docs/**"
+alwaysApply: true
+---
+
+# Hurricane Client — Cursor Rules
+
+Canonical guide: [AGENTS.md](mdc:AGENTS.md). Full knowledge base: [ai-docs/Home.md](mdc:ai-docs/Home.md).
+
+**Project:** custom **Java** client for *Haven & Hearth*, fork of Loftar's `hafen-client` (`v1.63b`).
+Entry point `haven.Client`. Build with **Apache Ant** (`ant jar` to compile-check; `ant run` to
+launch). No Maven/Gradle. No unit-test suite. Java 17–21 (level 15).
+
+## Always follow these rules
+
+1. Keep core `haven.*` edits **surgical and additive** (the fork merges the `LoftarSeatribe`
+   upstream). Match existing indentation; don't reformat whole files.
+2. Use the widget-message protocol: `wdgmsg(...)` = client→server, `uimsg(...)` = server→client.
+   Never construct network packets by hand.
+3. `haven.Loading` is control flow (lazy resource loading), not an error — catch and retry.
+4. World state (`OCache`/`MCache`/`Glob`) mutates on the network thread. Always
+   `synchronized (gui.map.glob.oc)` to iterate Gobs; never block the UI/render thread.
+5. Automation belongs in `haven.automated.*` (Window+Runnable, polled with `Thread.sleep`, using
+   `AUtils` helpers), launched from `GameUI` keybindings or the `MenuGrid` menu.
+6. Don't add telemetry/new outbound network calls; don't change the build system.
+
+## Navigation
+- Bots & triggers: [Bot-Index](mdc:ai-docs/reference/Bot-Index.md)
+- Symbols: [Class-Index](mdc:ai-docs/reference/Class-Index.md) · Hotspots: [Code-Metrics](mdc:ai-docs/reference/Code-Metrics.md)
+- Resource names (`gob.getres().name`): [Resource-Naming](mdc:ai-docs/reference/Resource-Naming.md)
+- Working method: [AI-Agent-Playbook](mdc:ai-docs/guides/AI-Agent-Playbook.md)
+
+If a rule here conflicts with the code, the code wins — then update the docs.
