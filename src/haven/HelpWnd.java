@@ -33,7 +33,7 @@ public class HelpWnd extends Window {
     public HelpWnd(Indir<Resource> res) {
 	super(Coord.z, "Help!", true);
 	this.text = add(new RichTextBox(UI.scale(300, 400), fnd, () -> RichText.Document.respag(res)), Coord.z);
-	add(new Button(UI.scale(100), "Dismiss").action(() -> HelpWnd.this.wdgmsg("close")), UI.scale(100, 410));
+	add(new Button(UI.scale(100), "Dismiss").action(this::reqclose), UI.scale(100, 410));
 	pack();
     }
 
