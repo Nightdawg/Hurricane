@@ -1,0 +1,25 @@
+name: Notify docs on release
+
+# When a new Hurricane release is published, ping the HurricaneDocs repo so it
+# rebuilds and regenerates its auto-generated Changelog page.
+#
+# Requires a repository secret named DOCS_DISPATCH_TOKEN: a token that can write
+# to the Nightdawg/HurricaneDocs repo (a fine-grained PAT scoped to HurricaneDocs
+# with "Contents: read and write", or a classic PAT with the "repo" scope).
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger HurricaneDocs rebuild
+        run: |
+          curl -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.DOCS_DISPATCH_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/Nightdawg/HurricaneDocs/dispatches \
+            -d '{"event_type":"new-release"}'
