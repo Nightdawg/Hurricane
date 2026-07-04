@@ -172,25 +172,79 @@ public class NEWTContext implements Toolkit.Factory {
 	    public double subamount() {return(subamount);}
 	}
 
+	public static class NEWTSym implements Key.Sym {
+	    public final int code;
+
+	    public NEWTSym(int code) {
+		this.code = code;
+	    }
+
+	    public String id() {return(("newt:" + code).intern());}
+	    public String nm() {return(String.format("%X", code));}
+
+
+	    public boolean equals(NEWTSym that) {return(this.code == that.code);}
+	    public boolean equals(Object x) {return((x instanceof NEWTSym) && equals((NEWTSym)x));}
+	    public int hashCode() {return(code);}
+	}
+
+	public static class NEWTKey implements Key {
+	    public final int code, sym;
+	    public final char ch;
+	    public final Key.Std cstd, sstd;
+	    public final NEWTSym nsym;
+
+	    public NEWTKey(com.jogamp.newt.event.KeyEvent ev) {
+		this.code = ev.getKeyCode()   & 0xffff;
+		this.sym  = ev.getKeySymbol() & 0xffff;
+		this.ch   = ev.getKeyChar();
+		this.cstd = stdsyms.get(ev.getKeyCode());
+		this.sstd = stdsyms.get(ev.getKeySymbol());
+		this.nsym = new NEWTSym(code);
+	    }
+
+	    public String id() {
+		return(("newt:" + code).intern());
+	    }
+
+	    public Sym primary() {
+		if(sstd != null)
+		    return(sstd);
+		if(cstd != null)
+		    return(cstd);
+		return(nsym);
+	    }
+
+	    public Sym primary(Collection<? extends Sym> of) {
+		if((sstd != null) && of.contains(sstd))
+		    return(sstd);
+		if((cstd != null) && of.contains(cstd))
+		    return(cstd);
+		if((nsym != null) && of.contains(nsym))
+		    return(nsym);
+		return(null);
+	    }
+	}
+
 	public static class NEWTKeyEvent {
 	    public final com.jogamp.newt.event.KeyEvent newt;
+	    public final NEWTKey key;
 
 	    public NEWTKeyEvent(com.jogamp.newt.event.KeyEvent newt) {
 		this.newt = newt;
+		this.key = new NEWTKey(newt);
 	    }
 
 	    public String string() {
 		char c = newt.getKeyChar();
-		return((c == java.awt.event.KeyEvent.CHAR_UNDEFINED) ? null : Character.toString(c));
+		return((c == 0) ? "" : Character.toString(c));
 	    }
 	    public Key key() {
-		short code = newt.getKeyCode();
-		if(code == VK_UNDEFINED)
-		    return(null);
-		Key ret = stdkeys.get(code);
-		if(ret != null)
-		    return(ret);
-		return(new NEWTKey(newt));
+		return(key);}
+	    public Key.Sym sym() {
+		if(key.sstd != null)
+		    return(key.sstd);
+		return(key.nsym);
 	    }
 	    public Set<Key.Mod> mods() {return(xlmods(newt));}
 	}
@@ -199,17 +253,6 @@ public class NEWTContext implements Toolkit.Factory {
 	}
 	public static class NEWTKeyUpEvent extends NEWTKeyEvent implements KeyUpEvent {
 	    public NEWTKeyUpEvent(com.jogamp.newt.event.KeyEvent newt) {super(newt);}
-	}
-
-	public static class NEWTKey implements Key {
-	    public final com.jogamp.newt.event.KeyEvent ev;
-
-	    public NEWTKey(com.jogamp.newt.event.KeyEvent ev) {
-		this.ev = ev;
-	    }
-
-	    public String id() {return(("newt:" + (ev.getKeyCode() & 0xffff)).intern());}
-	    public String nm() {return(String.format("%X", ev.getKeyCode() & 0xffff));}
 	}
 
 	public class NEWTWindow implements Windeye {
@@ -515,7 +558,7 @@ public class NEWTContext implements Toolkit.Factory {
 	}
     }
 
-    public static final Map<Short, Key> stdkeys = Utils.<Short, Key>map()
+    public static final Map<Short, Key.Std> stdsyms = Utils.<Short, Key.Std>map()
 	.put(VK_ENTER, Key.Std.ENTER)
 	.put(VK_BACK_SPACE, Key.Std.BACKSPACE)
 	.put(VK_TAB, Key.Std.TAB)

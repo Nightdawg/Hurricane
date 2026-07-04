@@ -1358,7 +1358,7 @@ public class Widget {
 	    return(true);
 	if(focusctl && focustab) {
 	    Widget f = focused;
-	    if(key_tab.match(ev.awt) && (f != null)) {
+	    if(key_tab.match(ev.awt, KeyMatch.S) && (f != null)) {
 		while(true) {
 		    if((ev.mods & KeyMatch.S) == 0) {
 			Widget n = f.rnext();

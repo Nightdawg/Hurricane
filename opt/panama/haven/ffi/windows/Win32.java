@@ -1079,7 +1079,7 @@ public abstract class Win32 {
 	private final MethodHandle VkKeyScanExW = ld.downcallHandle(user32.find("VkKeyScanExW").get(), FunctionDescriptor.of(SHORT, WCHAR, HKL));
 	public int VkKeyScanEx(int ch, Handle dwhkl) {
 	    try {
-		return((int)VkKeyScanExW.invoke((short)ch, dwhkl.bits));
+		return((short)VkKeyScanExW.invoke((short)ch, dwhkl.bits) & 0xffff);
 	    } catch(Throwable e) {
 		throw(new RuntimeException(e));
 	    }

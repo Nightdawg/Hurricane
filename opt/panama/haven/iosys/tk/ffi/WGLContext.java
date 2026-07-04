@@ -88,6 +88,8 @@ public class WGLContext implements Toolkit.Factory {
 	private final Handle hInstance;
 	private final WndClassEx wndclass;
 	private final KeyboardState kb = new KeyboardState();
+	private final Map<Handle, LayoutMap> layouts = new HashMap<>();
+	private final Map<W32Key, W32Key> curkeys = new HashMap<>();
 	private WGL.Ext text;
 	private Handle ctx;
 	private OpenGL gl;
@@ -397,6 +399,162 @@ public class WGLContext implements Toolkit.Factory {
 	private void unregister(WGLWindow wnd) {
 	    synchronized(mtmon) {
 		windows.remove(wnd.hwnd);
+	    }
+	}
+
+	public class LayoutMap {
+	    private final Map<Integer, Key.Std[]> syms = new HashMap<>();
+
+	    LayoutMap(Handle hkl) {
+		Map<Integer, List<Integer>> scan = new HashMap<>();
+		Set<Character> seen = new HashSet<>();
+		Key.Std[] all = Key.Std.values();
+		for(int i = 0; i < all.length; i++) {
+		    Key.Std sym = all[i];
+		    if((sym.ch == 0) || seen.contains(sym.ch))
+			continue;
+		    seen.add(sym.ch);
+		    int sv = win.VkKeyScanEx(sym.ch, hkl);
+		    if(sv == 0xffff)
+			continue;
+		    int vk = sv & 0xff, ss = (sv >>> 8) & 0xff;
+		    int vsc = win.MapVirtualKeyEx(vk, Win32.MAPVK_VK_TO_VSC_EX, hkl);
+		    if(vsc == 0)
+			continue;
+		    if((vsc & ~0xff) != 0)
+			vsc = 0x100 | (vsc & 0xff);
+		    scan.computeIfAbsent(vsc, k -> new ArrayList<>()).add((ss << 16) | i);
+		}
+		for(Map.Entry<Integer, List<Integer>> ent : scan.entrySet()) {
+		    List<Integer> vals = ent.getValue();
+		    Collections.sort(vals);
+		    Key.Std[] syms = new Key.Std[vals.size()];
+		    for(int i = 0; i < vals.size(); i++)
+			syms[i] = all[vals.get(i) & 0xffff];
+		    this.syms.put(ent.getKey(), syms);
+		}
+	    }
+
+	    public Key.Sym[] syms(boolean ext, int sc) {
+		int vsc = (sc & 0xff) | (ext ? 0x100 : 0);
+		Key.Std[] ret = syms.get(vsc);
+		return((ret == null) ? new Key.Std[0] : ret);
+	    }
+	}
+
+	public class VKSym implements Key.Sym {
+	    public final int vk;
+	    public final String id, nm;
+
+	    public VKSym(int vk, int sc, boolean ext) {
+		this.vk = vk;
+		this.id = ("w32:v" + vk).intern();
+		this.nm = win.GetKeyNameText((sc << 16) | (ext ? (1 << 24) : 0));
+	    }
+
+	    public String id() {return(id);}
+	    public String nm() {return(nm);}
+
+	    public int hashCode() {return(vk);}
+	    public boolean equals(VKSym that) {return(this.vk == that.vk);}
+	    public boolean equals(Object x) {return((x instanceof VKSym) && equals((VKSym)x));}
+
+	    public String toString() {
+		return(String.format("#<vksym %s(%x)>", nm, vk));
+	    }
+	}
+
+	public class CharSym implements Key.Sym {
+	    public final char ch;
+	    public final String id, nm;
+
+	    public CharSym(char ch) {
+		this.ch = ch;
+		this.id = ("w32:c" + (int)ch).intern();
+		this.nm = Character.toString(ch);
+	    }
+
+	    public String id() {return(id);}
+	    public String nm() {return(nm);}
+
+	    public int hashCode() {return(ch);}
+	    public boolean equals(CharSym that) {return(this.ch == that.ch);}
+	    public boolean equals(Object x) {return((x instanceof CharSym) && equals((CharSym)x));}
+
+	    public String toString() {
+		return(String.format("#<charsym %s>", nm));
+	    }
+	}
+
+	public class W32Key implements Key {
+	    public final Handle pkl;
+	    public final int vk, sc;
+	    public final boolean ext;
+
+	    public W32Key(Handle pkl, int vk, int sc, boolean ext) {
+		this.pkl = pkl;
+		this.vk = vk;
+		this.sc = sc;
+		this.ext = ext;
+	    }
+
+	    private Sym[] syms = null;
+	    public Sym[] syms() {
+		if(syms == null) {
+		    Sym vsym = stdvsyms.get(vk);
+		    vsym = (vsym != null) ? vsym : new VKSym(vk, sc, ext);
+		    char prich = (char)win.MapVirtualKeyEx(vk, Win32.MAPVK_VK_TO_CHAR, pkl);
+		    Sym csym = (prich == 0) ? null : stdcsyms.get(prich);
+		    csym = (csym != null) ? csym : (prich != 0) ? new CharSym(prich) : null;
+		    ArrayList<Sym> syms = new ArrayList<>();
+		    if(vsym != null)
+			syms.add(vsym);
+		    if((csym != null) && !syms.contains(csym))
+			syms.add(csym);
+		    for(Sym msym : layouts.computeIfAbsent(pkl, LayoutMap::new).syms(ext, sc)) {
+			if(!syms.contains(msym))
+			    syms.add(msym);
+		    }
+		    for(Handle hkl : win.GetKeyboardLayoutList()) {
+			if(Utils.eq(hkl, pkl))
+			    continue;
+			for(Sym msym : layouts.computeIfAbsent(hkl, LayoutMap::new).syms(ext, sc)) {
+			    if(!syms.contains(msym))
+				syms.add(msym);
+			}
+		    }
+		    this.syms = syms.toArray(new Sym[0]);
+		}
+		return(syms);
+	    }
+
+	    public String id() {
+		if(ext)
+		    return(("w32e:" + sc).intern());
+		return(("w32:" + sc).intern());
+	    }
+
+	    public Sym primary() {
+		if(syms().length > 0)
+		    return(syms()[0]);
+		return(null);
+	    }
+
+	    public Sym primary(Collection<? extends Sym> of) {
+		for(Sym sym : syms()) {
+		    if(of.contains(sym))
+			return(sym);
+		}
+		return(null);
+	    }
+
+	    public int hashCode() {return((((pkl.hashCode() * 31) + vk) * 31) + sc + (ext ? 256 : 0));}
+	    public boolean equals(W32Key that) {return(Utils.eq(this.pkl, that.pkl) && (this.vk == that.vk) &&
+						       (this.sc == that.sc) && (this.ext == that.ext));}
+	    public boolean equals(Object x) {return((x instanceof W32Key) && equals((W32Key)x));}
+
+	    public String toString() {
+		return(String.format("#<winkey vk=%x sc=%x%s syms=%s>", vk, sc, ext ? "(ext)" : "", Arrays.deepToString(syms())));
 	    }
 	}
 
@@ -747,7 +905,7 @@ public class WGLContext implements Toolkit.Factory {
 	    public class W32KeyEvent {
 		public int code, repeat, scancode;
 		public boolean ext, ctx, pstate, tstate;
-		public Key key;
+		public W32Key key;
 		public Set<Key.Mod> mods;
 
 		public W32KeyEvent(long wparam, long lparam) {
@@ -760,24 +918,18 @@ public class WGLContext implements Toolkit.Factory {
 		    tstate   =       (lparam & 0x80000000) != 0;
 
 		    win.GetKeyboardState(kb);
-		    if((key = stdkeys.get(code)) == null) {
-			synchronized(ukeys) {
-			    W32Key ukey = new W32Key(win, code, scancode, ext);
-			    if((key = ukeys.get(ukey)) == null) {
-				ukeys.put(ukey, ukey);
-				key = ukey;
-			    }
-			}
-		    }
+		    W32Key key = new W32Key(win.GetKeyboardLayout(0), code, scancode, ext);
+		    this.key = curkeys.computeIfAbsent(key, Function.identity());
 		    mods = xlmods(kb);
 		}
 
-		public String string() {return(null);}
+		public String string() {return("");}
 		public Key key() {return(key);}
 		public Set<Key.Mod> mods() {return(mods);}
 	    }
 	    public class W32KeyDownEvent extends W32KeyEvent implements KeyDownEvent {
 		public String string;
+		public Key.Sym sym = null;
 
 		public W32KeyDownEvent(long wparam, long lparam) {
 		    super(wparam, lparam);
@@ -785,9 +937,23 @@ public class WGLContext implements Toolkit.Factory {
 		    kb.set(code, pst | 0x80);
 		    char[] chars = win.ToUnicodeEx(code, scancode, kb, 0, win.GetKeyboardLayout(0));
 		    kb.set(code, pst);
-		    string = ((chars == null) || (chars.length == 0)) ? null : new String(chars);
+		    string = ((chars == null) || (chars.length == 0)) ? "" : new String(chars);
+		    if(string.length() == 1) {
+			for(Key.Sym sym : key.syms()) {
+			    if((sym instanceof Key.Std) && (((Key.Std)sym).ch == Character.toUpperCase(string.charAt(0)))) {
+				this.sym = sym;
+				break;
+			    } else if((sym instanceof CharSym) && (((CharSym)sym).ch == string.charAt(0))) {
+				this.sym = sym;
+				break;
+			    }
+			}
+		    }
+		    if(sym == null)
+			sym = key.primary();
 		}
 
+		public Key.Sym sym() {return(sym);}
 		public String string() {return(string);}
 	    }
 	    public class W32KeyUpEvent extends W32KeyEvent implements KeyUpEvent {
@@ -941,46 +1107,17 @@ public class WGLContext implements Toolkit.Factory {
 	}
     }
 
-    private static final Map<W32Key, W32Key> ukeys = new HashMap<>();
-    public static class W32Key implements Key {
-	public final int vk, sc;
-	public final boolean ext;
-	public final String nm, id;
-
-	public W32Key(Win32 win, int vk, int sc, boolean ext) {
-	    this.vk = vk;
-	    this.sc = sc;
-	    this.ext = ext;
-	    this.nm = win.GetKeyNameText((sc << 16) | (ext ? (1 << 24) : 0));
-	    this.id = String.format("w32:%s", nm).intern();
-	}
-
-	public String id() {return(id);}
-	public String nm() {return(nm);}
-
-	public int hashCode() {return(Objects.hash(vk, sc));}
-	public boolean equals(W32Key that) {return((this.vk == that.vk) && (this.sc == that.sc) && (this.ext == that.ext));}
-	public boolean equals(Object x) {return((x instanceof W32Key) && equals((W32Key)x));}
-
-	public String toString() {
-	    return(String.format("#<win32-key %s%d %d (%s)>", ext ? "ext:" : "", sc, vk, nm));
-	}
-    }
-
-    public static final Map<Integer, Key> stdkeys = Utils.<Integer, Key>map()
+    public static final Map<Integer, Key.Std> stdvsyms = Utils.<Integer, Key.Std>map()
 	.put(0x0d, ENTER)         .put(0x08, BACKSPACE)     .put(0x09, TAB)
 	.put(0x03, CANCEL)        .put(0x0c, CLEAR)         .put(0x10, SHIFT)
 	.put(0x11, CONTROL)       .put(0x12, ALT)           .put(0x13, PAUSE)
 	.put(0x14, CAPSLOCK)      .put(0x1b, ESCAPE)        .put(0x20, SPACE)
 	.put(0x21, PAGEUP)        .put(0x22, PAGEDOWN)      .put(0x23, END)
 	.put(0x24, HOME)          .put(0x25, LEFT)          .put(0x26, UP)
-	.put(0x27, RIGHT)         .put(0x28, DOWN)          .put(0xbc, COMMA)
-	.put(0xbd, MINUS)         .put(0xbe, PERIOD)        .put(0xbf, SLASH)
-	.put(0xba, SEMICOLON)     .put(0xbb, EQUALS)        .put(0xdb, LEFTBRACKET)
-	.put(0xdd, RIGHTBRACKET)  .put(0xdc, BACKSLASH)     .put(0x2e, DELETE)
+	.put(0x27, RIGHT)         .put(0x28, DOWN)
+	.put(0x2e, DELETE)
 	.put(0x90, NUMLOCK)       .put(0x91, SCROLLLOCK)    .put(0x2c, PRINTSCREEN)
-	.put(0x2d, INSERT)        .put(0x2f, HELP)          .put(0xc0, BACKQUOTE)
-	.put(0xde, QUOTE)
+	.put(0x2d, INSERT)        .put(0x2f, HELP)
 
 	.put(0x5b, WINDOWS)       .put(0x5c, WINDOWS)       .put(0x5d, MENU)
 	.put(0x18, FINAL)         .put(0x1c, CONVERT)       .put(0x1d, NONCONVERT)
@@ -1018,4 +1155,15 @@ public class WGLContext implements Toolkit.Factory {
 	.put(0x6d, NP_SUB)        .put(0x6b, NP_ADD)        .put(0x6c, NP_SEP)
 	.put(0x6e, NP_DEC)
 	.map();
+
+    private static Map<Character, Key.Std> stdcsyms() {
+	Map<Character, Key.Std> ret = new HashMap<>();
+	for(Key.Std sym : Key.Std.values()) {
+	    if((sym.ch != 0) && !ret.containsKey(sym.ch))
+		ret.put(sym.ch, sym);
+	}
+	return(ret);
+    }
+
+    public static final Map<Character, Key.Std> stdcsyms = stdcsyms();
 }

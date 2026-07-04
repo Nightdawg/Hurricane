@@ -128,8 +128,10 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
     }
 
     public static void settoken(String user, String confname, byte[] token) {
+	if(user == null)
+	    return;
 	String prefnm = user;
-	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + confname, (token == null) ? "" : Utils.hex.enc(token));
+	Utils.setpref("savedtoken-" + mangleuser(user) + "@" + confname, (token == null) ? null : Utils.hex.enc(token));
 	rottokens(user, confname, token != null, true);
     }
 
@@ -162,7 +164,7 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
     public UI.Runner run(UI ui) throws InterruptedException {
 	ui.setreceiver(this);
 	ui.newwidgetp(1, ($1, $2) -> new LoginScreen(confname), 0, new Object[] {Coord.z});
-	String loginname = getpref("loginname", "");
+	String loginname = null;
 	boolean savepw = false;
 	NamedSocketAddress defserv = new NamedSocketAddress(server.host, gameport.get());
 	Session sess;
@@ -182,33 +184,34 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		authed: try(AuthClient auth = new AuthClient(server)) {
 		    authaddr = auth.address();
 		    if(!Arrays.equals(inittoken, getprefb("lasttoken-" + mangleuser(inituser), confname, null, false))) {
-			String authed = null;
+			AuthClient.Credentials creds = new AuthClient.TokenCred(inituser, inittoken);
+			Session.User authed = null;
 			try {
-			    authed = new AuthClient.TokenCred(inituser, inittoken).tryauth(auth);
+			    authed = creds.tryauth(auth);
 			} catch(AuthClient.Credentials.AuthException e) {
 			}
 			setpref("lasttoken-" + mangleuser(inituser), Utils.hex.enc(inittoken));
 			if(authed != null) {
-			    acct = new Session.User(authed);
+			    acct = authed;
 			    cookie = auth.getcookie();
 			    if(Connection.encrypt.get())
 				acct.alias(auth.getalias());
 			    hosts = auth.gethosts(defserv);
-			    settoken(authed, confname, auth.gettoken());
+			    settoken(creds.authname(), confname, auth.gettoken());
 			    break authed;
 			}
 		    }
 		    if((token = gettoken(inituser, confname)) != null) {
+			AuthClient.Credentials creds = new AuthClient.TokenCred(inituser, token);
 			try {
-			    String authed = new AuthClient.TokenCred(inituser, token).tryauth(auth);
-			    acct = new Session.User(authed);
+			    acct = creds.tryauth(auth);
 			    cookie = auth.getcookie();
 			    if(Connection.encrypt.get())
 				acct.alias(auth.getalias());
 			    hosts = auth.gethosts(defserv);
 			    break authed;
 			} catch(AuthClient.Credentials.AuthException e) {
-			    settoken(inituser, confname, null);
+			    settoken(creds.authname(), confname, null);
 			}
 		    }
 		    ui.uimsg(1, "error", "Launcher login expired");
@@ -226,7 +229,6 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 			if(msg.name == "login") {
 			    creds = (AuthClient.Credentials)msg.args[0];
 			    savepw = (Boolean)msg.args[1];
-			    loginname = creds.name();
 			    break;
 			}
 		    }
@@ -235,18 +237,19 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		try(AuthClient auth = new AuthClient(server)) {
 		    authaddr = auth.address();
 		    try {
-			acct = new Session.User(creds.tryauth(auth));
+			acct = creds.tryauth(auth);
 		    } catch(AuthClient.Credentials.AuthException e) {
-			settoken(creds.name(), confname, null);
+			settoken(creds.authname(), confname, null);
 			ui.uimsg(1, "error", e.getMessage());
 			continue retry;
 		    }
 		    cookie = auth.getcookie();
 		    if(Connection.encrypt.get())
 			acct.alias(auth.getalias());
+		    loginname = creds.authname();
 		    if(savepw) {
 			byte[] ntoken = (creds instanceof AuthClient.TokenCred) ? ((AuthClient.TokenCred)creds).token : auth.gettoken();
-			settoken(acct.name, confname, ntoken);
+			settoken(creds.authname(), confname, ntoken);
 		    }
 		    hosts = auth.gethosts(defserv);
 		} catch(UnknownHostException e) {
@@ -303,8 +306,10 @@ public class Bootstrap implements UI.Receiver, UI.Runner {
 		ui.uimsg(1, "error", "Could not locate server");
 		continue retry;
 	    }
-	    setpref("loginname", loginname);
-	    rottokens(loginname, confname, false, false);
+	    if(loginname != null) {
+		setpref("loginname", loginname);
+		rottokens(loginname, confname, false, false);
+	    }
 	    break retry;
 	} while(true);
 	ui.destroy(1);

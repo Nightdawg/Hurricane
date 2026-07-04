@@ -791,6 +791,7 @@ public abstract class XLib {
     public abstract void XFreeCursor(XLib.Display dpy, XID cursor);
     public abstract XID XCreateWindow(XLib.Display dpy, XID parent, int x, int y, int width, int height, int border_width, int depth, int cl, XLib.Visual visual, long valuemask, XSetWindowAttributes attributes);
     public abstract int XDestroyWindow(XLib.Display dpy, XID w);
+    public abstract int[] XDisplayKeycodes(XLib.Display dpy);
     public abstract XID[][] XGetKeyboardMapping(XLib.Display dpy, int first_keycode, int keycode_count);
     public abstract XModifierMapping XGetModifierMapping(XLib.Display dpy);
     public abstract int XSelectInput(Display dpy, XID w, long event_mask);
@@ -1982,6 +1983,21 @@ public abstract class XLib {
 		throw(new RuntimeException(e));
 	    } finally {
 		checkerror();
+	    }
+	}
+
+	private final MethodHandle XDisplayKeycodes = ld.downcallHandle(xlib.find("XDisplayKeycodes").get(), FunctionDescriptor.of(C_INT, ADDRESS, ADDRESS, ADDRESS));
+	public int[] XDisplayKeycodes(XLib.Display dpy) {
+	    try(Arena st = Arena.ofConfined()) {
+		MemorySegment minbuf = st.allocate(C_INT), maxbuf = st.allocate(C_INT);
+		try {
+		    XDisplayKeycodes.invoke(dpy.mem(), minbuf, maxbuf);
+		} catch(Throwable e) {
+		    throw(new RuntimeException(e));
+		} finally {
+		    checkerror();
+		}
+		return(new int[] {(int)getint(minbuf, 0, C_INT, true), (int)getint(maxbuf, 0, C_INT, true)});
 	    }
 	}
 

@@ -31,10 +31,10 @@ import java.util.*;
 
 public class AWTCompat {
     private static final java.awt.Component awtdummy = new java.awt.Component() {};
-    private static final Map<Key, Integer> revawt = new HashMap<>();
+    private static final Map<Key.Std, Integer> revawt = new HashMap<>();
     static {
-	for(Map.Entry<Integer, Key> k : AWTToolkit.stdkeys.entrySet())
-	    revawt.put(k.getValue(),k.getKey());
+	for(Map.Entry<Integer, Key.Std> k : AWTToolkit.stdsyms.entrySet())
+	    revawt.put(k.getValue(), k.getKey());
     }
 
     public static int awtmods(Collection<Key.Mod> mods) {
@@ -65,10 +65,10 @@ public class AWTCompat {
 	else if(ev instanceof Toolkit.KeyUpEvent)
 	    id = java.awt.event.KeyEvent.KEY_RELEASED;
 	char c = java.awt.event.KeyEvent.CHAR_UNDEFINED;
-	if(ev.string() != null)
+	if(ev.string() != "")
 	    c = ev.string().charAt(0);
 	return(new ExtKeyEvent(id, System.currentTimeMillis(), awtmods(ev.mods()),
-			       revawt.getOrDefault(ev.key(), java.awt.event.KeyEvent.VK_UNDEFINED),
+			       revawt.getOrDefault(ev.key().primary(revawt.keySet()), java.awt.event.KeyEvent.VK_UNDEFINED),
 			       c, java.awt.event.KeyEvent.KEY_LOCATION_UNKNOWN));
     }
 

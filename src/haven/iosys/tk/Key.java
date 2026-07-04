@@ -31,12 +31,21 @@ import java.util.*;
 
 public interface Key {
     public String id();
-    public String nm();
+    public Sym primary();
+    public Sym primary(Collection<? extends Sym> of);
+    public default boolean is(Sym sym) {
+	return(primary() == sym);
+    }
 
-    public static enum Std implements Key {
-        ENTER("ret", "Enter"),
-        BACKSPACE("bksp", "Backspace"),
-        TAB("tab", "Tab"),
+    public static interface Sym {
+	public String id();
+	public String nm();
+    }
+
+    public static enum Std implements Sym {
+        ENTER("ret", "Enter", '\r'),
+        BACKSPACE("bksp", "Backspace", '\b'),
+        TAB("tab", "Tab", '\t'),
         CANCEL("cancel", "Cancel"),
         CLEAR("clear", "Clear"),
         SHIFT("shift", "Shift"),
@@ -44,8 +53,8 @@ public interface Key {
         ALT("alt", "Alt"),
         PAUSE("pause", "Pause"),
         CAPSLOCK("capslock", "Caps Lock"),
-        ESCAPE("esc", "Escape"),
-        SPACE("sp", "Space"),
+        ESCAPE("esc", "Escape", '\u001b'),
+        SPACE("sp", "Space", ' '),
         PAGEUP("pgup", "Page Up"),
         PAGEDOWN("pgdn", "Page Down"),
         END("end", "End"),
@@ -54,15 +63,16 @@ public interface Key {
         UP("up", "Up"),
         RIGHT("right", "Right"),
         DOWN("down", "Down"),
-        COMMA("comma", "Comma"),
-        MINUS("minus", "Minus"),
-        PERIOD("period", "Period"),
-        SLASH("slash", "Slash"),
-        SEMICOLON("semicolon", "Semicolon"),
-        EQUALS("equals", "Equals"),
-        LEFTBRACKET("[", "Left Bracket"),
-        RIGHTBRACKET("]", "Right Bracket"),
-        BACKSLASH("bkslash", "Backslash"),
+        COMMA("comma", "Comma", ','),
+        MINUS("minus", "Minus", '-'),
+        PERIOD("period", "Period", '.'),
+        SLASH("slash", "Slash", '/'),
+        SEMICOLON("semicolon", "Semicolon", ';'),
+        EQUALS("equals", "Equals", '='),
+        LEFTBRACKET("[", "Left Bracket", '['),
+        RIGHTBRACKET("]", "Right Bracket", ']'),
+        BACKSLASH("bkslash", "Backslash", '\\'),
+	BAR("bar", "Bar", '|'),
         DELETE("del", "Delete"),
         NUMLOCK("numlock", "Num Lock"),
         SCROLLLOCK("scrlock", "Scroll Lock"),
@@ -70,28 +80,28 @@ public interface Key {
         INSERT("ins", "Insert"),
         HELP("help", "Help"),
         META("meta", "Meta"),
-        BACKQUOTE("bkquote", "Back Quote"),
-        QUOTE("quote", "Quote"),
+        BACKQUOTE("bkquote", "Back Quote", '`'),
+        QUOTE("quote", "Quote", '\''),
  
-        AMPERSAND("amp", "Ampersand"),
-        ASTERISK("mul", "Asterisk"),
-        DBLQUOTE("2quote", "Double Quote"),
-        LT("lt", "Less Than"),
-        GT("gt", "Greater Than"),
-        LEFTBRACE("{", "Left Brace"),
-        RIGHTBRACE("}", "Right Brace"),
-        AT("at", "At"),
-        COLON("colon", "Colon"),
-        CIRCUMFLEX("circ", "Circumflex"),
-        DOLLAR("dollar", "Dollar"),
-        EUROSIGN("euro", "Euro"),
-        EXCL("excl", "Exclamation Mark"),
-        INVEXCL("invexcl", "Inverted Exclamation Mark"),
-        LEFTPAREN("(", "Left Parenthesis"),
-        RIGHTPAREN(")", "Right Parenthesis"),
-        NUMBERSIGN("number", "Number Sign"),
-        PLUS("plus", "Plus"),
-        UNDERSCORE("uscore", "Underscore"),
+        AMPERSAND("amp", "Ampersand", '&'),
+        ASTERISK("mul", "Asterisk", '*'),
+        DBLQUOTE("2quote", "Double Quote", '"'),
+        LT("lt", "Less Than", '<'),
+        GT("gt", "Greater Than", '>'),
+        LEFTBRACE("{", "Left Brace", '{'),
+        RIGHTBRACE("}", "Right Brace", '}'),
+        AT("at", "At", '@'),
+        COLON("colon", "Colon", ':'),
+        CIRCUMFLEX("circ", "Circumflex", '^'),
+        DOLLAR("dollar", "Dollar", '$'),
+        EUROSIGN("euro", "Euro", '\u20ac'),
+        EXCL("excl", "Exclamation Mark", '!'),
+        INVEXCL("invexcl", "Inverted Exclamation Mark", '\u00a1'),
+        LEFTPAREN("(", "Left Parenthesis", '('),
+        RIGHTPAREN(")", "Right Parenthesis", ')'),
+        NUMBERSIGN("number", "Number Sign", '#'),
+        PLUS("plus", "Plus", '+'),
+        UNDERSCORE("uscore", "Underscore", '_'),
         WINDOWS("win", "Windows"),
         MENU("menu", "Context Menu"),
         FINAL("final", "Final"),
@@ -140,43 +150,43 @@ public interface Key {
         DEADVOICED("deadvoiced", "Dead Voiced"),
         DEADSEMIVOICED("deadsemivoiced", "Dead Semivoiced"),
  
-        N0("0", "0"),
-        N1("1", "1"),
-        N2("2", "2"),
-        N3("3", "3"),
-        N4("4", "4"),
-        N5("5", "5"),
-        N6("6", "6"),
-        N7("7", "7"),
-        N8("8", "8"),
-        N9("9", "9"),
+        N0("0", "0", '0'),
+        N1("1", "1", '1'),
+        N2("2", "2", '2'),
+        N3("3", "3", '3'),
+        N4("4", "4", '4'),
+        N5("5", "5", '5'),
+        N6("6", "6", '6'),
+        N7("7", "7", '7'),
+        N8("8", "8", '8'),
+        N9("9", "9", '9'),
  
-        A("a", "A"),
-        B("b", "B"),
-        C("c", "C"),
-        D("d", "D"),
-        E("e", "E"),
-        F("f", "F"),
-        G("g", "G"),
-        H("h", "H"),
-        I("i", "I"),
-        J("j", "J"),
-        K("k", "K"),
-        L("l", "L"),
-        M("m", "M"),
-        N("n", "N"),
-        O("o", "O"),
-        P("p", "P"),
-        Q("q", "Q"),
-        R("r", "R"),
-        S("s", "S"),
-        T("t", "T"),
-        U("u", "U"),
-        V("v", "V"),
-        W("w", "W"),
-        X("x", "X"),
-        Y("y", "Y"),
-        Z("z", "Z"),
+        A("a", "A", 'A'),
+        B("b", "B", 'B'),
+        C("c", "C", 'C'),
+        D("d", "D", 'D'),
+        E("e", "E", 'E'),
+        F("f", "F", 'F'),
+        G("g", "G", 'G'),
+        H("h", "H", 'H'),
+        I("i", "I", 'I'),
+        J("j", "J", 'J'),
+        K("k", "K", 'K'),
+        L("l", "L", 'L'),
+        M("m", "M", 'M'),
+        N("n", "N", 'N'),
+        O("o", "O", 'O'),
+        P("p", "P", 'P'),
+        Q("q", "Q", 'Q'),
+        R("r", "R", 'R'),
+        S("s", "S", 'S'),
+        T("t", "T", 'T'),
+        U("u", "U", 'U'),
+        V("v", "V", 'V'),
+        W("w", "W", 'W'),
+        X("x", "X", 'X'),
+        Y("y", "Y", 'Y'),
+        Z("z", "Z", 'Z'),
  
         F1("f1", "F1"),
         F2("f2", "F2"),
@@ -203,42 +213,48 @@ public interface Key {
         F23("f23", "F23"),
         F24("f24", "F24"),
  
-        NP0("np0", "Numpad 0"),
-        NP1("np1", "Numpad 1"),
-        NP2("np2", "Numpad 2"),
-        NP3("np3", "Numpad 3"),
-        NP4("np4", "Numpad 4"),
-        NP5("np5", "Numpad 5"),
-        NP6("np6", "Numpad 6"),
-        NP7("np7", "Numpad 7"),
-        NP8("np8", "Numpad 8"),
-        NP9("np9", "Numpad 9"),
-        NP_DIV("npdiv", "Numpad /"),
-        NP_MUL("npmul", "Numpad *"),
-        NP_SUB("npsub", "Numpad -"),
-        NP_ADD("npadd", "Numpad +"),
-        NP_SEP("npsep", "Numpad ,"),
-        NP_DEC("npdec", "Numpad ."),
+        NP0("np0", "Numpad 0", '0'),
+        NP1("np1", "Numpad 1", '1'),
+        NP2("np2", "Numpad 2", '2'),
+        NP3("np3", "Numpad 3", '3'),
+        NP4("np4", "Numpad 4", '4'),
+        NP5("np5", "Numpad 5", '5'),
+        NP6("np6", "Numpad 6", '6'),
+        NP7("np7", "Numpad 7", '7'),
+        NP8("np8", "Numpad 8", '8'),
+        NP9("np9", "Numpad 9", '9'),
+        NP_DIV("npdiv", "Numpad /", '/'),
+        NP_MUL("npmul", "Numpad *", '*'),
+        NP_SUB("npsub", "Numpad -", '-'),
+        NP_ADD("npadd", "Numpad +", '+'),
+        NP_SEP("npsep", "Numpad ,", ','),
+        NP_DEC("npdec", "Numpad .", '.'),
         NP_UP("npup", "Numpad Up"),
         NP_DOWN("npdown", "Numpad Down"),
         NP_LEFT("npleft", "Numpad Left"),
         NP_RIGHT("npright", "Numpad Right");
  
         public final String id, nm;
+	public final char ch;
  
-        Std(String id, String nm) {
-            this.id = ("std." + id).intern();
+        Std(String id, String nm, char ch) {
+            this.id = ("std:" + id).intern();
             this.nm = nm;
+	    this.ch = ch;
         }
+        Std(String id, String nm) {
+	    this(id, nm, '\0');
+	}
  
         public String id() {return(id);}
 	public String nm() {return(nm);}
  
-        public final static List<Std> NUMKEYS = new EnumInterval<Std>(N0, N9);
-        public final static List<Std> NUMPADKEYS = new EnumInterval<Std>(NP0, NP9);
+        public final static List<Std> NUMBERS = new EnumInterval<Std>(N0, N9);
+        public final static List<Std> PADNUMBERS = new EnumInterval<Std>(NP0, NP9);
         public final static List<Std> FKEYS = new EnumInterval<Std>(F1, F24);
-        public final static List<Std> ALPHAKEYS = new EnumInterval<Std>(A, Z);
+        public final static List<Std> LATIN = new EnumInterval<Std>(A, Z);
         public final static Set<Std> MODKEYS = EnumSet.of(SHIFT, CONTROL, META, ALT, ALTGR, WINDOWS);
+	public final static Set<Std> ALL = new HashSet<Std>(Arrays.asList(Std.values()));
     }
 
     public static enum Mod {

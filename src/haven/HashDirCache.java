@@ -304,6 +304,7 @@ public class HashDirCache implements ResCache {
 				 * is supported, so try to trade atomicity for... non-failure? */
 				try {
 				    Files.delete(path);
+				} catch(NoSuchFileException e) {
 				} catch(IOException e) {
 				    new Warning(e, "weird deletion failure on " + path).issue();
 				}

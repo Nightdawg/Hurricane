@@ -51,10 +51,17 @@ import javax.swing.JFileChooser;
 import static java.awt.event.KeyEvent.*;
 
 public abstract class AWTToolkit implements Toolkit {
-    public static void initawt() {
+    public static void initawt1() {
 	try {
 	    System.setProperty("sun.java2d.uiScale.enabled", "false");
 	    System.setProperty("apple.awt.application.name", "Haven & Hearth");
+	} catch(Throwable e) {
+	    new Warning(e, "AWT initialization failed").issue();
+	}
+    }
+
+    public static void initawt2() {
+	try {
 	    javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
 	    // java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().push(new DebugEventQueue());
 	} catch(Throwable e) {
@@ -63,10 +70,11 @@ public abstract class AWTToolkit implements Toolkit {
     }
 
     static {
-	initawt();
+	initawt1();
     }
 
     protected AWTToolkit() {
+	initawt2();
 	try {
 	    emptycurs = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(TexI.mkbuf(new Coord(1, 1)), new java.awt.Point(), "");
 	} catch(HeadlessException e) {
@@ -106,37 +114,102 @@ public abstract class AWTToolkit implements Toolkit {
 	return(ret);
     }
 
+    public static class AWTSym implements Key.Sym {
+	public final int code;
+	public final String id, nm;
+
+	public AWTSym(int code, String nm) {
+	    this.code = code;
+	    this.id = String.format("awt:%x", code).intern();
+	    this.nm = nm;
+	}
+
+	public String id() {return(id);}
+	public String nm() {return(nm);}
+
+	public boolean equals(AWTSym that) {return(this.code == that.code);}
+	public boolean equals(Object x) {return((x instanceof AWTSym) && equals((AWTSym)x));}
+	public int hashCode() {return(code);}
+
+	public String toString() {
+	    return(String.format("#<awt-sym %x(%s)>", code, nm));
+	}
+    }
+
+    public static class AWTKey implements Key {
+	public final int pc, ec;
+	public final char ch;
+	public final Key.Std stdsym;
+	public final AWTSym extsym;
+
+	public AWTKey(int pc, int ec, char ch) {
+	    this.pc = pc;
+	    this.ec = ec;
+	    this.ch = ch;
+	    this.stdsym = stdsyms.get(pc);
+	    this.extsym = extended();
+	}
+
+	public String id() {
+	    return(String.format("awt:%x", ec).intern());
+	}
+
+	private AWTSym extended() {
+	    if(ec == java.awt.event.KeyEvent.VK_UNDEFINED)
+		return(null);
+	    String name;
+	    if(pc != java.awt.event.KeyEvent.VK_UNDEFINED)
+		name = java.awt.event.KeyEvent.getKeyText(pc);
+	    else if(!Character.isISOControl(ch))
+		name = Character.toString(Character.toUpperCase(ch));
+	    else
+		name = String.format("%X", ec);
+	    return(new AWTSym(ec, name));
+	}
+
+	public Sym primary() {
+	    return((stdsym != null) ? stdsym : extsym);
+	}
+
+	public Sym primary(Collection<? extends Sym> of) {
+	    if((stdsym != null) && of.contains(stdsym))
+		return(stdsym);
+	    if((extsym != null) && of.contains(extsym))
+		return(stdsym);
+	    return(null);
+	}
+
+	public String toString() {
+	    return(String.format("#<awt-key pc=%x ec=%x std=%s ext=%s>", pc, ec, stdsym, extsym));
+	}
+    }
+
     public static class AWTKeyEvent {
 	public final java.awt.event.KeyEvent awt;
 	public final Set<Key.Mod> mods;
+	public final AWTKey key;
 
 	public AWTKeyEvent(java.awt.event.KeyEvent awt) {
 	    this.awt = awt;
+	    this.key = new AWTKey(awt.getKeyCode(), awt.getExtendedKeyCode(), awt.getKeyChar());
 	    mods = awtmods(awt.getModifiersEx());
 	}
 
 	public Key key() {
-	    int code = awt.getKeyCode();
-	    Key ret = stdkeys.get(code);
-	    if(ret != null)
-		return(ret);
-	    int ecode = awt.getExtendedKeyCode();
-	    if(ecode == java.awt.event.KeyEvent.VK_UNDEFINED)
-		return(null);
-	    String name;
-	    if(code != java.awt.event.KeyEvent.VK_UNDEFINED)
-		name = java.awt.event.KeyEvent.getKeyText(code);
-	    else if(!Character.isISOControl(awt.getKeyChar()))
-		name = Character.toString(Character.toUpperCase(awt.getKeyChar()));
-	    else
-		name = String.format("%X", ecode);
-	    return(new AWTKey(ecode, name));
+	    return(key);
+	}
+	public Key.Sym sym() {
+	    return(key.primary());
 	}
 	public String string() {
 	    char c = awt.getKeyChar();
-	    return((c == java.awt.event.KeyEvent.CHAR_UNDEFINED) ? null : Character.toString(c));
+	    return((c == java.awt.event.KeyEvent.CHAR_UNDEFINED) ? "" : Character.toString(c));
 	}
 	public Set<Key.Mod> mods() {return(mods);}
+
+	public String toString() {
+	    return(String.format("#<%s %s str=\"%s\" %s>", getClass().getSimpleName(), key, (string() == null) ? "" : Utils.bprint.enc(string().getBytes(Utils.utf8)), awt));
+	}
     }
     public static class AWTKeyDownEvent extends AWTKeyEvent implements KeyDownEvent {
 	public AWTKeyDownEvent(java.awt.event.KeyEvent awt) {super(awt);}
@@ -840,21 +913,7 @@ public abstract class AWTToolkit implements Toolkit {
 	return(new AWTCursor(tk.createCustomCursor(buf, new java.awt.Point(hs.x, hs.y), "")));
     }
 
-    public static class AWTKey implements Key {
-	public final int code;
-	public final String id, nm;
-
-	public AWTKey(int code, String nm) {
-	    this.code = code;
-	    this.id = String.format("awt:%x", code).intern();
-	    this.nm = nm;
-	}
-
-	public String id() {return(id);}
-	public String nm() {return(nm);}
-    }
-
-    public static final Map<Integer, Key> stdkeys = Utils.<Integer, Key>map()
+    public static final Map<Integer, Key.Std> stdsyms = Utils.<Integer, Key.Std>map()
 	.put(VK_ENTER, Key.Std.ENTER)
 	.put(VK_BACK_SPACE, Key.Std.BACKSPACE)
 	.put(VK_TAB, Key.Std.TAB)

@@ -362,7 +362,7 @@ public class Client implements Console.Directory {
 		AuthClient cl = new AuthClient(Bootstrap.authserv.get());
 		try {
 		    try {
-			acct = new Session.User(new AuthClient.TokenCred(username, Utils.hex.dec(token)).tryauth(cl));
+			acct = new AuthClient.TokenCred(username, Utils.hex.dec(token)).tryauth(cl);
 		    } catch(AuthClient.Credentials.AuthException e) {
 			throw(new ConnectionError("authentication with saved token failed"));
 		    }

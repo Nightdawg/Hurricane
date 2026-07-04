@@ -50,6 +50,7 @@ import static haven.iosys.tk.Key.Std.*;
 
 @Toolkit.Available(name = "glx")
 public class GLXContext implements Toolkit.Factory {
+    public static final boolean DEBUG = false;
     private final LibC libc;
     private final XLib xlib;
     private final XInput xi;
@@ -92,7 +93,7 @@ public class GLXContext implements Toolkit.Factory {
     public int priority() {
 	return(System.getProperty("os.name", "").equals("Linux") ? 100 : 0);
     }
-    public boolean experimental() {return(true);}
+    public boolean experimental() {return(false);}
 
     public static class XCursor implements Cursor {
 	public static final XCursor inherit = new XCursor(null, XID.None);
@@ -137,6 +138,8 @@ public class GLXContext implements Toolkit.Factory {
 	public final GLX.GLXContext ctx;
 	public final XIM im;
 	public final long imstyle;
+	public final int mincode, maxcode;
+	public final XID[][] keymap;
 	public final int mod_alt, mod_meta, mod_altgr, mod_super;
 	public final Map<Integer, Integer> rmodmap = new HashMap<>();
 	public final Map<Integer, XIPointerInfo> pointers = new HashMap<>();
@@ -381,20 +384,18 @@ public class GLXContext implements Toolkit.Factory {
 		    }
 		}
 		{
+		    int[] ival = xlib.XDisplayKeycodes(dpy);
+		    mincode = ival[0]; maxcode = ival[1];
+		    keymap = xlib.XGetKeyboardMapping(dpy, mincode, maxcode + 1 - mincode);
 		    int[][] modmap = xlib.XGetModifierMapping(dpy).mapping();
-		    int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
 		    for(int i = 0; i < 8; i++) {
-			for(int key : modmap[i]) {
+			for(int key : modmap[i])
 			    rmodmap.put(key, i);
-			    min = Math.min(min, key);
-			    max = Math.max(max, key);
-			}
 		    }
-		    XID[][] syms = xlib.XGetKeyboardMapping(dpy, min, max + 1 - min);
 		    int mod_alt = 0, mod_meta = 0, mod_altgr = 0, mod_super = 0;
 		    for(int i = 3; i < 8; i++) {
 			for(int key : modmap[i]) {
-			    for(XID sym : syms[key - min]) {
+			    for(XID sym : keymap[key - mincode]) {
 				if(sym.equals(XK_Alt_L) || sym.equals(XK_Alt_R)) {
 				    mod_alt = i;
 				} else if(sym.equals(XK_Meta_L) || sym.equals(XK_Meta_R)) {
@@ -577,7 +578,8 @@ public class GLXContext implements Toolkit.Factory {
 		    wnd = windows.get(id);
 		}
 		if(wnd == null) {
-		    Warning.warn(String.format("event received for non-registered window %s: %d", id, ev.type()));
+		    if(DEBUG)
+			Debug.dump(String.format("event received for non-registered window %s: %d", id, ev.type()));
 		    return;
 		}
 		wnd.event(ev);
@@ -1117,10 +1119,10 @@ public class GLXContext implements Toolkit.Factory {
 		int l;
 		if(!doim || (ic == null)) {
 		    l = data.lookup(cbuf, sbuf, compose);
-		    out.sym = sbuf[0];
+		    out.rawsym = sbuf[0];
 		    if(l > 0)
 			out.str = new String(Utils.splice(cbuf, 0, l), ABI.C_CHARSET);
-		    out.key = sym2key(data.keycode(), sbuf[0]);
+		    out.sym = getkeysym(sbuf[0]);
 		    return(true);
 		} else {
 		    int[] st = {0};
@@ -1139,8 +1141,8 @@ public class GLXContext implements Toolkit.Factory {
 		    if(!sbuf[0].equals(XID.None)) {
 			if(!((st[0] == XLib.XLookupKeySym) || (st[0] == XLib.XLookupBoth)))
 			    throw(new RuntimeException("unexpected X11 key lookup status: " + st[0]));
-			out.sym = sbuf[0];
-			out.key = sym2key(data.keycode(), sbuf[0]);
+			out.rawsym = sbuf[0];
+			out.sym = getkeysym(sbuf[0]);
 			rv = true;
 		    }
 		    return(rv);
@@ -1168,7 +1170,8 @@ public class GLXContext implements Toolkit.Factory {
 			msg.xclient().message_type(WM_PROTOCOLS.id).format(32).a(0, _NET_WM_PING.id).l(1, ev.l()[1]).x(2, id);
 			xlib.XSendEvent(dpy, screen.root(), false, XLib.SubstructureNotifyMask | XLib.SubstructureRedirectMask, msg);
 		    } else {
-			Debug.dump("unknown window-manager message received: " + xlib.XGetAtomName(dpy, ev.a()[0]));
+			if(DEBUG)
+			    Debug.dump("unknown window-manager message received: " + xlib.XGetAtomName(dpy, ev.a()[0]));
 		    }
 		} else if(XdndEnter.is(ev.message_type()) && (ev.format() == 32)) {
 		    XID src = ev.x()[0];
@@ -1202,7 +1205,8 @@ public class GLXContext implements Toolkit.Factory {
 			return;
 		    d.dropped(ev.l()[2]);
 		} else {
-		    Debug.dump("unknown client message received: " + xlib.XGetAtomName(dpy, ev.message_type()));
+		    if(DEBUG)
+			Debug.dump("unknown client message received: " + xlib.XGetAtomName(dpy, ev.message_type()));
 		}
 	    }
 
@@ -2284,46 +2288,111 @@ public class GLXContext implements Toolkit.Factory {
 	    }
 	}
 
+	GLXContext ctx() {
+	    return(GLXContext.this);
+	}
+
 	public String description() {
 	    return(String.format("X11/GLX, %s/%d %s", srvvendor, srvrelease, wmname));
 	}
     }
 
-    private static final Map<Pair<Integer, XID>, XKey> ukeys = new HashMap<>();
-    private Key sym2key(int code, XID sym) {
-	Key ret = stdkeys.get(sym);
+    private static final Map<XID, X11Keysym> extsyms = new HashMap<>();
+    private Key.Sym getkeysym(XID sym) {
+	Key.Sym ret = stdsyms.get(sym);
 	if(ret == null) {
-	    synchronized(ukeys) {
-		XKey k = ukeys.get(Pair.of(code, sym));
+	    synchronized(extsyms) {
+		X11Keysym k = extsyms.get(sym);
 		if(k == null)
-		    ukeys.put(Pair.of(code, sym), k = new XKey(xlib, code, sym));
+		    extsyms.put(sym, k = new X11Keysym(xlib, sym));
 		ret = k;
 	    }
 	}
 	return(ret);
     }
 
+    public static class X11Keysym implements Key.Sym {
+	public final XID sym;
+	public final String id, nm;
+
+	public X11Keysym(XLib xlib, XID sym) {
+	    this.sym = sym;
+	    this.nm = xlib.XKeysymToString(sym);
+	    this.id = String.format("x11:%s", nm).intern();
+	}
+
+	public String id() {return(id);}
+	public String nm() {return(nm);}
+
+	public int hashCode() {return(sym.hashCode());}
+	public boolean equals(X11Keysym that) {return(this.sym.equals(that.sym));}
+	public boolean equals(Object x) {return((x instanceof X11Keysym) && equals((X11Keysym)x));}
+
+	public String toString() {
+	    return(String.format("#<x-keysym %s(%s)>", nm, sym));
+	}
+    }
+
+    public static class X11Key implements Key {
+	public final int code;
+	public final XID[] rawsyms;
+	public final Sym[] keysyms;
+	public final String id;
+
+	private X11Key(GLXToolkit tk, int code) {
+	    this.code = code;
+	    if((code >= tk.mincode) && (code <= tk.maxcode))
+		this.rawsyms = tk.keymap[code - tk.mincode];
+	    else
+		this.rawsyms = new XID[0];
+	    this.keysyms = new Sym[this.rawsyms.length];
+	    for(int i = 0; i < this.rawsyms.length; i++)
+		this.keysyms[i] = tk.ctx().getkeysym(this.rawsyms[i]);
+	    this.id = ("x11:" + code).intern();
+	}
+
+	public String id() {return(id);}
+
+	public Sym primary() {
+	    return((keysyms.length > 0) ? keysyms[0] : null);
+	}
+
+	public Sym primary(Collection<? extends Sym> of) {
+	    for(Sym sym : keysyms) {
+		if(of.contains(sym))
+		    return(sym);
+	    }
+	    return(null);
+	}
+
+	public String toString() {
+	    return(String.format("#<x-key %d syms=%s>", code, Arrays.deepToString(keysyms)));
+	}
+    }
+
     public static abstract class GLXKeyEvent {
 	public final GLXToolkit.GLXWindow wnd;
-	public final int code, state;
+	public final int state;
 	public final Set<Key.Mod> mods;
-	public XID sym;
-	public Key key;
-	public String str;
+	public XID rawsym;
+	public Key.Sym sym;
+	public X11Key key;
+	public String str = "";
 
 	public GLXKeyEvent(GLXToolkit.GLXWindow wnd, XKeyEvent ev, boolean include) {
 	    this.wnd = wnd;
-	    this.code = ev.keycode();
 	    this.state = ev.state();
+	    this.key = new X11Key(wnd.toolkit(), ev.keycode());
 	    this.mods = wnd.toolkit().mods(ev.state(), ev.keycode(), include);
 	}
 
 	public String string() {return(str);}
 	public Key key() {return(key);}
+	public Key.Sym sym() {return(sym);}
 	public Set<Key.Mod> mods() {return(mods);}
 
 	public String toString() {
-	    return(String.format("#<%s code=%d state=%x sym=%s key=%s str=\"%s\">", getClass().getSimpleName(), code, state, sym, key, (str == null) ? "" : Utils.bprint.enc(str.getBytes(Utils.utf8))));
+	    return(String.format("#<%s %s state=%x sym=%s str=\"%s\">", getClass().getSimpleName(), key, state, rawsym, (str == null) ? "" : Utils.bprint.enc(str.getBytes(Utils.utf8))));
 	}
     }
     public static class GLXKeyPressEvent extends GLXKeyEvent implements Toolkit.KeyDownEvent {
@@ -2427,31 +2496,7 @@ public class GLXContext implements Toolkit.Factory {
 	public double subamount() {return(sub);}
     }
 
-    public static class XKey implements Key {
-	public final int code;
-	public final XID sym;
-	public final String id, nm;
-
-	private XKey(XLib xlib, int code, XID sym) {
-	    this.code = code;
-	    this.sym = sym;
-	    this.nm = xlib.XKeysymToString(sym);
-	    this.id = String.format("x11:%s", nm).intern();
-	}
-
-	public String id() {return(id);}
-	public String nm() {return(nm);}
-
-	public int hashCode() {return(Objects.hash(code, sym));}
-	public boolean equals(XKey that) {return((this.code == that.code) && this.sym.equals(that.sym));}
-	public boolean equals(Object x) {return((x instanceof XKey) && equals((XKey)x));}
-
-	public String toString() {
-	    return(String.format("#<x-key %d %s(%s)>", code, nm, sym));
-	}
-    }
-
-    public static final Map<XID, Key> stdkeys = Utils.<XID, Key>map()
+    public static final Map<XID, Key.Std> stdsyms = Utils.<XID, Key.Std>map()
 	.put(XK_Return, ENTER)             .put(XK_BackSpace, BACKSPACE)    .put(XK_Tab, TAB)
 	.put(XK_Cancel, CANCEL)            .put(XK_Clear, CLEAR)            .put(XK_Pause, PAUSE)
 	.put(XK_Caps_Lock, CAPSLOCK)       .put(XK_Escape, ESCAPE)          .put(XK_space, SPACE)
@@ -2463,6 +2508,7 @@ public class GLXContext implements Toolkit.Factory {
 	.put(XK_bracketright, RIGHTBRACKET).put(XK_backslash, BACKSLASH)    .put(XK_Delete, DELETE)
 	.put(XK_Num_Lock, NUMLOCK)         .put(XK_Scroll_Lock, SCROLLLOCK) .put(XK_Print, PRINTSCREEN)
 	.put(XK_Insert, INSERT)            .put(XK_Help, HELP)              .put(XK_grave, BACKQUOTE)
+	.put(XK_apostrophe, QUOTE)         .put(XK_bar, BAR)
 
 	.put(XK_Shift_L, SHIFT)            .put(XK_Shift_R, SHIFT)          .put(XK_Control_L, CONTROL)
 	.put(XK_Control_R, CONTROL)        .put(XK_Alt_L, ALT)              .put(XK_Alt_R, ALT)
