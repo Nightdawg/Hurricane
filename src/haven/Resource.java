@@ -61,7 +61,7 @@ public class Resource implements Serializable {
     public final String name;
     public int ver;
     public ResSource source;
-    public final transient Pool pool;
+    public transient Pool pool;
     protected Collection<Layer> layers = new LinkedList<Layer>();
     private boolean used = false;
 
@@ -880,7 +880,7 @@ public class Resource implements Serializable {
 	return(_local);
     }
 
-    private static Pool _remote = null;
+    private static volatile Pool _remote = null;
     public static Pool remote() {
 	if(_remote == null) {
 	    synchronized(Resource.class) {
@@ -2045,6 +2045,28 @@ public class Resource implements Serializable {
 	    this.ver = ver;
 	else if(ver != this.ver)
 	    throw(new LoadException("Wrong res version (" + ver + " != " + this.ver + ")", this));
+	Pool rem = _remote;
+	if((rem != null) && (source instanceof FileSource)) {
+	    /* ND: A resource loaded from a local .res file is created by the
+	     * local() pool, which cannot reach the game server, so its external
+	     * references (materials, linked sprites, code classpath, etc.) would
+	     * fail to resolve. Rebind it to the full remote() chain, which
+	     * checks local overrides first (via its parent pool) and only then
+	     * the server.
+	     *
+	     * Only rebind when remote() already exists -- deliberately never
+	     * force its creation here. During early startup a FileSource load
+	     * can happen before setupres() has installed the resource cache
+	     * (e.g. GobIcon preset loading on the main thread racing setupres()
+	     * on another); building remote() at that point would produce a
+	     * cache-less pool and make every resource re-download from the
+	     * network. Bundled resources that load that early have no external
+	     * references anyway, while gameplay overrides (the ones that need
+	     * this) load long after remote() has been set up with its cache.
+	     * Reassigned before decoding layers because some factories (e.g.
+	     * Material) capture res.pool at decode time. */
+	    this.pool = rem;
+	}
 	while(!in.eom()) {
 	    LayerFactory<?> lc = ltypes.get(in.string());
 	    int len = in.int32();
