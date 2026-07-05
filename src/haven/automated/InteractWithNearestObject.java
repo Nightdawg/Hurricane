@@ -34,7 +34,6 @@ public class InteractWithNearestObject implements Runnable {
             "bat",
             "swan",
             "goshawk",
-            "precioussnowflake",
             "truffle-black0",
             "truffle-black1",
             "truffle-black2",
@@ -46,6 +45,11 @@ public class InteractWithNearestObject implements Runnable {
             "gemstone",
             "boarspear"
     ));
+
+    public final static Set<String> otherForageablesThatRequireFlowerMenuPick = new HashSet<String>(Arrays.asList(
+            "precioussnowflake" // gfx/terobjs/items/precioussnowflake
+    ));
+
 
     public final static HashSet<String> mines = new HashSet<String>(Arrays.asList(
             "gfx/terobjs/ladder",
@@ -100,7 +104,7 @@ public class InteractWithNearestObject implements Runnable {
                 || (mines.contains(res.name) && Utils.getprefb("clickNearestObject_MineholesAndLadders", false))) {
                     if (distFromPlayer < maxDistance && (theObject == null || distFromPlayer < theObject.rc.dist(plc))) {
                         theObject = gob;
-                        if (res.name.startsWith("gfx/terobjs/herbs")) FlowerMenu.setNextSelection("Pick"); // ND: Set the flower menu option to "pick" only for these particular ones.
+                        if (res.name.startsWith("gfx/terobjs/herbs") || InteractWithNearestObject.otherForageablesThatRequireFlowerMenuPick.contains(res.basename())) FlowerMenu.setNextSelection("Pick"); // ND: Set the flower menu option to "pick" only for these particular ones.
                     }
                 }
             }

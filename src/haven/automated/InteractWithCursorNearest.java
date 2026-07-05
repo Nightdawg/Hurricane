@@ -55,7 +55,7 @@ public class InteractWithCursorNearest implements Runnable {
                             || (Arrays.stream(Config.critterResPaths).anyMatch(res.name::matches) || res.name.matches(".*(rabbit|bunny)$")) && Utils.getprefb("clickNearestObject_Critters", true)
                             || (InteractWithNearestObject.caves.contains(res.name) && Utils.getprefb("clickNearestObject_Caves", false))
                             || (InteractWithNearestObject.mines.contains(res.name) && Utils.getprefb("clickNearestObject_MineholesAndLadders", false))) {
-                                if (res.name.startsWith("gfx/terobjs/herbs")) FlowerMenu.setNextSelection("Pick"); // ND: Set the flower menu option to "pick" only for these particular ones.
+                                if (res.name.startsWith("gfx/terobjs/herbs") || InteractWithNearestObject.otherForageablesThatRequireFlowerMenuPick.contains(res.basename())) FlowerMenu.setNextSelection("Pick"); // ND: Set the flower menu option to "pick" only for these particular ones.
                                 if (OptWnd.autoEquipBunnySlippersPlateBootsCheckBox.a) {
                                     gui.map.switchBunnySlippersAndPlateBoots(clickedGob);
                                 }
@@ -98,7 +98,7 @@ public class InteractWithCursorNearest implements Runnable {
                                 || (InteractWithNearestObject.mines.contains(res.name) && Utils.getprefb("clickNearestObject_MineholesAndLadders", false))) {
                             if (distFromPlayer < maxDistance && (theObject == null || distFromPlayer < theObject.rc.dist(mc))) {
                                 theObject = gob;
-                                if (res.name.startsWith("gfx/terobjs/herbs")) FlowerMenu.setNextSelection("Pick"); // ND: Set the flower menu option to "pick" only for these particular ones.
+                                if (res.name.startsWith("gfx/terobjs/herbs") || InteractWithNearestObject.otherForageablesThatRequireFlowerMenuPick.contains(res.basename())) FlowerMenu.setNextSelection("Pick"); // ND: Set the flower menu option to "pick" only for these particular ones.
                             }
                         }
                     }
