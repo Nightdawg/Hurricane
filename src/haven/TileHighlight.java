@@ -244,6 +244,8 @@ public class TileHighlight {
     }
     
     private static void tryInit(GameUI gui) {
+	if(gui != null && gui.mapfile != null)
+	    gui.mapfile.toggleol(TileHighlight.TAG, true);
 	if(initialized) {return;}
 	categories.add(ALL);
 	ArrayList<TileItem> all = new ArrayList<>();
@@ -261,7 +263,6 @@ public class TileHighlight {
 	    all.addAll(items);
 	}
 	all.sort(Comparator.comparing(item -> item.name));
-	gui.mapfile.toggleol(TileHighlight.TAG, true);
 	initialized = true;
     }
     
@@ -505,7 +506,11 @@ public class TileHighlight {
 	    for (c.x = 0; c.x < cmaps.x; c.x++) {
 		for (c.y = 0; c.y < cmaps.y; c.y++) {
 		    int tile = grid.gettile(c);
+		    if(tile < 0 || tile >= grid.tilesets.length)
+			continue;
 		    MapFile.TileInfo tileset = grid.tilesets[tile];
+		    if(tileset == null || tileset.res == null)
+			continue;
 		    boolean v = isHighlighted(tileset.res.name);
 		    set(c, v);
 		    if(v) { setn(c, true); } //make 1 tile border around actual tiles
