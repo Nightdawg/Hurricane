@@ -659,8 +659,11 @@ public class LoginScreen extends Widget {
 	parent.setfocus(this);
     opts = new OptWnd(false); // ND: This needs to be created when the login screen is created, to prevent options nullpointers once we log into a character
     playMainTheme(themes.get(bgIndex-1));
-    if (ui != null)
-        GameUI.stopAllThemes(ui);
+    if (ui != null) {
+		GameUI.stopAllThemes(ui);
+		ui.root.adda(opts, 0.5, 0.5);
+		opts.hide();
+	}
     }
 
 	public void dispose() {
