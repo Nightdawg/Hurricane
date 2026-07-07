@@ -5205,7 +5205,7 @@ public class OptWnd extends Window {
 	    }), 0, y).pos("bl").adds(0, 5).y;
 	}
 	y = main.add(new Button(UI.scale(200), "Close", false).action(() -> {
-		    OptWnd.this.hide();
+		    OptWnd.this.reqclose();
 	}), 0, y).pos("bl").adds(0, 5).y;
 	this.main.pack();
 
