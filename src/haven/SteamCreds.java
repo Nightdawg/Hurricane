@@ -43,7 +43,7 @@ public class SteamCreds extends AuthClient.Credentials {
 
     public Session.User tryauth(AuthClient cl) throws IOException {
 	try(Steam.WebTicket tkt = api.webticket()) {
-	    Message rpl = cl.cmdv0("steam", Utils.hex.enc(tkt.data));
+	    Message rpl = cl.cmd("steam", "ticket", Utils.hex.enc(tkt.data));
 	    String stat = rpl.string();
 	    if(stat.equals("ok")) {
 		String acct = rpl.string();

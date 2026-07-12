@@ -458,19 +458,22 @@ public class GLXContext implements Toolkit.Factory {
 		}
 
 		/* GLX */
-		if((ext_glx = xlib.XQueryExtension(dpy, "GLX")) == null)
-		    throw(new Unavailable("GLX is not supported"));
-		exts = Arrays.asList(glx.glXQueryExtensionsString(dpy, nscreen).split(" "));
-		if(!exts.contains("GLX_ARB_create_context_profile"))
-		    throw(new Unavailable("GLX_ARB_create_context_profile not supported"));
+		{
+		    if((ext_glx = xlib.XQueryExtension(dpy, "GLX")) == null)
+			throw(new Unavailable("GLX is not supported"));
+		    String extstr = glx.glXQueryExtensionsString(dpy, nscreen);
+		    exts = Arrays.asList(((extstr == null) ? "" : extstr).split(" "));
+		    if(!exts.contains("GLX_ARB_create_context_profile"))
+			throw(new Unavailable("GLX_ARB_create_context_profile not supported"));
 
-		GLX.GLXFBConfig[] fbs = glx.glXChooseFBConfig(dpy, nscreen, fbattribs);
-		if(fbs.length == 0)
-		    throw(new Unavailable("no suitable framebuffer configuration available"));
-		fb = fbs[0];
-		vis = glx.glXGetVisualFromFBConfig(dpy, fb);
-		colormap = xlib.XCreateColormap(dpy, screen.root(), vis.visual(), XLib.AllocNone);
-		this.ctx = createctx();
+		    GLX.GLXFBConfig[] fbs = glx.glXChooseFBConfig(dpy, nscreen, fbattribs);
+		    if(fbs.length == 0)
+			throw(new Unavailable("no suitable framebuffer configuration available"));
+		    fb = fbs[0];
+		    vis = glx.glXGetVisualFromFBConfig(dpy, fb);
+		    colormap = xlib.XCreateColormap(dpy, screen.root(), vis.visual(), XLib.AllocNone);
+		    this.ctx = createctx();
+		}
 
 		/* WM info */
 		{

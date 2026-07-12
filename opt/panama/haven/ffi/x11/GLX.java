@@ -175,8 +175,7 @@ public abstract class GLX {
 	    } finally {
 		checkerror();
 	    }
-	    String ret = retp.reinterpret(Long.MAX_VALUE).getString(0, C_CHARSET);
-	    return(ret);
+	    return(nullp(retp) ? null : retp.reinterpret(Long.MAX_VALUE).getString(0, C_CHARSET));
 	}
 
 	private final MethodHandle glXChooseVisual = ld.downcallHandle(glx.find("glXChooseVisual").get(), FunctionDescriptor.of(ADDRESS.withTargetLayout(libX11_so_6._XVisualInfo), ADDRESS, C_INT, ADDRESS));
