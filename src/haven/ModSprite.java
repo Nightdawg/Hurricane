@@ -811,7 +811,12 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
             Map.entry("gfx/terobjs/items/cutblade", new HatTransformEntry(new Location[]{
                     Location.scale(1.4f, 1.1f, 1.1f),
                     Location.xlate(new Coord3f(0.5f, 0, 0))
-            }))
+            })),
+			Map.entry("gfx/terobjs/items/hats/dinocap", new HatTransformEntry(new Location[]{
+					Location.rot(new Coord3f(0, 0, 1), 3.15f),
+					Location.rot(new Coord3f(0, 1, 0), 0.4f),
+					Location.scale(1.2f, 1.1f, 1.1f)
+			}))
     );
 
 }
