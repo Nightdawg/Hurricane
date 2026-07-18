@@ -1095,9 +1095,10 @@ public class GobIcon extends GAttrib {
 		newPresetName = new TextEntry(UI.scale(120), ""){
 			public boolean keydown(KeyDownEvent e) {
 				if(e.awt.getKeyCode() == KeyEvent.VK_ESCAPE) {
-					setfocus(SettingsWindow.this.cont);
-				}
-				return(buf.key(e.awt));
+					setfocus(SettingsWindow.this.list);
+					return(true);
+				} else
+					return(buf.key(e.awt));
 			}
 		};
 		left.last(new Button(UI.scale(170), "Save New Preset", false).action(() -> {
