@@ -817,7 +817,7 @@ public class GobIcon extends GAttrib {
 
 	    protected boolean searchmatch(ListIcon icon, String text) {
 		return((icon.name != null) &&
-		       (icon.name.toLowerCase().indexOf(text.toLowerCase()) >= 0));
+		       Fuzzy.fuzzyContains(icon.name.toLowerCase(Locale.ROOT), text.toLowerCase(Locale.ROOT)));
 	    }
 
 		@Override
