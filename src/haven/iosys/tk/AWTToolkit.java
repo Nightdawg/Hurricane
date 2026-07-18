@@ -435,6 +435,7 @@ public abstract class AWTToolkit implements Toolkit {
 
     public abstract class AWTWindow implements Windeye {
 	public final java.awt.Frame frame;
+	private final AWTEventListener keyfilter;
 	private final Collection<EventListener> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
 	private boolean excl = false;
 	private boolean focused;
@@ -443,6 +444,18 @@ public abstract class AWTToolkit implements Toolkit {
 
 	public AWTWindow() {
 	    frame = new java.awt.Frame();
+	    keyfilter = ev -> {
+		if(ev instanceof java.awt.event.KeyEvent) {
+		    java.awt.event.KeyEvent key = (java.awt.event.KeyEvent)ev;
+		    if((key.getID() == java.awt.event.KeyEvent.KEY_RELEASED) &&
+		       ((key.getKeyCode() == java.awt.event.KeyEvent.VK_ALT) ||
+			(key.getKeyCode() == java.awt.event.KeyEvent.VK_F10)) &&
+		       (key.getComponent() != null) &&
+		       ((key.getComponent() == frame) || javax.swing.SwingUtilities.isDescendingFrom(key.getComponent(), frame)))
+			key.consume();
+		}
+	    };
+	    java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(keyfilter, AWTEvent.KEY_EVENT_MASK);
 	}
 
 	protected abstract Component panel();
@@ -791,6 +804,7 @@ public abstract class AWTToolkit implements Toolkit {
 	}
 
 	public void dispose() {
+	    java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(keyfilter);
 	    frame.dispose();
 	}
     }
