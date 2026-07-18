@@ -322,31 +322,6 @@ public class AuthClient implements Closeable {
 	return(recvmsg());
     }
 
-    /* Some commands (currently only `steam') have not been migrated to
-     * the keyword-based protocol used by esendmsg/cmd, and are instead
-     * sent using the original positional format, which the auth server
-     * still accepts for commands lacking the trailing `*' marker. */
-    private void esendmsgv0(Object... args) throws IOException {
-	MessageBuf buf = new MessageBuf();
-	for(Object arg : args) {
-	    if(arg instanceof String) {
-		buf.addstring((String)arg);
-	    } else if(arg instanceof byte[]) {
-		buf.addbytes((byte[])arg);
-	    } else if(arg instanceof Object[]) {
-		buf.addlist((Object[])arg);
-	    } else {
-		throw(new RuntimeException("Illegal argument to esendmsgv0: " + arg.getClass()));
-	    }
-	}
-	sendmsg(buf);
-    }
-
-    public Message cmdv0(Object... args) throws IOException {
-	esendmsgv0(args);
-	return(recvmsg());
-    }
-    
     public static abstract class Credentials {
 	public abstract Session.User tryauth(AuthClient cl) throws IOException;
 	public abstract String authname();
