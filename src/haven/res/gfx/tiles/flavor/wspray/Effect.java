@@ -91,7 +91,7 @@ public class Effect extends Sprite {
     public static boolean enabled = true;
     public boolean tick(double ddt) {
 	float dt = (float)ddt;
-	if(enabled) {
+	if(enabled && !OptWnd.flatWorldCheckBox.a) {
 	    for(Line l : lines) {
 		l.de += dt;
 		float tpb = this.tpb / ((l.ai + l.bi) * 0.5f * 0.1f);
