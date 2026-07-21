@@ -3677,7 +3677,7 @@ public class OptWnd extends Window {
 			}, prev.pos("bl").adds(0, 12));
 
 			prev = add(continuousWalkingCheckBox = new CheckBox("Continuous Walking when holding down Left Click"){
-				{a = Utils.getprefb("continuousWalking", true);}
+				{a = Utils.getprefb("continuousWalking", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("continuousWalking", val);
 				}
