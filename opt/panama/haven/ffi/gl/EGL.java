@@ -92,7 +92,17 @@ public abstract class EGL {
     public static final int EGL_BAD_SURFACE = 0x300D;
     public static final int EGL_CONTEXT_LOST = 0x300E;
 
+    public static final int EGL_DEVICE_EXT = 0x322C;
+    public static final int EGL_PLATFORM_DEVICE_EXT = 0x313F;
+    public static final int EGL_DRM_DEVICE_FILE_EXT = 0x3233;
+    public static final int EGL_DRM_RENDER_NODE_FILE_EXT = 0x3377;
+    public static final int EGL_DEVICE_UUID_EXT = 0x335C;
+    public static final int EGL_DRIVER_UUID_EXT = 0x335D;
+    public static final int EGL_DRIVER_NAME_EXT = 0x335E;
+    public static final int EGL_RENDERER_EXT = 0x335F;
+
     public static class EGLDisplay {
+	public static final EGLDisplay NONE = new EGLDisplay(MemorySegment.NULL);
 	protected final MemorySegment mem;
 
 	EGLDisplay(MemorySegment mem) {
@@ -147,6 +157,14 @@ public abstract class EGL {
     public abstract void eglDestroySurface(EGLDisplay dpy, EGLSurface srf);
     public abstract void eglTerminate(EGLDisplay dpy);
 
+    public static interface EGLDeviceEXT {
+	MemorySegment spec();
+    }
+
+    public abstract EGLDeviceEXT[] eglQueryDevicesEXT();
+    public abstract long eglQueryDeviceAttribEXT(EGL.EGLDeviceEXT device, int name);
+    public abstract String eglQueryDeviceStringEXT(EGL.EGLDeviceEXT device, int name);
+
     public EGLDisplay eglGetDisplay() {
 	return(eglGetDisplay(EGL_DEFAULT_DISPLAY));
     }
@@ -159,6 +177,10 @@ public abstract class EGL {
 	return(eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA, MemorySegment.NULL, new int[0]));
     }
 
+    public EGLDisplay eglGetPlatformDisplay(EGLDeviceEXT spec) {
+	return(eglGetPlatformDisplay(EGL_PLATFORM_DEVICE_EXT, spec.spec(), new int[0]));
+    }
+
     EGLException lasterror() {
 	return(new EGLException(eglGetError()));
     }
@@ -167,6 +189,7 @@ public abstract class EGL {
 	static final ValueLayout EGLenum = OpenGL.Base.GLenum;
 	static final ValueLayout EGLBoolean = OpenGL.Base.GLboolean;
 	static final ValueLayout EGLint = ValueLayout.JAVA_INT;
+	static final MemoryLayout EGLAttrib = PTRINT_T;
 	static final ValueLayout EGLNativeDisplayType = ADDRESS;
 	private final SymbolLookup egl = SymbolLookup.libraryLookup("libEGL.so.1", Arena.global());
 
@@ -381,6 +404,69 @@ public abstract class EGL {
 	    }
 	    if(rv == 0)
 		throw(lasterror());
+	}
+
+	public static class EGLDeviceEXT implements EGL.EGLDeviceEXT {
+	    public final MemorySegment mem;
+
+	    public EGLDeviceEXT(MemorySegment mem) {
+		this.mem = mem;
+	    }
+
+	    public MemorySegment spec() {return(mem);}
+	}
+
+	private final MethodHandle eglQueryDevicesEXT = ld.downcallHandle(eglGetProcAddress("eglQueryDevicesEXT"), FunctionDescriptor.of(EGLBoolean, EGLint, ADDRESS, ADDRESS));
+	private boolean eglQueryDevicesEXT(int max_devices, MemorySegment devices, MemorySegment num_devices) {
+	    try {
+		return((int)eglQueryDevicesEXT.invoke(max_devices, devices, num_devices) != 0);
+	    } catch(Throwable e) {
+		throw(new RuntimeException(e));
+	    }
+	}
+	public EGLDeviceEXT[] eglQueryDevicesEXT() {
+	    try(Arena st = Arena.ofConfined()) {
+		MemorySegment nbuf = st.allocate(EGLint);
+		if(!eglQueryDevicesEXT(0, MemorySegment.NULL, nbuf))
+		    throw(lasterror());
+		int n = (int)getint(nbuf, 0, EGLint, true);
+		MemorySegment dbuf = st.allocate(ADDRESS, n);
+		if(!eglQueryDevicesEXT(n, dbuf, nbuf))
+		    throw(lasterror());
+		EGLDeviceEXT[] ret = new EGLDeviceEXT[n];
+		for(int i = 0; i < n; i++)
+		    ret[i] = new EGLDeviceEXT(dbuf.get(ADDRESS, ADDRESS.byteSize() * i));
+		return(ret);
+	    }
+	}
+
+	private final MethodHandle eglQueryDeviceAttribEXT = ld.downcallHandle(eglGetProcAddress("eglQueryDeviceAttribEXT"), FunctionDescriptor.of(EGLBoolean, ADDRESS, EGLint, ADDRESS));
+	public long eglQueryDeviceAttribEXT(EGL.EGLDeviceEXT device, int name) {
+	    try(Arena st = Arena.ofConfined()) {
+		MemorySegment buf = st.allocate(EGLAttrib);
+		int rv;
+		try {
+		    rv = (int)eglQueryDeviceAttribEXT.invoke(((EGLDeviceEXT)device).mem, name, buf);
+		} catch(Throwable e) {
+		    throw(new RuntimeException(e));
+		}
+		if(rv == 0)
+		    throw(lasterror());
+		return(getint(buf, 0, EGLAttrib, true));
+	    }
+	}
+
+	private final MethodHandle eglQueryDeviceStringEXT = ld.downcallHandle(eglGetProcAddress("eglQueryDeviceStringEXT"), FunctionDescriptor.of(ADDRESS, ADDRESS, EGLint));
+	public String eglQueryDeviceStringEXT(EGL.EGLDeviceEXT device, int name) {
+	    MemorySegment rv;
+	    try {
+		rv = (MemorySegment)eglQueryDeviceStringEXT.invoke(((EGLDeviceEXT)device).mem, name);
+	    } catch(Throwable e) {
+		throw(new RuntimeException(e));
+	    }
+	    if(nullp(rv))
+		throw(lasterror());
+	    return(rv.reinterpret(Long.MAX_VALUE).getString(0, C_CHARSET));
 	}
     }
 

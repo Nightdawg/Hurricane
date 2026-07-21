@@ -104,6 +104,7 @@ public class LWJGLWrap implements GL {
     public void glDeleteTextures(int count, int[] buffers) {GL30.glDeleteTextures(ckbuf(buffers, count));}
     public void glDeleteVertexArrays(int count, int[] buffers) {GL30.glDeleteVertexArrays(ckbuf(buffers, count));}
     public void glDebugMessageControl(int source, int type, int severity, int count, int[] ids, boolean enabled) {GL43.glDebugMessageControl(source, type, severity, ckbuf(ids, count), enabled);}
+    public void glDebugMessageInsert(int source, int type, int id, int severity, String message) {GL43.glDebugMessageInsert(source, type, id, severity, message);}
     public void glDeleteSync(long id) {GL32.glDeleteSync(id);}
     public void glDepthFunc(int func) {GL30.glDepthFunc(func);}
     public void glDepthMask(boolean mask) {GL30.glDepthMask(mask);}
@@ -153,6 +154,8 @@ public class LWJGLWrap implements GL {
     public void glPointSize(float size) {GL30.glPointSize(size);}
     public void glPolygonMode(int face, int mode) {GL30.glPolygonMode(face, mode);}
     public void glPolygonOffset(float factor, float units) {GL30.glPolygonOffset(factor, units);}
+    public void glPopDebugGroup() {GL43.glPopDebugGroup();}
+    public void glPushDebugGroup(int source, int id, String message) {GL43.glPushDebugGroup(source, id, message);}
     public void glQueryCounter(int id, int target) {GL33.glQueryCounter(id, target);}
     public void glReadBuffer(int buf) {GL30.glReadBuffer(buf);}
     public void glReadPixels(int x, int y, int width, int height, int format, int type, ByteBuffer data) {GL30.glReadPixels(x, y, width, height, format, type, data);}

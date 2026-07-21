@@ -79,6 +79,7 @@ public class JOGLWrapBackup implements GL, WrappedJOGL {
     public void glDeleteTextures(int count, int[] buffers) {back.glDeleteTextures(count, buffers, 0);}
     public void glDeleteVertexArrays(int count, int[] buffers) {back.getGL2GL3().glDeleteVertexArrays(count, buffers, 0);}
     public void glDebugMessageControl(int source, int type, int severity, int count, int[] ids, boolean enabled) {back.getGL2GL3().glDebugMessageControl(source, type, severity, count, ids, 0, enabled);}
+    public void glDebugMessageInsert(int source, int type, int id, int severity, String message) {back.getGL2GL3().glDebugMessageInsert(source, type, id, severity, -1, message);}
     public void glDeleteSync(long id) {back.getGL3().glDeleteSync(id);}
     public void glDepthFunc(int func) {back.glDepthFunc(func);}
     public void glDepthMask(boolean mask) {back.glDepthMask(mask);}
@@ -128,6 +129,8 @@ public class JOGLWrapBackup implements GL, WrappedJOGL {
     public void glPointSize(float size) {back.getGL2GL3().glPointSize(size);}
     public void glPolygonMode(int face, int mode) {back.getGL2GL3().glPolygonMode(face, mode);}
     public void glPolygonOffset(float factor, float units) {back.glPolygonOffset(factor, units);}
+    public void glPopDebugGroup() {back.getGL2GL3().glPopDebugGroup();}
+    public void glPushDebugGroup(int source, int id, String message) {back.getGL2GL3().glPushDebugGroup(source, id, -1, (message + '\0').getBytes(), 0);}
     public void glQueryCounter(int id, int target) {back.getGL2GL3().glQueryCounter(id, target);}
     public void glReadBuffer(int buf) {back.getGL2GL3().glReadBuffer(buf);}
     public void glReadPixels(int x, int y, int width, int height, int format, int type, ByteBuffer data) {back.glReadPixels(x, y, width, height, format, type, data);}

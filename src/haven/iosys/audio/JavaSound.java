@@ -38,10 +38,10 @@ import static haven.iosys.audio.AudioSystem.*;
 
 @haven.iosys.audio.AudioSystem.Available(name = "java")
 public class JavaSound implements haven.iosys.audio.AudioSystem {
-    private static Factory factory = new Factory() {
+    private static Providers.Factory<JavaSound> factory = new Providers.Factory<JavaSound>() {
 	private JavaSound instance = null;
 
-	public haven.iosys.audio.AudioSystem open(String... args) {
+	public JavaSound open(String... args) {
 	    synchronized(this) {
 		if(instance == null)
 		    instance = new JavaSound();
@@ -51,7 +51,7 @@ public class JavaSound implements haven.iosys.audio.AudioSystem {
 
 	public int priority() {return(-10);}
     };
-    public static Factory get() {
+    public static Providers.Factory<JavaSound> get() {
 	return(factory);
     }
 

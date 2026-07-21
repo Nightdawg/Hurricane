@@ -562,6 +562,24 @@ public abstract class BGL {
 	    });
     }
 
+    public void glDebugMessageInsert(final int source, final int type, final int id, final int severity, final String message) {
+	add(new Command() {
+		public void run(GL gl) {gl.glDebugMessageInsert(source, type, id, severity, message);}
+	    });
+    }
+
+    public void glPushDebugGroup(final int source, final int id, final String message) {
+	add(new Command() {
+		public void run(GL gl) {gl.glPushDebugGroup(source, id, message);}
+	    });
+    }
+
+    public void glPopDebugGroup() {
+	add(new Command() {
+		public void run(GL gl) {gl.glPopDebugGroup();}
+	    });
+    }
+
     public void glDeleteSync(final long id) {
 	add(new Command() {
 		public void run(GL gl) {gl.glDeleteSync(id);}

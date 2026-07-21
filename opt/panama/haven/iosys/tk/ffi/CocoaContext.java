@@ -44,12 +44,12 @@ import haven.ffi.objc.Runtime;
 import static haven.iosys.tk.Key.Std.*;
 
 @Toolkit.Available(name = "cgl")
-public class NSContext implements Toolkit.Factory {
+public class CocoaContext implements Providers.Factory<Toolkit> {
     private final Runtime rt;
     private final Foundation fnd;
     private final AppKit ak;
 
-    private NSContext() {
+    private CocoaContext() {
 	try {
 	    rt = Runtime.get();
 	    fnd = Foundation.get();
@@ -59,25 +59,26 @@ public class NSContext implements Toolkit.Factory {
 	}
     }
 
-    private static NSContext instance = null;
-    public static NSContext get() {
+    private static CocoaContext instance = null;
+    public static CocoaContext get() {
 	if(instance == null) {
-	    synchronized(NSContext.class) {
+	    synchronized(CocoaContext.class) {
 		if(instance == null)
-		    instance = new NSContext();
+		    instance = new CocoaContext();
 	    }
 	}
 	return(instance);
     }
 
     public Toolkit open(String... args) {
-	return(new NSToolkit());
+	return(new CocoaToolkit());
     }
 
     public int priority() {
 	return(System.getProperty("os.name", "").startsWith("Mac OS") ? 100 : 0);
     }
     public boolean experimental() {return(true);}
+    public boolean autouse() {return(false);}
 
     private NSApplication app = null;
     public NSApplication app() {
@@ -90,10 +91,10 @@ public class NSContext implements Toolkit.Factory {
 	}
     }
 
-    public class NSToolkit implements Toolkit {
+    public class CocoaToolkit implements Toolkit {
 	public final NSApplication app = app();
 
-	private NSToolkit() {
+	private CocoaToolkit() {
 	}
 
 	public Cursor.Caps cursorcaps() {
@@ -139,13 +140,13 @@ public class NSContext implements Toolkit.Factory {
 	    return(r.val);
 	}
 
-	public class NSWindeye implements Windeye {
+	public class CocoaWindow implements Windeye {
 	    public final NSWindow nsw;
 	    private final Collection<EventListener> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
 	    private boolean shown = false;
 	    private Sizing sizeinfo = new Sizing().normsize(Coord.of(800, 600));
 
-	    private NSWindeye() {
+	    private CocoaWindow() {
 		nsw = mainrun(() -> ak.NSWindow(Area.sized(Coord.of(1, 1)), 
 						AppKit.NSWindowStyleMaskTitled |
 						AppKit.NSWindowStyleMaskClosable |
@@ -155,8 +156,8 @@ public class NSContext implements Toolkit.Factory {
 						true));
 	    }
 
-	    public NSToolkit toolkit() {
-		return(NSToolkit.this);
+	    public CocoaToolkit toolkit() {
+		return(CocoaToolkit.this);
 	    }
 
 	    public void add(EventListener l) {
@@ -183,7 +184,7 @@ public class NSContext implements Toolkit.Factory {
 		}
 	    }
 
-	    public NSWindeye show(boolean show) {
+	    public CocoaWindow show(boolean show) {
 		mainrun(() -> {
 		    if(!shown) {
 			if(show) {
@@ -203,20 +204,20 @@ public class NSContext implements Toolkit.Factory {
 		return(this);
 	    }
 
-	    public NSWindeye title(String title) {
+	    public CocoaWindow title(String title) {
 		mainrun(() -> nsw.setTitle(title));
 		return(this);
 	    }
 
-	    public NSWindeye icon(BufferedImage img) {
+	    public CocoaWindow icon(BufferedImage img) {
 		return(this);
 	    }
 
-	    public NSWindeye cursor(Cursor curs) {
+	    public CocoaWindow cursor(Cursor curs) {
 		return(this);
 	    }
 
-	    public NSWindeye sizing(Sizing info) {
+	    public CocoaWindow sizing(Sizing info) {
 		mainrun(() -> {
 		    sizeinfo = info;
 		    if(shown)
@@ -225,7 +226,7 @@ public class NSContext implements Toolkit.Factory {
 		return(this);
 	    }
 
-	    public NSWindeye state(State st) {
+	    public CocoaWindow state(State st) {
 		return(this);
 	    }
 
@@ -253,7 +254,7 @@ public class NSContext implements Toolkit.Factory {
 	}
 
 	public Windeye window() {
-	    return(new NSWindeye());
+	    return(new CocoaWindow());
 	}
 
 	public String description() {

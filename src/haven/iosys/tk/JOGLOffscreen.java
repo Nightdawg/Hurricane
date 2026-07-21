@@ -136,10 +136,10 @@ public class JOGLOffscreen implements Acephal {
     public void dispose() {
     }
 
-    private static Factory factory = new Factory() {
+    private static Providers.Factory<JOGLOffscreen> factory = new Providers.Factory<JOGLOffscreen>() {
 	private JOGLOffscreen instance = null;
 
-	public Acephal open(String... args) {
+	public JOGLOffscreen open(String... args) {
 	    synchronized(this) {
 		if(instance == null)
 		    instance = new JOGLOffscreen();
@@ -149,7 +149,7 @@ public class JOGLOffscreen implements Acephal {
 
 	public int priority() {return(-10);}
     };
-    public static Factory get() {
+    public static Providers.Factory<JOGLOffscreen> get() {
 	return(factory);
     }
 }

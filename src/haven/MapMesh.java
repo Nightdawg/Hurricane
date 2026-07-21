@@ -201,6 +201,8 @@ public class MapMesh implements RenderTree.Node, Disposable {
 	};
 
 	public Comparator<MLOrder> comparator() {return(cmp);}
+
+	public String toString() {return(String.format("#<order map %s %x>", mainorder(), z));}
     }
     public static Order premap = new Order.Default(990);
     public static Order postmap = new Order.Default(1010);

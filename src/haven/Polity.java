@@ -30,37 +30,55 @@ import java.awt.Color;
 import java.awt.Font;
 import java.util.*;
 import static haven.BuddyWnd.width;
+import static haven.PType.*;
 
-public class Polity extends Widget {
+public abstract class Polity extends Widget {
     public final String cap, name;
     public int auth, acap, adrain, aseq;
     public boolean offline;
-    public final List<Member> memb = new ArrayList<Member>();
-    public final Map<Integer, Member> idmap = new HashMap<Integer, Member>();
+    public final Map<Integer, Member> memb = new HashMap<Integer, Member>();
+    public int mseq;
     protected Widget mw;
+    private int nextmemb = 0;
+
+    public abstract String type();
 
 	public static final Text unk = Text.render("Unknown (Not Memorised)", new Color(140, 140, 140));
 	public static final Text self = Text.render(">> Yourself <<", new Color(255, 205, 0));
     public class Member {
 	public final Integer id;
+	public final int order;
 
 	public Member(Integer id) {
 	    this.id = id;
+	    this.order = nextmemb++;
+	}
+
+	public Member(Member p) {
+	    this.id = p.id;
+	    this.order = p.order;
+	}
+
+	public Text rname() {
+	    if(id == null)
+		return(self);
+	    BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(id);
+	    return((b == null) ? unk : b.rname());
 	}
 
 	public void draw(GOut g) {
-	    Text rn;
-	    if(id == null) {
-		rn = self;
-	    } else {
-		BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(id);
-		rn = (b == null) ? unk : (b.rname());
-	    }
-	    g.aimage(rn.tex(), UI.scale(0, 10), 0, 0.5);
+	    g.aimage(rname().tex(), UI.scale(0, 10), 0, 0.5);
+	}
+
+	public String name() {
+	    return(rname().text);
 	}
     }
 
     public class MemberList extends SSearchBox<Member, Widget> {
+	public List<Member> mlist = new ArrayList<>();
+	private int mseq;
+
 	public MemberList(Coord sz) {
 	    super(sz, UI.scale(20));
 	}
@@ -69,14 +87,18 @@ public class Polity extends Widget {
 		this(Coord.of(w, (int)(h * 1.6) * UI.scale(20)));
 	}
 
-	public List<Member> allitems() {return(memb);}
-	public String itemname(Member m) {
-	    if(m.id == null)
-		return(">> Yourself <<");
-	    BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(m.id);
-	    return((b == null) ? "Unknown (Not Memorised)" : b.name);
+	public List<Member> allitems() {return(mlist);}
+	public boolean searchmatch(Member m, String txt) {return(m.name().toLowerCase().indexOf(txt.toLowerCase()) >= 0);}
+
+	public void tick(TickEvent ev) {
+	    super.tick(ev);
+	    if(ev.visible && (this.mseq != Polity.this.mseq)) {
+		mlist.clear();
+		mlist.addAll(memb.values());
+		Collections.sort(mlist, Comparator.comparing(Member::name).thenComparing(m -> m.order));
+		this.mseq = Polity.this.mseq;
+	    }
 	}
-	public boolean searchmatch(Member m, String txt) {return(itemname(m).toLowerCase().indexOf(txt.toLowerCase()) >= 0);}
 
 	protected Widget makeitem(Member m, int idx, Coord sz) {
 	    return(new ItemWidget<Member>(this, sz, m) {
@@ -143,7 +165,7 @@ public class Polity extends Widget {
 		}
 		if(rauth == null) {
 		    Color col = offline ? Color.RED : Color.WHITE;
-		    rauth = new TexI(Utils.outline2(Text.render(String.format("%s/%s", auth, acap), col).img, Utils.contrast(col)));
+		    rauth = new TexI(Utils.outline2(Text.render(String.format("%,d / %,d", auth, acap), col).img, Utils.contrast(col)));
 		}
 		g.aimage(rauth, sz.div(2), 0.5, 0.5);
 	    }
@@ -156,32 +178,47 @@ public class Polity extends Widget {
 	}
     }
 
-    protected Member parsememb(Object[] args) {
-	Integer id = (Integer)args[0];
-	return(new Member(id));
+    protected Member parsememb(Object[] args, Member p) {
+	if(p == null) {
+	    Integer id = INT.of(args[0]);
+	    return(new Member(id));
+	} else {
+	    return(new Member(p));
+	}
+    }
+
+    public void add(Member pm) {
+	synchronized(this) {
+	    memb.put(pm.id, pm);
+	    mseq++;
+	}
+    }
+
+    public void remove(Member pm) {
+	synchronized(this) {
+	    memb.remove(pm.id);
+	    mseq++;
+	}
     }
 
     public void uimsg(String msg, Object... args) {
 	if(msg == "auth") {
 	    synchronized(this) {
-		auth = Utils.iv(args[0]);
-		acap = Utils.iv(args[1]);
-		adrain = Utils.iv(args[2]);
-		offline = Utils.bv(args[3]);
+		auth = INT.of(args[0]);
+		acap = INT.of(args[1]);
+		adrain = INT.of(args[2]);
+		offline = BOOL.of(args[3]);
 		aseq++;
 	    }
 	} else if(msg == "add") {
-	    Member pm = parsememb(args);
+	    Integer id = INT.of(args[0]);
 	    synchronized(this) {
-		memb.add(pm);
-		idmap.put(pm.id, pm);
+		add(parsememb(args, memb.get(id)));
 	    }
 	} else if(msg == "rm") {
-	    Integer id = (Integer)args[0];
+	    Integer id = INT.of(args[0]);
 	    synchronized(this) {
-		Member pm = idmap.get(id);
-		memb.remove(pm);
-		idmap.remove(id);
+		remove(memb.get(id));
 	    }
 	} else {
 	    super.uimsg(msg, args);

@@ -710,6 +710,13 @@ public abstract class OpenGL implements haven.render.gl.GL {
 	    } catch(Throwable e) {throw(new RuntimeException(e));}
 	}
 
+	private final MethodHandle glDebugMessageInsert = lookup("glDebugMessageInsert", FunctionDescriptor.ofVoid(GLenum, GLenum, GLuint, GLenum, GLsizei, ADDRESS), critical);
+	public void glDebugMessageInsert(int source, int type, int id, int severity, String message) {
+	    try(Arena st = Arena.ofConfined()) {
+		glDebugMessageInsert.invoke(source,type, id, severity, -1, st.allocateFrom(message));
+	    } catch(Throwable e) {throw(new RuntimeException(e));}
+	}
+
 	private final MethodHandle glLineWidth = lookup("glLineWidth", FunctionDescriptor.ofVoid(GLfloat), critical);
 	public void glLineWidth(float w) {
 	    try {
@@ -756,6 +763,20 @@ public abstract class OpenGL implements haven.render.gl.GL {
 	public void glPolygonOffset(float factor, float units) {
 	    try {
 		glPolygonOffset.invoke(factor, units);
+	    } catch(Throwable e) {throw(new RuntimeException(e));}
+	}
+
+	private final MethodHandle glPopDebugGroup = lookup("glPopDebugGroup", FunctionDescriptor.ofVoid(), critical);
+	public void glPopDebugGroup() {
+	    try {
+		glPopDebugGroup.invoke();
+	    } catch(Throwable e) {throw(new RuntimeException(e));}
+	}
+
+	private final MethodHandle glPushDebugGroup = lookup("glPushDebugGroup", FunctionDescriptor.ofVoid(GLenum, GLint, GLsizei, ADDRESS), critical);
+	public void glPushDebugGroup(int source, int id, String name) {
+	    try(Arena st = Arena.ofConfined()) {
+		glPushDebugGroup.invoke(source, id, -1, st.allocateFrom(name));
 	    } catch(Throwable e) {throw(new RuntimeException(e));}
 	}
 

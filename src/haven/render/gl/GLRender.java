@@ -576,6 +576,10 @@ public class GLRender implements Render, Disposable {
 	    });
     }
 
+    public void marker(String name) {
+	gl().glDebugMessageInsert(GL.GL_DEBUG_SOURCE_APPLICATION, GL.GL_DEBUG_TYPE_MARKER, 0, GL.GL_DEBUG_SEVERITY_NOTIFICATION, name);
+    }
+
     public void submit(BGL.Request req) {
 	gl().bglSubmit(req);
     }

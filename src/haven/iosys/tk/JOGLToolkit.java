@@ -54,10 +54,10 @@ public class JOGLToolkit extends AWTToolkit {
 	}
     }
 
-    private static Factory factory = new Factory() {
+    private static Providers.Factory<JOGLToolkit> factory = new Providers.Factory<JOGLToolkit>() {
 	private JOGLToolkit instance = null;
 
-	public Toolkit open(String... args) {
+	public JOGLToolkit open(String... args) {
 	    synchronized(this) {
 		if(instance == null)
 		    instance = new JOGLToolkit();
@@ -67,7 +67,7 @@ public class JOGLToolkit extends AWTToolkit {
 
 	public int priority() {return(-10);}
     };
-    public static Factory get() {
+    public static Providers.Factory<JOGLToolkit> get() {
 	return(factory);
     }
 

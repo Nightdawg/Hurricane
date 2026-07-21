@@ -51,20 +51,6 @@ public interface Toolkit {
 	throw(new IOException("No web browser available."));
     }
 
-    public static interface Factory {
-	public Toolkit open(String... args);
-	public default int priority() {return(0);}
-	public default boolean experimental() {return(false);}
-	public default boolean autouse() {return(true);}
-    }
-
-    @dolda.jglob.Discoverable
-    @Target(ElementType.TYPE)
-    @Retention(RetentionPolicy.RUNTIME)
-    public static @interface Available {
-	String name();
-    }
-
     public static interface Event {
     }
 
@@ -106,100 +92,19 @@ public interface Toolkit {
 	public void event(Event ev);
     }
 
-    public static Map<String, Toolkit.Factory> toolkits() {
-	return(Found.toolkits());
+    @dolda.jglob.Discoverable
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    public static @interface Available {
+	String name();
+    }
+
+    static final Providers<Toolkit, Available> prov = new Providers<>("toolkit", toolkit::get, Available.class, Available::name);
+    public static Map<String, Providers.Factory<? extends Toolkit>> toolkits() {
+	return(prov.found());
     }
 
     public static Toolkit instance() {
-	return(Found.instance());
-    }
-
-    class Found {
-	private static Map<String, Factory> find() {
-	    Map<String, Factory> ret = new HashMap<>();
-	    ClassLoader loader = Available.class.getClassLoader();
-	    for(String clnm : dolda.jglob.Loader.get(Available.class).names()) {
-		try {
-		    Class<?> cl;
-		    try {
-			cl = loader.loadClass(clnm);
-		    } catch(ClassNotFoundException e) {
-			continue;
-		    }
-		    String nm = cl.getAnnotation(Available.class).name();
-		    Factory fac;
-		    try {
-			fac = (Factory)Utils.invoke(cl.getDeclaredMethod("get"), null);
-		    } catch(NoSuchMethodException e) {
-			throw(new AssertionError(e));
-		    } catch(Unavailable | LinkageError e) {
-			fac = new Factory() {
-				public Toolkit open(String... args) {throw(new Unavailable(e));}
-				public int priority() {return(-1000);}
-			    };
-		    }
-		    ret.put(nm, fac);
-		} catch(UnsupportedClassVersionError e) {
-		    continue;
-		}
-	    }
-	    return(ret);
-	}
-
-	private static Map<String, Factory> toolkits;
-	static Map<String, Factory> toolkits() {
-	    if(toolkits == null) {
-		synchronized(Found.class) {
-		    if(toolkits == null) {
-			toolkits = find();
-		    }
-		}
-	    }
-	    return(toolkits);
-	}
-
-	private static Toolkit instance = null;
-	public static Toolkit instance() {
-	    if(instance == null) {
-		synchronized(Found.class) {
-		    if(instance == null) {
-			if(Utils.eq(toolkit.get(), "help")) {
-			    List<Map.Entry<String, Factory>> toolkits = new ArrayList<>(toolkits().entrySet());
-			    Collections.sort(toolkits, Comparator.comparing(Map.Entry<String, Factory>::getValue, Comparator.comparing(Factory::priority)).reversed());
-			    for(Map.Entry<String, Factory> ent : toolkits)
-				System.out.printf("name: %-19s priority: %5d%s\n", ent.getKey(), ent.getValue().priority(), ent.getValue().autouse() ? "" : " (manual only)");
-			    System.exit(0);
-			} else if(toolkit.get() != null) {
-			    Factory f = toolkits().get(toolkit.get());
-			    if(f == null)
-				throw(new Unavailable("no such toolkit: " + toolkit.get()));
-			    instance = f.open();
-			} else {
-			    List<Factory> toolkits = new ArrayList<>(toolkits().values());
-			    Collections.sort(toolkits, Comparator.comparing(Factory::priority).reversed());
-			    Collection<Throwable> errors = new ArrayList<>();
-			    Toolkit first = null;
-			    for(Factory type : toolkits) {
-				if(!type.autouse() || (type.experimental() && !Config.exp.get()))
-				    continue;
-				try {
-				    first = type.open();
-				    break;
-				} catch(Unavailable e) {
-				    errors.add(e);
-				}
-			    }
-			    if(first == null) {
-				Unavailable exc = new Unavailable("could find no working toolkit");
-				errors.forEach(exc::addSuppressed);
-				throw(exc);
-			    }
-			    instance = first;
-			}
-		    }
-		}
-	    }
-	    return(instance);
-	}
+	return(prov.instance());
     }
 }

@@ -45,6 +45,18 @@ public interface GL {
     public static final int GL_CONTEXT_COMPATIBILITY_PROFILE_BIT = com.jogamp.opengl.GL3.GL_CONTEXT_COMPATIBILITY_PROFILE_BIT;
     public static final int GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH = com.jogamp.opengl.GL3.GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH;
     public static final int GL_DEBUG_OUTPUT = com.jogamp.opengl.GL3.GL_DEBUG_OUTPUT;
+    public static final int GL_DEBUG_SOURCE_APPLICATION = com.jogamp.opengl.GL3.GL_DEBUG_SOURCE_APPLICATION;
+    public static final int GL_DEBUG_SOURCE_THIRD_PARTY = com.jogamp.opengl.GL3.GL_DEBUG_SOURCE_THIRD_PARTY;
+    public static final int GL_DEBUG_TYPE_ERROR = com.jogamp.opengl.GL3.GL_DEBUG_TYPE_ERROR;
+    public static final int GL_DEBUG_TYPE_PERFORMANCE = com.jogamp.opengl.GL3.GL_DEBUG_TYPE_PERFORMANCE;
+    public static final int GL_DEBUG_TYPE_MARKER = com.jogamp.opengl.GL3.GL_DEBUG_TYPE_MARKER;
+    public static final int GL_DEBUG_TYPE_PUSH_GROUP = com.jogamp.opengl.GL3.GL_DEBUG_TYPE_PUSH_GROUP;
+    public static final int GL_DEBUG_TYPE_POP_GROUP = com.jogamp.opengl.GL3.GL_DEBUG_TYPE_POP_GROUP;
+    public static final int GL_DEBUG_TYPE_OTHER = com.jogamp.opengl.GL3.GL_DEBUG_TYPE_OTHER;
+    public static final int GL_DEBUG_SEVERITY_LOW = com.jogamp.opengl.GL3.GL_DEBUG_SEVERITY_LOW;
+    public static final int GL_DEBUG_SEVERITY_MEDIUM = com.jogamp.opengl.GL3.GL_DEBUG_SEVERITY_MEDIUM;
+    public static final int GL_DEBUG_SEVERITY_HIGH = com.jogamp.opengl.GL3.GL_DEBUG_SEVERITY_HIGH;
+    public static final int GL_DEBUG_SEVERITY_NOTIFICATION = com.jogamp.opengl.GL3.GL_DEBUG_SEVERITY_NOTIFICATION;
     public static final int GL_DEPTH_ATTACHMENT = com.jogamp.opengl.GL.GL_DEPTH_ATTACHMENT;
     public static final int GL_DEPTH_BUFFER_BIT = com.jogamp.opengl.GL3.GL_DEPTH_BUFFER_BIT;
     public static final int GL_DONT_CARE = com.jogamp.opengl.GL3.GL_DONT_CARE;
@@ -264,6 +276,7 @@ public interface GL {
     public void glDeleteVertexArrays(int count, int[] buffers);
     public void glCullFace(int mode);
     public void glDebugMessageControl(int source, int type, int severity, int count, int[] ids, boolean enabled);
+    public void glDebugMessageInsert(int source, int type, int id, int severity, String message);
     public void glDepthFunc(int func);
     public void glDepthMask(boolean mask);
     public void glDisable(int cap);
@@ -312,6 +325,8 @@ public interface GL {
     public void glPointSize(float size);
     public void glPolygonMode(int face, int mode);
     public void glPolygonOffset(float factor, float units);
+    public void glPopDebugGroup();
+    public void glPushDebugGroup(int source, int id, String marker);
     public void glQueryCounter(int id, int target);
     public void glReadBuffer(int buf);
     public void glReadPixels(int x, int y, int width, int height, int format, int type, ByteBuffer data);

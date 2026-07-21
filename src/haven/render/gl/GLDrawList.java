@@ -944,6 +944,8 @@ public class GLDrawList implements DrawList {
 	GLRender g = (GLRender)r;
 	if(!g.env.compatible(this))
 	    throw(new IllegalArgumentException());
+	if(GLEnvironment.debuglog)
+	    g.gl().glPushDebugGroup(GL.GL_DEBUG_SOURCE_APPLICATION, 0, String.valueOf(desc));
 	synchronized(this) {
 	    DrawSlot first = first(), last = null;
 	    if(first == null)
@@ -964,12 +966,19 @@ public class GLDrawList implements DrawList {
 	    if(g.state.prog() != first.prog)
 		throw(new ProgramMismatchException(g.state.prog(), first.prog));
 	    BGL gl = g.gl();
-	    for(DrawSlot cur = first; cur != null; last = cur, cur = cur.next())
+	    for(DrawSlot cur = first; cur != null; last = cur, cur = cur.next()) {
+		if(GLEnvironment.debuglog) {
+		    if((last == null) || (last.gorder != cur.gorder))
+			g.marker("order: " + String.valueOf(cur.gorder));
+		}
 		gl.bglCallList(cur.compiled);
+	    }
 	    settingbuf.put(gl);
 	    g.state.assume(last.bk.state());
 	    g.state.apply(null, VaoState.slot, ((VaoSetting)last.settings[idx_vao]).st);
 	}
+	if(GLEnvironment.debuglog)
+	    g.gl().glPopDebugGroup();
     }
 
     public void add(Slot<? extends Rendered> slot) {

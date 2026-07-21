@@ -46,7 +46,7 @@ import static com.jogamp.newt.event.KeyEvent.*;
  * that it's hard to ever consider this toolkit complete, I
  * think. It's arguably still nice to have a fallback, though. */
 @Toolkit.Available(name = "newt")
-public class NEWTContext implements Toolkit.Factory {
+public class NEWTContext implements Providers.Factory<Toolkit> {
     public NEWTToolkit open(String... args) {
 	try {
 	    return(new NEWTToolkit());
@@ -60,7 +60,7 @@ public class NEWTContext implements Toolkit.Factory {
     public boolean autouse() {return(false);}
 
     private static final NEWTContext instance = new NEWTContext();
-    public static Toolkit.Factory get() {return(instance);}
+    public static Providers.Factory<Toolkit> get() {return(instance);}
 
     public static class ProfileException extends Environment.UnavailableException {
 	public final String availability;

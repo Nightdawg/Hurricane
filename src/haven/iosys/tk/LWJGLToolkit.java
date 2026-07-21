@@ -49,10 +49,10 @@ public class LWJGLToolkit extends AWTToolkit {
 	}
     }
 
-    private static Factory factory = new Factory() {
+    private static Providers.Factory<LWJGLToolkit> factory = new Providers.Factory<LWJGLToolkit>() {
 	private LWJGLToolkit instance = null;
 
-	public Toolkit open(String... args) {
+	public LWJGLToolkit open(String... args) {
 	    synchronized(this) {
 		if(instance == null)
 		    instance = new LWJGLToolkit();
@@ -62,7 +62,7 @@ public class LWJGLToolkit extends AWTToolkit {
 
 	public int priority() {return(-11);}
     };
-    public static Factory get() {
+    public static Providers.Factory<LWJGLToolkit> get() {
 	return(factory);
     }
 

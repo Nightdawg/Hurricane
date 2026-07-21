@@ -79,6 +79,8 @@ public interface Rendered {
 		    return(a.comparator().compare(a, b));
 		}
 	    };
+
+	public String toString() {return(String.format("#<order %s %s>", getClass().getSimpleName(), mainorder()));}
     }
 
     public final static Order deflt = new Order.Default(0);

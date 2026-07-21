@@ -118,14 +118,14 @@ public class OSMesaOffscreen implements Acephal {
 	}
     }
 
-    private static Factory factory = new Factory() {
-	public Acephal open(String... args) {
+    private static Providers.Factory<OSMesaOffscreen> factory = new Providers.Factory<OSMesaOffscreen>() {
+	public OSMesaOffscreen open(String... args) {
 	    return(new OSMesaOffscreen());
 	}
 
 	public int priority() {return(-5);}
     };
-    public static Factory get() {
+    public static Providers.Factory<OSMesaOffscreen> get() {
 	return(factory);
     }
 }

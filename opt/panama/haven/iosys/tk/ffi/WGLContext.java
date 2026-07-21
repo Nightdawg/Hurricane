@@ -43,7 +43,7 @@ import haven.ffi.windows.Win32.*;
 import static haven.iosys.tk.Key.Std.*;
 
 @Toolkit.Available(name = "wgl")
-public class WGLContext implements Toolkit.Factory {
+public class WGLContext implements Providers.Factory<Toolkit> {
     private final Win32 win;
     private final WGL wgl;
     private final SHCore shcore;

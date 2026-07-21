@@ -46,6 +46,8 @@ public interface Render extends Disposable {
     public void timestamp(Consumer<Long> callback);
     public void fence(Runnable callback);
 
+    public default void marker(String name) {}
+
     public default void draw1(Pipe pipe, Model data) {
 	draw(pipe, data);
 	data.dispose();

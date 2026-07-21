@@ -148,6 +148,8 @@ public class Composited implements RenderTree.Node, EquipTarget {
 	};
 
 	public Comparator<ModOrder> comparator() {return(cmp);}
+
+	public String toString() {return(String.format("#<order mod %s %s>", z1, z2));}
     };
 
     public class Model implements RenderTree.Node, TickList.TickNode, TickList.Ticking {

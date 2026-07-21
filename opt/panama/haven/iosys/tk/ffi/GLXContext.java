@@ -49,7 +49,7 @@ import static haven.ffi.x11.XKeysym.*;
 import static haven.iosys.tk.Key.Std.*;
 
 @Toolkit.Available(name = "glx")
-public class GLXContext implements Toolkit.Factory {
+public class GLXContext implements Providers.Factory<Toolkit> {
     public static final boolean DEBUG = false;
     private final LibC libc;
     private final XLib xlib;
@@ -738,7 +738,7 @@ public class GLXContext implements Toolkit.Factory {
 	public class GLXWindow implements Windeye, EventWindow {
 	    public final XID id;
 	    public final XIC ic;
-	    private final Collection<Consumer<XEvent>> listeners = new ArrayList<>();
+	    private final Collection<Predicate<XEvent>> listeners = new ArrayList<>();
 	    private final Collection<EventListener> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
 	    private boolean showing = false;
 	    private boolean mapped, focused;
@@ -847,13 +847,15 @@ public class GLXContext implements Toolkit.Factory {
 
 	    public GLXWindow show(boolean show) {
 		if(show && !showing) {
+		    Promise<XEvent> waiter = eventwait(ev -> ev.type() == XLib.MapNotify);
 		    xrun(() -> xlib.XMapWindow(dpy, id));
 		    showing = true;
-		    waitfor(ev -> ev.type() == XLib.MapNotify);
+		    waiter.waitfor();
 		} else if(!show && showing) {
+		    Promise<XEvent> waiter = eventwait(ev -> ev.type() == XLib.UnmapNotify);
 		    xrun(() -> xlib.XUnmapWindow(dpy, id));
 		    showing = false;
-		    waitfor(ev -> ev.type() == XLib.UnmapNotify);
+		    waiter.waitfor();
 		}
 		return(this);
 	    }
@@ -1065,38 +1067,19 @@ public class GLXContext implements Toolkit.Factory {
 		gbuf.submit(gl-> this.glswap(gl, ((Boolean)mode) ? 1 : 0));
 	    }
 
-	    private XEvent waitfor(Predicate<XEvent> test) {
-		XEvent[] ret = {null};
-		Consumer<XEvent> cb = ev -> {
+	    private Promise<XEvent> eventwait(Predicate<XEvent> test) {
+		Promise<XEvent> ret = new Promise<>();
+		Predicate<XEvent> cb = ev -> {
 		    if(test.test(ev)) {
-			synchronized(ret) {
-			    ret[0] = ev;
-			    ret.notifyAll();
-			}
+			ret.resolve(ev);
+			return(true);
 		    }
+		    return(false);
 		};
 		synchronized(listeners) {
 		    listeners.add(cb);
 		}
-		try {
-		    boolean irq = false;
-		    synchronized(ret) {
-			while(ret[0] == null) {
-			    try {
-				ret.wait();
-			    } catch(InterruptedException e) {
-				irq = true;
-			    }
-			}
-		    }
-		    if(irq)
-			Thread.currentThread().interrupt();
-		} finally {
-		    synchronized(listeners) {
-			listeners.remove(cb);
-		    }
-		}
-		return(ret[0]);
+		return(ret);
 	    }
 
 	    private void configurenotify(XConfigureEvent ev) {
@@ -1223,8 +1206,13 @@ public class GLXContext implements Toolkit.Factory {
 	    }
 
 	    public void event(XEvent ev) {
-		for(Consumer<XEvent> cb : listeners)
-		    cb.accept(ev);
+		synchronized(listeners) {
+		    for(Iterator<Predicate<XEvent>> i = listeners.iterator(); i.hasNext();) {
+			Predicate<XEvent> cb = i.next();
+			if(cb.test(ev))
+			    i.remove();
+		    }
+		}
 		switch(ev.type()) {
 		case XLib.MapNotify:
 		    mapped = true;

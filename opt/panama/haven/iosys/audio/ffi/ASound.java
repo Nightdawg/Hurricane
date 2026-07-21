@@ -41,10 +41,10 @@ import static haven.ffi.misc.Alsa.*;
 public class ASound implements AudioSystem {
     private final Alsa alsa;
 
-    private static Factory factory = new Factory() {
+    private static Providers.Factory<ASound> factory = new Providers.Factory<ASound>() {
 	private ASound instance = null;
 
-	public AudioSystem open(String... args) {
+	public ASound open(String... args) {
 	    synchronized(this) {
 		if(instance == null)
 		    instance = new ASound();
@@ -54,7 +54,7 @@ public class ASound implements AudioSystem {
 
 	public boolean experimental() {return(true);}
     };
-    public static Factory get() {
+    public static Providers.Factory<ASound> get() {
 	return(factory);
     }
 

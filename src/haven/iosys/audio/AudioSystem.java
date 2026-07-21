@@ -72,13 +72,6 @@ public interface AudioSystem {
 	throw(new IllegalArgumentException(key + ": " + val));
     }
 
-    public static interface Factory {
-	public AudioSystem open(String... args);
-	public default int priority() {return(0);}
-	public default boolean experimental() {return(false);}
-	public default boolean autouse() {return(true);}
-    }
-
     @dolda.jglob.Discoverable
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
@@ -86,100 +79,12 @@ public interface AudioSystem {
 	String name();
     }
 
-    public static Map<String, Factory> types() {
-	return(Found.found());
+    static final Providers<AudioSystem, Available> prov = new Providers<>("audio-system", audiosystem::get, Available.class, Available::name);
+    public static Map<String, Providers.Factory<? extends AudioSystem>> types() {
+	return(prov.found());
     }
 
     public static AudioSystem instance() {
-	return(Found.instance());
-    }
-
-    static class Found {
-	private static Map<String, Factory> find() {
-	    Map<String, Factory> ret = new HashMap<>();
-	    ClassLoader loader = Available.class.getClassLoader();
-	    for(String clnm : dolda.jglob.Loader.get(Available.class).names()) {
-		try {
-		    Class<?> cl;
-		    try {
-			cl = loader.loadClass(clnm);
-		    } catch(ClassNotFoundException e) {
-			continue;
-		    }
-		    String nm = cl.getAnnotation(Available.class).name();
-		    Factory fac;
-		    try {
-			fac = (Factory)Utils.invoke(cl.getDeclaredMethod("get"), null);
-		    } catch(NoSuchMethodException e) {
-			throw(new AssertionError(e));
-		    } catch(Unavailable | LinkageError e) {
-			fac = new Factory() {
-				public AudioSystem open(String... args) {throw(new Unavailable(e));}
-				public int priority() {return(-1000);}
-			    };
-		    }
-		    ret.put(nm, fac);
-		} catch(UnsupportedClassVersionError e) {
-		    continue;
-		}
-	    }
-	    return(ret);
-	}
-
-	private static Map<String, Factory> found = null;
-	public static Map<String, Factory> found() {
-	    if(found == null) {
-		synchronized(Found.class) {
-		    if(found == null) {
-			found = find();
-		    }
-		}
-	    }
-	    return(found);
-	}
-
-	private static AudioSystem instance = null;
-	public static AudioSystem instance() {
-	    if(instance == null) {
-		synchronized(Found.class) {
-		    if(instance == null) {
-			if(Utils.eq(audiosystem.get(), "help")) {
-			    List<Map.Entry<String, Factory>> types = new ArrayList<>(found().entrySet());
-			    Collections.sort(types, Comparator.comparing(Map.Entry<String, Factory>::getValue, Comparator.comparing(Factory::priority)).reversed());
-			    for(Map.Entry<String, Factory> ent : types)
-				System.out.printf("name: %-19s priority: %5d\n", ent.getKey(), ent.getValue().priority());
-			    System.exit(0);
-			} else if(audiosystem.get() != null) {
-			    Factory f = types().get(audiosystem.get());
-			    if(f == null)
-				throw(new Unavailable("no such audio-system name: " + audiosystem.get()));
-			    instance = f.open();
-			} else {
-			    List<Factory> types = new ArrayList<>(found().values());
-			    Collections.sort(types, Comparator.comparing(Factory::priority).reversed());
-			    Collection<Throwable> errors = new ArrayList<>();
-			    AudioSystem first = null;
-			    for(Factory type : types) {
-				if(!type.autouse() || (type.experimental() && !Config.exp.get()))
-				    continue;
-				try {
-				    first = type.open();
-				    break;
-				} catch(Unavailable e) {
-				    errors.add(e);
-				}
-			    }
-			    if(first == null) {
-				Unavailable exc = new Unavailable("could find no working audio system");
-				errors.forEach(exc::addSuppressed);
-				throw(exc);
-			    }
-			    instance = first;
-			}
-		    }
-		}
-	    }
-	    return(instance);
-	}
+	return(prov.instance());
     }
 }
