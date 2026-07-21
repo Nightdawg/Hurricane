@@ -4,13 +4,12 @@ package haven.res.ui.expwnd;
 import haven.*;
 
 /* >wdg: ExpWnd */
-@haven.FromResource(name = "ui/expwnd", version = 24)
+@haven.FromResource(name = "ui/expwnd", version = 25)
 public class ExpWnd extends Window {
     public static Resource sfx = Loading.waitfor(Resource.classres(ExpWnd.class).pool.load("sfx/exp", 1));
     public static final RichText.Foundry fnd = new RichText.Foundry();
     public final Indir<Resource> exp;
     public final int ep;
-    private Button close;
     private Img img, text;
 
     public static Widget mkwidget(UI ui, Object... args) {
@@ -51,17 +50,10 @@ public class ExpWnd extends Window {
 	    if(ep > 0)
 		add(new Label("Experience points gained: " + ep), this.text.c.x, this.text.c.y + this.text.sz.y + UI.scale(10));
 	    Coord csz = contentsz();
-	    this.close = adda(new Button(UI.scale(100), "Okay!"), csz.x / 2, csz.y + UI.scale(25), 0.5, 0);
+	    adda(new Button(UI.scale(100), "Okay!"), csz.x / 2, csz.y + UI.scale(25), 0.5, 0).action(this::reqclose);
 	    resize(contentsz());
 	    this.c = new Coord((parent.sz.x - sz.x) / 2, OptWnd.expWindowLocationIsTop ? 0 : (parent.sz.y - sz.y));
 	}
 	super.tick(dt);
-    }
-
-    public void wdgmsg(Widget sender, String msg, Object... args) {
-	if(sender == close)
-	    wdgmsg("close");
-	else
-	    super.wdgmsg(sender, msg, args);
     }
 }
