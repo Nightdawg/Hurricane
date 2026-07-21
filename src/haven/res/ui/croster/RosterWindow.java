@@ -9,7 +9,7 @@ import haven.MenuGrid.Pagina;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-@haven.FromResource(name = "ui/croster", version = 77)
+@haven.FromResource(name = "ui/croster", version = 78)
 public class RosterWindow extends Window {
     public static final Map<Glob, RosterWindow> rosters = new HashMap<>();
     public static int rmseq = 0;
@@ -43,12 +43,8 @@ public class RosterWindow extends Window {
 	rmseq++;
     }
 
-    public void wdgmsg(Widget sender, String msg, Object... args) {
-	if((sender == this) && msg.equals("close")) {
-	    this.hide();
-	    return;
-	}
-	super.wdgmsg(sender, msg, args);
+    public void reqclose() {
+	hide();
     }
 }
 
