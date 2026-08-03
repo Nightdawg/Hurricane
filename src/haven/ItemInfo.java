@@ -183,6 +183,27 @@ public abstract class ItemInfo {
 	}
     }
 
+    public static class ResourceName extends Tip {
+	private final Text str;
+
+	public ResourceName(Owner owner, String name) {
+	    super(owner);
+	    this.str = Text.render(name, Color.GREEN);
+	}
+
+	public BufferedImage tipimg() {
+	    return((OptWnd.extendedMouseoverInfoCheckBox != null) && OptWnd.extendedMouseoverInfoCheckBox.a ? str.img : null);
+	}
+
+	public void layout(Layout l) {
+	    BufferedImage img = tipimg();
+	    if(img != null)
+		l.cmp.add(img, new Coord(0, l.cmp.sz.y + img.getHeight()));
+	}
+
+	public int order() {return(20000);}
+    }
+
     public static class Name extends Tip {
 	public final Text str;
 	public final String original;

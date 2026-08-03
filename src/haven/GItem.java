@@ -239,6 +239,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 			Resource.Pagina pg = res.get().layer(Resource.pagina);
 			if(pg != null)
 				info.add(new ItemInfo.Pagina(this, pg.text));
+			info.add(new ItemInfo.ResourceName(this, res.get().name));
 			this.info = info;
 			try {
 				if (FoodService.isValidEndpoint() && !checkForHempBuff()) {

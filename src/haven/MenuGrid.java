@@ -288,6 +288,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		Resource.Pagina pg = res.layer(Resource.pagina);
 		if(pg != null)
 		    info.add(new ItemInfo.Pagina(this, pg.text));
+		info.add(new ItemInfo.ResourceName(this, res.name));
 	    }
 	    return(info);
 	}

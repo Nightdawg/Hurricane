@@ -5249,9 +5249,10 @@ public class OptWnd extends Window {
             "\nThe Custom Theme folder can be found in your $col[218,163,0]{client folder}, under $col[218,163,0]{\\ res \\ customclient \\ uiThemes \\ Custom Theme}" +
             "\n" +
             "\n$col[185,185,185]{You don't need to change *everything* for the Custom Theme to work. If it's missing something, it just defaults to whatever the \"Nightdawg Dark\" theme uses.}", UI.scale(300));
-	private static final Object extendedMouseoverInfoTooltip = RichText.render("Holding Ctrl+Shift shows the Resource Path when mousing over Objects or Tiles. " +
-			"\nThis setting will add a lot of additional information on top of that." +
-			"\n" +
+	private static final Object extendedMouseoverInfoTooltip = RichText.render("This setting adds additional info to:" +
+			"\n- Object Ctrl+Shift Mouseover Info (Adds lots of info)" +
+			"\n- Item Tooltips (Shows Resource Name)" +
+			"\n- Action Button Tooltips (Shows Resource Name)" +
 			"\n$col[185,185,185]{Unless you're a client dev, you don't really need to enable this setting, like ever.}", UI.scale(300));
 	private static final Object disableMenuGridHotkeysTooltip = RichText.render("This completely disables the hotkeys for the action buttons & categories in the bottom right corner menu (aka the menu grid)." +
 			"\n" +
