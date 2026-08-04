@@ -8,10 +8,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static haven.OCache.posres;
-
 public class RefillWaterContainers implements Runnable {
     private static final Coord2d posres = Coord2d.of(0x1.0p-10, 0x1.0p-10).mul(11, 11);
+    private static final Map<String, Float> CONTAINER_CAPACITIES = Map.ofEntries(
+            Map.entry("gfx/invobjs/waterskin", 3.0F),
+            Map.entry("gfx/invobjs/small/waterskin", 3.0F),
+            Map.entry("gfx/invobjs/waterflask", 2.0F),
+            Map.entry("gfx/invobjs/glassjug", 5.0F),
+            Map.entry("gfx/invobjs/small/glassjug", 5.0F)
+    );
     private GameUI gui;
 
     public RefillWaterContainers(GameUI gui) {
@@ -107,11 +112,7 @@ public class RefillWaterContainers implements Runnable {
                             if (entry.getValue().c.equals(calculatedCoord)) {
                                 String resName = entry.getKey().res.get().name;
                                 ItemInfo.Contents.Content content = getContent(entry.getKey());
-                                if (resName.equals("gfx/invobjs/small/waterskin") && shouldAddToContainers(content, 3.0F)) {
-                                    containers.put(entry.getValue(), indexCoord);
-                                } else if (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F)) {
-                                    containers.put(entry.getValue(), indexCoord);
-                                } else if (resName.equals("gfx/invobjs/small/glassjug") && shouldAddToContainers(content, 5.0F)) {
+                                if (shouldAddToContainers(resName, content)) {
                                     containers.put(entry.getValue(), indexCoord);
                                 }
                             }
@@ -151,11 +152,7 @@ public class RefillWaterContainers implements Runnable {
                     if (entry.getValue().c.equals(calculatedCoord)) {
                         String resName = entry.getKey().res.get().name;
                         ItemInfo.Contents.Content content = getContent(entry.getKey());
-                        if (resName.equals("gfx/invobjs/waterskin") && shouldAddToContainers(content, 3.0F)) {
-                            containers.put(entry.getValue(), indexCoord);
-                        } else if (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F)) {
-                            containers.put(entry.getValue(), indexCoord);
-                        } else if (resName.equals("gfx/invobjs/glassjug") && shouldAddToContainers(content, 5.0F)) {
+                        if (shouldAddToContainers(resName, content)) {
                             containers.put(entry.getValue(), indexCoord);
                         }
                     }
@@ -172,18 +169,14 @@ public class RefillWaterContainers implements Runnable {
         if (leftPouch != null) {
             String resName = leftPouch.item.res.get().name;
             ItemInfo.Contents.Content content = getContent(leftPouch.item);
-            if ((resName.equals("gfx/invobjs/small/waterskin") && shouldAddToContainers(content, 3.0F))
-                    || (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F))
-                    || (resName.equals("gfx/invobjs/small/glassjug") && shouldAddToContainers(content, 5.0F))) {
+            if (shouldAddToContainers(resName, content)) {
                 containers.put(leftPouch, 19);
             }
         }
         if (rightPouch != null) {
             String resName = rightPouch.item.res.get().name;
             ItemInfo.Contents.Content content = getContent(rightPouch.item);
-            if ((resName.equals("gfx/invobjs/small/waterskin") && shouldAddToContainers(content, 3.0F))
-                    || (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F))
-                    || (resName.equals("gfx/invobjs/small/glassjug") && shouldAddToContainers(content, 5.0F))) {
+            if (shouldAddToContainers(resName, content)) {
                 containers.put(rightPouch, 20);
             }
         }
@@ -204,8 +197,10 @@ public class RefillWaterContainers implements Runnable {
         return content;
     }
 
-    private boolean shouldAddToContainers(ItemInfo.Contents.Content content, float contentCount) {
-        return content == null || (content.count != contentCount && Objects.equals(content.name, "Water"));
+    private boolean shouldAddToContainers(String resName, ItemInfo.Contents.Content content) {
+        Float capacity = CONTAINER_CAPACITIES.get(resName);
+        return capacity != null
+                && (content == null || (content.count != capacity && Objects.equals(content.name, "Water")));
     }
 
     private void refillContainers(Coord2d lc, Gob gob){
