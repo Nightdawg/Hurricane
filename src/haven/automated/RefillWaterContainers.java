@@ -15,7 +15,9 @@ public class RefillWaterContainers implements Runnable {
             Map.entry("gfx/invobjs/small/waterskin", 3.0F),
             Map.entry("gfx/invobjs/waterflask", 2.0F),
             Map.entry("gfx/invobjs/glassjug", 5.0F),
-            Map.entry("gfx/invobjs/small/glassjug", 5.0F)
+            Map.entry("gfx/invobjs/glassjug-full", 5.0F),
+            Map.entry("gfx/invobjs/small/glassjug", 5.0F),
+            Map.entry("gfx/invobjs/small/glassjug-full", 5.0F)
     );
     private GameUI gui;
 
