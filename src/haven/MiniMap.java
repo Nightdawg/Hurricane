@@ -27,6 +27,7 @@
 package haven;
 
 import haven.automated.pathfinder.Pathfinder;
+import haven.automated.mapper.MappingClient;
 import haven.iosys.tk.Windeye;
 import haven.render.*;
 
@@ -1288,6 +1289,8 @@ public class MiniMap extends Widget {
 		    file.lock.writeLock().unlock();
 		}
 		if(mid != null) {
+		    if(MappingClient.getInstance() != null && OptWnd.uploadMapTilesCheckBox.a)
+			MappingClient.getInstance().uploadSMarker(icon.gob, mid);
 		    synchronized(icon.gob) {
 			icon.gob.setattr(new MarkerID(icon.gob, mid));
 		    }
