@@ -24,22 +24,23 @@ Steam Workshop:
 https://steamcommunity.com/sharedfiles/filedetails/?id=3423755273
 
 ## Downloading/Updating the Hurricane Client (Outside of Steam):
-Use the Hurricane Updater: https://github.com/Nightdawg/Hurricane-Updater/releases/latest
+Use the Hurricane Updater: https://github.com/Nightdawg/Hurricane-Updater/releases/latest/download/HurricaneUpdater.jar
+(Source Code: https://github.com/Nightdawg/Hurricane-Updater)
 
 ### If the updater doesn't work:
-1. Make sure your installed Java version is between 17 and 21, *21 IS HIGHLY RECOMMENDED*
+1. Make sure your installed Java version is **any version between Java 17 and Java 25**
 2. You might need to add the updater file (HurricaneUpdater.jar) to your anti-virus exceptions list.
 
 ## Launching the Hurricane Client (Outside of Steam):
 
 Run the Play.bat file inside the client folder, or Play_Linux.sh (for Linux/MacOS)
 
-The client works with any java version between Java 17 - Java 21, *BUT 21 IS HIGHLY RECOMMENDED*    
-I've also been playing on GraalVM 21 (some different open-source java distribution based on OpenJDK),
+The client works with **any version between Java 17 and Java 25**
+I've also been playing on GraalVM (some different open-source java distribution based on OpenJDK),
 and I seem to get like 15-20 extra FPS out of the client.
 
 ### If the client doesn't launch:
-1. Make sure your installed Java version is between 17 and 21, *21 IS HIGHLY RECOMMENDED*
+1. Make sure your installed Java version is **any version between Java 17 and Java 25**
 2. You might need to add the launcher file (Play.bat or Play_Linux.sh) to your anti-virus exceptions list.
 
 
