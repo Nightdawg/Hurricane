@@ -245,8 +245,11 @@ public class XmlPrefs extends AbstractPreferences {
 	    if(dir != null)
 		Files.createDirectories(dir);
 	    tmp = Files.createTempFile((dir == null) ? Paths.get(".") : dir, path.getFileName().toString(), ".tmp");
-	    try(OutputStream fp = Files.newOutputStream(tmp, StandardOpenOption.TRUNCATE_EXISTING)) {
+	    try(FileChannel ch = FileChannel.open(tmp, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+		OutputStream fp = Channels.newOutputStream(ch)) {
 		src.storeToXML(fp, "Hurricane preferences", "UTF-8");
+		fp.flush();
+		ch.force(true);
 	    }
 	    try {
 		Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
