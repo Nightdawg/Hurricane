@@ -4763,6 +4763,7 @@ public class OptWnd extends Window {
 	public static TextEntry webmapEndpointTextEntry;
 	public static CheckBox uploadMapTilesCheckBox;
 	public static CheckBox sendLiveLocationCheckBox;
+	public static CheckBox supplyGenusCheckBox;
 	public static TextEntry liveLocationNameTextEntry;
 //	public static TextEntry webmapTokenTextEntry;
 
@@ -4799,6 +4800,14 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 12));
 			sendLiveLocationCheckBox.tooltip = sendLiveLocationTooltip;
+
+			prev = add(supplyGenusCheckBox = new CheckBox("Supply world genus"){
+				{a = Utils.getprefb("supplyGenus", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("supplyGenus", val);
+				}
+			}, prev.pos("bl").adds(0, 12));
+			supplyGenusCheckBox.tooltip = supplyGenusTooltip;
 
 			prev = add(new Label("Your Live Location Name (Req. Relog):"), prev.pos("bl").adds(20, 4));
 			prev.tooltip = liveLocationNameTooltip;
@@ -5612,6 +5621,7 @@ public class OptWnd extends Window {
 	// Server Integration Settings Tooltips
 	private static final Object uploadMapTilesTooltip = RichText.render("Enable this to upload your map tiles to your web map server.", UI.scale(300));
 	private static final Object sendLiveLocationTooltip = RichText.render("Enable this to show your current location on your web map server.", UI.scale(320));
+	private static final Object supplyGenusTooltip = RichText.render("Enables compatibility with Kami's map service. Disable if it interferes with other mapping services.", UI.scale(320));
 	private static final Object liveLocationNameTooltip = RichText.render("If you send your location to the server, your name will appear as whatever you set in this text entry + your current character name." +
 			"\n" +
 			"\n$col[218,163,0]{For example:} Nightdawg (VillageCrafter)$col[185,185,185]{, where }\"Nightdawg\" $col[185,185,185]{is the name I set in this text entry, and} \"VillageCrafter\" $col[185,185,185]{is the character's original name." +

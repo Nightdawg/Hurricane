@@ -29,11 +29,12 @@ public class MappingClient {
     private int spamPreventionVal = 3;
     private int spamCount = 0;
     private Glob glob;
+    private String genus;
     
-    public static void init(Glob glob) {
+    public static void init(Glob glob, String genus) {
 	synchronized (MappingClient.class) {
 	    if(INSTANCE == null) {
-		INSTANCE = new MappingClient(glob);
+		INSTANCE = new MappingClient(glob, genus);
 	    } else {
 		throw new IllegalStateException("MappingClient can only be initialized once!");
 	    }
@@ -63,8 +64,9 @@ public class MappingClient {
 
     private PositionUpdates pu = new PositionUpdates();
     
-    private MappingClient(Glob glob) {
+    private MappingClient(Glob glob, String genus) {
 	this.glob = glob;
+	this.genus = genus;
 	scheduler.scheduleAtFixedRate(pu, 2L, 2L, TimeUnit.SECONDS);
     }
 
@@ -77,7 +79,7 @@ public class MappingClient {
     public void Track(long id, Coord2d coordinates) {
 	try {
 	    MCache.Grid g = glob.map.getgrid(toGC(coordinates));
-	    pu.Track(id, coordinates, g.id);
+	    pu.Track(id, coordinates, g.id, genus);
 	} catch (Exception ex) {}
     }
     
@@ -85,7 +87,8 @@ public class MappingClient {
 
     public void EnterGrid(Coord gc) {
 	lastGC = gc;
-	scheduler.execute(new GenerateGridUpdateTask(gc));
+	String _genus = OptWnd.supplyGenusCheckBox.a ? this.genus : null;
+	scheduler.execute(new GenerateGridUpdateTask(gc, _genus));
     }
 
     public void CheckGridCoord(Coord2d c) {
@@ -172,6 +175,9 @@ public class MappingClient {
 			}
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);
+			if(genus != null && OptWnd.supplyGenusCheckBox.a) {
+				o.put("genus", genus);
+			}
 			o.put("gridID", String.valueOf(gridId));
 			Coord gridOffset = md.m.tc.sub(mgc.mul(100));
 			o.put("x", gridOffset.x);
@@ -231,13 +237,17 @@ public class MappingClient {
     private class PositionUpdates implements Runnable {
 	private class Tracking {
 	    public String name;
+			public String genus;
 	    public String type;
 	    public long gridId;
 	    public Coord2d coords;
 	    
-	    public JSONObject getJSON() {
+	    public JSONObject getJSON(boolean supplyGenus) {
 		JSONObject j = new JSONObject();
 		j.put("name", name);
+		if(supplyGenus && genus != null) {
+			j.put("genus", genus);
+		}
 		j.put("type", type);
 		j.put("gridID", String.valueOf(gridId));
 		JSONObject c = new JSONObject();
@@ -246,6 +256,9 @@ public class MappingClient {
 		j.put("coords", c);
 		return j;
 	    }
+		public JSONObject getJSON() {
+			return getJSON(false);
+		}
 	}
 	
 	private Map<Long, Tracking> tracking = new ConcurrentHashMap<Long, Tracking>();
@@ -253,7 +266,7 @@ public class MappingClient {
 	private PositionUpdates() {
 	}
 	
-	private void Track(long id, Coord2d coordinates, long gridId) {
+	private void Track(long id, Coord2d coordinates, long gridId, String genus) {
 	    Tracking t = tracking.get(id);
 	    if(t == null) {
 		t = new Tracking();
@@ -276,6 +289,7 @@ public class MappingClient {
 		    }
 		}
 	    }
+	    t.genus = genus;
 	    t.gridId = gridId;
 	    t.coords = gridOffset(coordinates);
 	}
@@ -293,7 +307,8 @@ public class MappingClient {
 			if(g.oc.getgob(e.getKey()) == null) {
 			    i.remove();
 			} else {
-			    upload.put(String.valueOf(e.getKey()), e.getValue().getJSON());
+			    boolean supplyGenus = OptWnd.supplyGenusCheckBox.a;
+			    upload.put(String.valueOf(e.getKey()), e.getValue().getJSON(supplyGenus));
 			}
 		    }
 		    
@@ -335,10 +350,12 @@ public class MappingClient {
     
     private class GenerateGridUpdateTask implements Runnable {
 	Coord coord;
+	String genus;
 	int retries = 3;
 	
-	GenerateGridUpdateTask(Coord c) {
+	GenerateGridUpdateTask(Coord c, String genus) {
 	    this.coord = c;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -354,7 +371,7 @@ public class MappingClient {
 			    gridRefs.put(String.valueOf(subg.id), new WeakReference<MCache.Grid>(subg));
 			}
 		    }
-		    scheduler.execute(new UploadGridUpdateTask(new GridUpdate(gridMap, gridRefs)));
+		    scheduler.execute(new UploadGridUpdateTask(new GridUpdate(gridMap, gridRefs), genus));
 		} catch (LoadingMap lm) {
 		    retries--;
 		    if(retries >= 0) {
@@ -370,9 +387,10 @@ public class MappingClient {
     
     private class UploadGridUpdateTask implements Runnable {
 	private final GridUpdate gridUpdate;
-	
-	UploadGridUpdateTask(final GridUpdate gridUpdate) {
+	String genus;
+	UploadGridUpdateTask(final GridUpdate gridUpdate, String genus) {
 	    this.gridUpdate = gridUpdate;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -381,6 +399,9 @@ public class MappingClient {
 		HashMap<String, Object> dataToSend = new HashMap<>();
 		
 		dataToSend.put("grids", this.gridUpdate.grids);
+		if (this.genus != null) {
+			dataToSend.put("genus", this.genus);
+		}
 		try {
 		    HttpURLConnection connection =
 			(HttpURLConnection) new URL(OptWnd.webmapEndpointTextEntry.buf.line() + "/gridUpdate").openConnection();
@@ -403,8 +424,10 @@ public class MappingClient {
 			String response = buffer.toString(StandardCharsets.UTF_8);
 			JSONObject jo = new JSONObject(response);
 			JSONArray reqs = jo.optJSONArray("gridRequests");
+			String _genus = OptWnd.supplyGenusCheckBox.a ? this.genus : null;
 			for (int i = 0; reqs != null && i < reqs.length(); i++) {
-			    gridsUploader.execute(new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i))));
+			    gridsUploader.execute(
+						new GridUploadTask(reqs.getString(i), gridUpdate.gridRefs.get(reqs.getString(i)), _genus));
 			}
 		    }
 		    
@@ -416,10 +439,11 @@ public class MappingClient {
     private class GridUploadTask implements Runnable {
 	private final String gridID;
 	private final WeakReference<MCache.Grid> grid;
-	
-	GridUploadTask(String gridID, WeakReference<MCache.Grid> grid) {
+	private final String genus;
+	GridUploadTask(String gridID, WeakReference<MCache.Grid> grid, String genus) {
 	    this.gridID = gridID;
 	    this.grid = grid;
+	    this.genus = genus;
 	}
 	
 	@Override
@@ -438,6 +462,9 @@ public class MappingClient {
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
 			MultipartUtility multipart = new MultipartUtility(OptWnd.webmapEndpointTextEntry.buf.line() + "/gridUpload", "utf-8");
 			multipart.addFormField("id", this.gridID);
+			if(this.genus != null) {
+				multipart.addFormField("genus", this.genus);
+			}
 			multipart.addFilePart("file", inputStream, "minimap.png");
 			extraData.put("season", glob.ast.is);
 			multipart.addFormField("extraData", extraData.toString());
@@ -471,6 +498,9 @@ public class MappingClient {
 
 			JSONObject obj = new JSONObject();
 			obj.put("name", marker.nm);
+			if(genus != null && OptWnd.supplyGenusCheckBox.a) {
+				obj.put("genus", genus);
+			}
 			obj.put("gridID", String.valueOf(grid.id));
 			obj.put("x", offset.x);
 			obj.put("y", offset.y);

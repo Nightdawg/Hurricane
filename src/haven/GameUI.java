@@ -581,6 +581,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	@Override
 	protected void attach(UI ui) {
 		ui.setGUI(this);
+		ui.sess.user.genus = genus;
 		super.attach(ui);
 	}
 	@Override

@@ -1183,7 +1183,7 @@ public class Config {
 			MappingClient.destroy();
 		}
         if (!OptWnd.webmapEndpointTextEntry.text().isEmpty() && ui.sess != null && ui.sess.glob != null) {
-            MappingClient.init(ui.sess.glob);
+            MappingClient.init(ui.sess.glob, ui.sess.user.genus);
             MappingClient automapper = MappingClient.getInstance();
             if (automapper != null)
                 automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");

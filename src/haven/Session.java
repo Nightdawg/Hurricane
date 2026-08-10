@@ -69,7 +69,7 @@ public class Session implements Resource.Resolver {
 
     public static class User {
 	public final String name;
-	public String alias = null, readname = null, prsname = null;
+	public String alias = null, readname = null, prsname = null, genus = null;
 
 	public User(String name) {
 	    this.name = name;
