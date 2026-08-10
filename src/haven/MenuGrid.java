@@ -314,10 +314,13 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		tt += " [$b{$col[255,128,0]{" + key.longname() + "}}]";
 	    BufferedImage ret = PUtils.strokeImg(PUtils.strokeImg(ttfnd.render(tt, UI.scale(300)).img));
 	    if(withpg) {
-		List<ItemInfo> info = info();
+		List<ItemInfo> info = new ArrayList<>(info());
 		info.removeIf(el -> el instanceof ItemInfo.Name);
-		if(!info.isEmpty())
-		    ret = ItemInfo.catimgs(0, ret, ItemInfo.longtip(info));
+		if(!info.isEmpty()) {
+		    BufferedImage longtip = ItemInfo.longtip(info);
+		    if(longtip != null)
+			ret = ItemInfo.catimgs(0, ret, longtip);
+		}
 	    }
 	    return(ret);
 	}

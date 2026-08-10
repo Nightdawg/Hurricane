@@ -149,6 +149,8 @@ public abstract class ItemInfo {
 		});
 	    for(Tip tip : tips)
 		tip.layout(this);
+	    if((cmp.sz.x <= 0) || (cmp.sz.y <= 0))
+		return(null);
 	    return(cmp.compose());
 	}
     }
@@ -460,7 +462,8 @@ public abstract class ItemInfo {
 	}
 	if(l.tips.size() < 1)
 	    return(null);
-	return(PUtils.strokeImg(l.render()));
+	BufferedImage ret = l.render();
+	return((ret == null) ? null : PUtils.strokeImg(ret));
     }
 
     public static BufferedImage shorttip(List<ItemInfo> info) {
