@@ -162,6 +162,7 @@ public class MappingClient {
 	    ArrayList<JSONObject> loadedMarkers = new ArrayList<>();
 	    while (!markers.isEmpty()) {
 		Iterator<MarkerData> iterator = markers.iterator();
+		String _genus = OptWnd.supplyGenusCheckBox.a ? genus : null;
 		while (iterator.hasNext()) {
 		    MarkerData md = iterator.next();
 		    try {
@@ -175,7 +176,7 @@ public class MappingClient {
 			}
 			JSONObject o = new JSONObject();
 			o.put("name", md.m.nm);
-			if(genus != null && OptWnd.supplyGenusCheckBox.a) {
+			if(_genus != null) {
 				o.put("genus", genus);
 			}
 			o.put("gridID", String.valueOf(gridId));
