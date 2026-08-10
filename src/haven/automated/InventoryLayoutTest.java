@@ -89,9 +89,35 @@ public class InventoryLayoutTest {
 	check("13 copyGrid does not alias the source", Boolean.FALSE, src[0][0]);
     }
 
+    private static void findFreeCellTests() {
+	Coord isz43 = new Coord(4, 3);
+	Coord isz22 = new Coord(2, 2);
+
+	// 1: column 0 full - what a vertical sort leaves behind. 8 cells free.
+	check("1 findFreeCell, column 0 full", new Coord(1, 0),
+	      InventoryLayout.findFreeCell(isz43, grid(4, 3), grid(4, 3, 0,0, 0,1, 0,2)));
+
+	// 2: row 0 full - what a horizontal sort leaves behind. 8 cells free.
+	check("2 findFreeCell, row 0 full", new Coord(0, 1),
+	      InventoryLayout.findFreeCell(isz43, grid(4, 3), grid(4, 3, 0,0, 1,0, 2,0, 3,0)));
+
+	// 3: scan stops before the occupied cell
+	check("3 findFreeCell, only (1,0) occupied", new Coord(0, 0),
+	      InventoryLayout.findFreeCell(isz43, grid(4, 3), grid(4, 3, 1,0)));
+
+	// 4: a masked cell is skipped, not treated as scan-terminating
+	check("4 findFreeCell, masked (0,0) and occupied (1,0)", new Coord(2, 0),
+	      InventoryLayout.findFreeCell(isz43, grid(4, 3, 0,0), grid(4, 3, 1,0)));
+
+	// 5: genuinely full
+	check("5 findFreeCell, 2x2 full", null,
+	      InventoryLayout.findFreeCell(isz22, grid(2, 2), grid(2, 2, 0,0, 1,0, 0,1, 1,1)));
+    }
+
     public static void main(String[] args) {
 	findFitTests();
 	copyGridTests();
+	findFreeCellTests();
 	System.out.println();
 	System.out.println(failures == 0
 			   ? (total + " of " + total + " passed")
