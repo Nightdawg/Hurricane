@@ -53,8 +53,9 @@ class InventoryLayout {
     }
 
     /**
-     * Marks an item's rect, ignoring cells outside the grid. Used for positions
+     * Marks an item's rect, ignoring cells outside isz. Used for positions
      * reported by the server, which markGrid's unchecked indexing cannot accept.
+     * The caller is responsible for isz matching the grid's actual dimensions.
      */
     static void markOccupied(boolean[][] grid, Coord isz, Coord pos, Coord slots, boolean val) {
 	for (int x = pos.x; x < pos.x + slots.x; x++)

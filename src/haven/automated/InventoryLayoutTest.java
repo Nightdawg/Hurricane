@@ -131,6 +131,12 @@ public class InventoryLayoutTest {
 	check("14a markOccupied marks the in-bounds cell", Boolean.TRUE, g14[3][2]);
 	check("14b markOccupied leaves the neighbour alone", Boolean.FALSE, g14[2][2]);
 
+	// 14c: a negative anchor clips on the low edge - without the >= 0 half of
+	// the guard this throws, and cases 14a/14b/15/16 would not notice
+	boolean[][] g14c = grid(4, 3);
+	InventoryLayout.markOccupied(g14c, isz43, new Coord(-1, -1), new Coord(2, 2), true);
+	check("14c markOccupied clips a negative anchor", Boolean.TRUE, g14c[0][0]);
+
 	// 15: clearing is symmetric
 	boolean[][] g15 = grid(4, 3, 1,1, 2,1);
 	InventoryLayout.markOccupied(g15, isz43, new Coord(1, 1), new Coord(2, 1), false);
