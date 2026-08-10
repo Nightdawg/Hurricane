@@ -112,12 +112,20 @@ public class InventoryLayoutTest {
 	// 5: genuinely full
 	check("5 findFreeCell, 2x2 full", null,
 	      InventoryLayout.findFreeCell(isz22, grid(2, 2), grid(2, 2, 0,0, 1,0, 0,1, 1,1)));
+
+	// 5b: only the far corner is free - an off-by-one that under-scans the
+	// last row or column would return null here, same as case 5 does
+	check("5b findFreeCell, only the last cell free", new Coord(3, 2),
+	      InventoryLayout.findFreeCell(isz43, grid(4, 3),
+					   grid(4, 3, 0,0, 1,0, 2,0, 3,0,
+						      0,1, 1,1, 2,1, 3,1,
+						      0,2, 1,2, 2,2)));
     }
 
     public static void main(String[] args) {
+	findFreeCellTests();
 	findFitTests();
 	copyGridTests();
-	findFreeCellTests();
 	System.out.println();
 	System.out.println(failures == 0
 			   ? (total + " of " + total + " passed")
