@@ -52,7 +52,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    return;
 	}
 	if (vertical)
-	    inv.ui.gui.msg("Sorting vertically", Color.WHITE);
+	    inv.ui.gui.msg("Sorting into columns", Color.WHITE);
 	start(new InventorySorter(Collections.singletonList(inv), inv.ui.gui, vertical));
     }
 
