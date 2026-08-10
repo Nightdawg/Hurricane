@@ -49,6 +49,17 @@ public class InventoryLayoutTest {
 	check("7b findFit vertical, second 1x1", new Coord(0, 1),
 	      InventoryLayout.findFit(g7, isz43, one, true));
 
+	// 7c/7d: the whole point of the feature - walk column 0 to its end, then
+	// start column 1. A row-major scan gives (2,0) and (3,0) here instead.
+	boolean[][] g7c = grid(4, 3);
+	Coord[] seq = new Coord[4];
+	for (int i = 0; i < seq.length; i++) {
+	    seq[i] = InventoryLayout.findFit(g7c, isz43, one, true);
+	    InventoryLayout.markGrid(g7c, seq[i], one, true);
+	}
+	check("7c findFit vertical, third 1x1 ends column 0", new Coord(0, 2), seq[2]);
+	check("7d findFit vertical, fourth 1x1 starts column 1", new Coord(1, 0), seq[3]);
+
 	// 8: a 1x2 in a 3-row grid leaves one dead row in its column
 	Coord tall = new Coord(1, 2);
 	boolean[][] g8 = grid(4, 3);
