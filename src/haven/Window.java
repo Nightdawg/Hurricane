@@ -477,15 +477,16 @@ public class Window extends Widget {
 			return;
 
         sortbtn = add(new IButton(sortbtni[0], sortbtni[1], sortbtni[2])).action(() -> {
+            boolean vertical = (ui.modflags() & UI.MOD_SHIFT) != 0;
             for (Widget wdg = this; wdg != null; wdg = wdg.next) {
                 Inventory inv = Inventory.fromWidget(wdg);
                 if (inv != null) {
-                    InventorySorter.sort(inv);
+                    InventorySorter.sort(inv, vertical);
                     break;
                 }
             }
         });
-        sortbtn.settip("Sort All");
+        sortbtn.settip("Sort (Shift+Click: fill columns)");
         sortbtn.visible = false;
         refreshInventoryButtons();
     }
