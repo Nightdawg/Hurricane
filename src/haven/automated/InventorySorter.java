@@ -119,16 +119,21 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    entries.add(new Entry(w, slots, current));
 	}
 
+	// Live occupancy, kept in step with every move made below
+	boolean[][] occupied = new boolean[inv.isz.x][inv.isz.y];
+	for (Entry e : entries)
+	    InventoryLayout.markOccupied(occupied, inv.isz, e.current, e.slots, true);
+
 	// Sort all items together
 	entries.sort(Comparator.comparing(e -> e.w, ITEM_COMPARATOR));
 
 	// Assign target positions in scan order, respecting each item's size
-	boolean[][] assignGrid = copyGrid(maskGrid, inv.isz);
+	boolean[][] assignGrid = InventoryLayout.copyGrid(maskGrid, inv.isz);
 	for (Entry e : entries) {
-	    Coord pos = findFit(assignGrid, inv.isz, e.slots);
+	    Coord pos = InventoryLayout.findFit(assignGrid, inv.isz, e.slots, false);
 	    if (pos == null) break;
 	    e.target = pos;
-	    markGrid(assignGrid, pos, e.slots, true);
+	    InventoryLayout.markGrid(assignGrid, pos, e.slots, true);
 	}
 
 	List<Entry> singles = entries.stream().filter(e -> e.slots.x * e.slots.y == 1).collect(Collectors.toList());
@@ -145,13 +150,15 @@ public class InventorySorter implements Defer.Callable<Void> {
 		    Coord cell = new Coord(tx, ty);
 		    for (Entry se : singles) {
 			if (se.current.equals(cell)) {
-			    Coord free = findFreeCell(inv.isz, maskGrid, entries);
+			    Coord free = InventoryLayout.findFreeCell(inv.isz, maskGrid, occupied);
 			    if (free == null) { blocked = true; break; }
 			    se.w.item.wdgmsg("take", Coord.z);
 			    Thread.sleep(10);
 			    inv.wdgmsg("drop", free);
 			    Thread.sleep(10);
+			    InventoryLayout.markOccupied(occupied, inv.isz, se.current, se.slots, false);
 			    se.current = free;
+			    InventoryLayout.markOccupied(occupied, inv.isz, se.current, se.slots, true);
 			    break;
 			}
 		    }
@@ -162,7 +169,9 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    Thread.sleep(10);
 	    inv.wdgmsg("drop", me.target);
 	    Thread.sleep(10);
+	    InventoryLayout.markOccupied(occupied, inv.isz, me.current, me.slots, false);
 	    me.current = me.target;
+	    InventoryLayout.markOccupied(occupied, inv.isz, me.current, me.slots, true);
 	}
 	if (anyMultiSkipped)
 	    gui.error("Could not move all large items — inventory too full");
@@ -183,53 +192,6 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    }
 	    Thread.sleep(10);
 	}
-    }
-
-    // Find the first position where an item of given slots fits (left-to-right, top-to-bottom)
-    private static Coord findFit(boolean[][] grid, Coord isz, Coord slots) {
-	for (int y = 0; y <= isz.y - slots.y; y++) {
-	    for (int x = 0; x <= isz.x - slots.x; x++) {
-		if (fits(grid, x, y, slots)) return new Coord(x, y);
-	    }
-	}
-	return null;
-    }
-
-    private static boolean fits(boolean[][] grid, int ox, int oy, Coord slots) {
-	for (int x = 0; x < slots.x; x++)
-	    for (int y = 0; y < slots.y; y++)
-		if (grid[ox + x][oy + y]) return false;
-	return true;
-    }
-
-    // Find a free 1x1 cell not currently occupied by any item
-    private static Coord findFreeCell(Coord isz, boolean[][] maskGrid, List<Entry> entries) {
-	outer:
-	for (int y = 0; y < isz.y; y++) {
-	    for (int x = 0; x < isz.x; x++) {
-		if (maskGrid[x][y]) continue;
-		for (Entry e : entries) {
-		    for (int ex = e.current.x; ex < e.current.x + e.slots.x; ex++)
-			for (int ey = e.current.y; ey < e.current.y + e.slots.y; ey++)
-			    if (ex == x && ey == y) continue outer;
-		}
-		return new Coord(x, y);
-	    }
-	}
-	return null;
-    }
-
-    private static boolean[][] copyGrid(boolean[][] src, Coord sz) {
-	boolean[][] copy = new boolean[sz.x][sz.y];
-	for (int x = 0; x < sz.x; x++)
-	    copy[x] = Arrays.copyOf(src[x], sz.y);
-	return copy;
-    }
-
-    private static void markGrid(boolean[][] grid, Coord pos, Coord slots, boolean val) {
-	for (int x = 0; x < slots.x; x++)
-	    for (int y = 0; y < slots.y; y++)
-		grid[pos.x + x][pos.y + y] = val;
     }
 
     public static void cancel() {
