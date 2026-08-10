@@ -122,10 +122,32 @@ public class InventoryLayoutTest {
 						      0,2, 1,2, 2,2)));
     }
 
+    private static void markOccupiedTests() {
+	Coord isz43 = new Coord(4, 3);
+
+	// 14: a 2x2 item anchored at (3,2) runs off both edges - must not throw
+	boolean[][] g14 = grid(4, 3);
+	InventoryLayout.markOccupied(g14, isz43, new Coord(3, 2), new Coord(2, 2), true);
+	check("14a markOccupied marks the in-bounds cell", Boolean.TRUE, g14[3][2]);
+	check("14b markOccupied leaves the neighbour alone", Boolean.FALSE, g14[2][2]);
+
+	// 15: clearing is symmetric
+	boolean[][] g15 = grid(4, 3, 1,1, 2,1);
+	InventoryLayout.markOccupied(g15, isz43, new Coord(1, 1), new Coord(2, 1), false);
+	check("15a markOccupied clears (1,1)", Boolean.FALSE, g15[1][1]);
+	check("15b markOccupied clears (2,1)", Boolean.FALSE, g15[2][1]);
+
+	// 16: a zero-sized item marks nothing (sprites smaller than sqsz)
+	boolean[][] g16 = grid(4, 3);
+	InventoryLayout.markOccupied(g16, isz43, new Coord(0, 0), new Coord(0, 1), true);
+	check("16 markOccupied with a zero slot marks nothing", Boolean.FALSE, g16[0][0]);
+    }
+
     public static void main(String[] args) {
 	findFreeCellTests();
 	findFitTests();
 	copyGridTests();
+	markOccupiedTests();
 	System.out.println();
 	System.out.println(failures == 0
 			   ? (total + " of " + total + " passed")

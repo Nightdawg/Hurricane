@@ -52,6 +52,17 @@ class InventoryLayout {
 		grid[pos.x + x][pos.y + y] = val;
     }
 
+    /**
+     * Marks an item's rect, ignoring cells outside the grid. Used for positions
+     * reported by the server, which markGrid's unchecked indexing cannot accept.
+     */
+    static void markOccupied(boolean[][] grid, Coord isz, Coord pos, Coord slots, boolean val) {
+	for (int x = pos.x; x < pos.x + slots.x; x++)
+	    for (int y = pos.y; y < pos.y + slots.y; y++)
+		if (x >= 0 && x < isz.x && y >= 0 && y < isz.y)
+		    grid[x][y] = val;
+    }
+
     /** First free, unmasked cell in row-major scan order, or null. */
     static Coord findFreeCell(Coord isz, boolean[][] mask, boolean[][] occupied) {
 	for (int y = 0; y < isz.y; y++)
