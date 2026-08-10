@@ -98,6 +98,16 @@ public class InventorySorter implements Defer.Callable<Void> {
 	}
     }
 
+    /**
+     * Moves an entry to a new cell, keeping the occupancy grid in step. Clears the
+     * old rect before reassigning current, so callers cannot get the order wrong.
+     */
+    private static void relocate(Entry e, Coord to, boolean[][] occupied, Coord isz) {
+	InventoryLayout.markOccupied(occupied, isz, e.current, e.slots, false);
+	e.current = to;
+	InventoryLayout.markOccupied(occupied, isz, e.current, e.slots, true);
+    }
+
     private void doSort(Inventory inv) throws InterruptedException {
 	// Build mask grid (permanently blocked cells)
 	boolean[][] maskGrid = new boolean[inv.isz.x][inv.isz.y];
@@ -120,9 +130,9 @@ public class InventorySorter implements Defer.Callable<Void> {
 	}
 
 	// Live occupancy, kept in step with every move made below
-	boolean[][] occupied = new boolean[inv.isz.x][inv.isz.y];
+	boolean[][] occupiedGrid = new boolean[inv.isz.x][inv.isz.y];
 	for (Entry e : entries)
-	    InventoryLayout.markOccupied(occupied, inv.isz, e.current, e.slots, true);
+	    InventoryLayout.markOccupied(occupiedGrid, inv.isz, e.current, e.slots, true);
 
 	// Sort all items together
 	entries.sort(Comparator.comparing(e -> e.w, ITEM_COMPARATOR));
@@ -150,15 +160,13 @@ public class InventorySorter implements Defer.Callable<Void> {
 		    Coord cell = new Coord(tx, ty);
 		    for (Entry se : singles) {
 			if (se.current.equals(cell)) {
-			    Coord free = InventoryLayout.findFreeCell(inv.isz, maskGrid, occupied);
+			    Coord free = InventoryLayout.findFreeCell(inv.isz, maskGrid, occupiedGrid);
 			    if (free == null) { blocked = true; break; }
 			    se.w.item.wdgmsg("take", Coord.z);
 			    Thread.sleep(10);
 			    inv.wdgmsg("drop", free);
 			    Thread.sleep(10);
-			    InventoryLayout.markOccupied(occupied, inv.isz, se.current, se.slots, false);
-			    se.current = free;
-			    InventoryLayout.markOccupied(occupied, inv.isz, se.current, se.slots, true);
+			    relocate(se, free, occupiedGrid, inv.isz);
 			    break;
 			}
 		    }
@@ -169,9 +177,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    Thread.sleep(10);
 	    inv.wdgmsg("drop", me.target);
 	    Thread.sleep(10);
-	    InventoryLayout.markOccupied(occupied, inv.isz, me.current, me.slots, false);
-	    me.current = me.target;
-	    InventoryLayout.markOccupied(occupied, inv.isz, me.current, me.slots, true);
+	    relocate(me, me.target, occupiedGrid, inv.isz);
 	}
 	if (anyMultiSkipped)
 	    gui.error("Could not move all large items — inventory too full");
