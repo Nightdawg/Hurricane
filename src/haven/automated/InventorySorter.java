@@ -3,6 +3,7 @@ package haven.automated;
 import haven.*;
 import haven.res.ui.tt.q.quality.Quality;
 
+import java.awt.Color;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,18 +34,26 @@ public class InventorySorter implements Defer.Callable<Void> {
     private Defer.Future<Void> task;
     private final List<Inventory> inventories;
     private final GameUI gui;
+    private final boolean vertical;
 
-    private InventorySorter(List<Inventory> inventories, GameUI gui) {
+    private InventorySorter(List<Inventory> inventories, GameUI gui, boolean vertical) {
 	this.inventories = inventories;
 	this.gui = gui;
+	this.vertical = vertical;
     }
 
     public static void sort(Inventory inv) {
+	sort(inv, false);
+    }
+
+    public static void sort(Inventory inv, boolean vertical) {
 	if (inv.ui.gui.vhand != null) {
 	    inv.ui.gui.error("Need empty cursor to sort inventory!");
 	    return;
 	}
-	start(new InventorySorter(Collections.singletonList(inv), inv.ui.gui));
+	if (vertical)
+	    inv.ui.gui.msg("Sorting vertically", Color.WHITE);
+	start(new InventorySorter(Collections.singletonList(inv), inv.ui.gui, vertical));
     }
 
     public static void sortAll(GameUI gui) {
@@ -59,7 +68,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    targets.add(inv);
 	}
 	if (!targets.isEmpty()) {
-	    start(new InventorySorter(targets, gui));
+	    start(new InventorySorter(targets, gui, false));
 	}
     }
 
@@ -140,7 +149,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	// Assign target positions in scan order, respecting each item's size
 	boolean[][] assignGrid = InventoryLayout.copyGrid(maskGrid, inv.isz);
 	for (Entry e : entries) {
-	    Coord pos = InventoryLayout.findFit(assignGrid, inv.isz, e.slots, false);
+	    Coord pos = InventoryLayout.findFit(assignGrid, inv.isz, e.slots, vertical);
 	    if (pos == null) break;
 	    e.target = pos;
 	    InventoryLayout.markGrid(assignGrid, pos, e.slots, true);
