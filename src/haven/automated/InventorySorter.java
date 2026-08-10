@@ -75,7 +75,7 @@ public class InventorySorter implements Defer.Callable<Void> {
     public Void call() throws InterruptedException {
 	for (Inventory inv : inventories) {
 	    if (inv.parent == null) return null;
-	    doSort(inv);
+	    if (!doSort(inv)) return null;
 	}
 	synchronized (lock) {
 	    if (current == this) current = null;
@@ -108,7 +108,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	InventoryLayout.markOccupied(occupied, isz, e.current, e.slots, true);
     }
 
-    private void doSort(Inventory inv) throws InterruptedException {
+    private boolean doSort(Inventory inv) throws InterruptedException {
 	// Build mask grid (permanently blocked cells)
 	boolean[][] maskGrid = new boolean[inv.isz.x][inv.isz.y];
 	if (inv.sqmask != null) {
@@ -187,11 +187,12 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    if (se.current.equals(se.target)) continue;
 	    se.w.item.wdgmsg("take", Coord.z);
 	    Entry handu = se;
+	    // a legitimate cycle visits each single at most once, so n+1 is one spare
 	    int guard = singles.size() + 1;
 	    while (handu != null) {
 		if (--guard < 0) {
-		    gui.error("Sort incomplete: placement chain too long — check your cursor");
-		    return;
+		    gui.error("Sort incomplete — placement chain too long, check your cursor");
+		    return false;
 		}
 		inv.wdgmsg("drop", handu.target);
 		Entry next = null;
@@ -203,6 +204,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    }
 	    Thread.sleep(10);
 	}
+	return true;
     }
 
     public static void cancel() {
