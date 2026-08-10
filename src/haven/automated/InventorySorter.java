@@ -187,7 +187,12 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    if (se.current.equals(se.target)) continue;
 	    se.w.item.wdgmsg("take", Coord.z);
 	    Entry handu = se;
+	    int guard = singles.size() + 1;
 	    while (handu != null) {
+		if (--guard < 0) {
+		    gui.error("Sort incomplete: placement chain too long — check your cursor");
+		    return;
+		}
 		inv.wdgmsg("drop", handu.target);
 		Entry next = null;
 		for (Entry x : singles) {
