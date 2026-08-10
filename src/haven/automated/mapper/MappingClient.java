@@ -301,6 +301,7 @@ public class MappingClient {
 		spamCount = 0;
 		if(OptWnd.sendLiveLocationCheckBox.a) {
 		    Glob g = glob;
+		    boolean supplyGenus = OptWnd.supplyGenusCheckBox.a;
 		    Iterator<Map.Entry<Long, Tracking>> i = tracking.entrySet().iterator();
 		    JSONObject upload = new JSONObject();
 		    while (i.hasNext()) {
@@ -308,7 +309,6 @@ public class MappingClient {
 			if(g.oc.getgob(e.getKey()) == null) {
 			    i.remove();
 			} else {
-			    boolean supplyGenus = OptWnd.supplyGenusCheckBox.a;
 			    upload.put(String.valueOf(e.getKey()), e.getValue().getJSON(supplyGenus));
 			}
 		    }
