@@ -83,12 +83,13 @@ class InventoryLayout {
      * InventoryMoves: an item can fit its target and still be impossible to
      * carry there, and only the move planner knows which.
      *
-     * `seed` is not modified.
+     * `seed` is indexed like `slots` and is not modified; entries past its end
+     * count as unpinned.
      */
     static Coord[] assignTargets(boolean[][] mask, Coord isz, Coord[] slots,
 				 Coord[] current, boolean vertical, boolean[] seed) {
 	Coord[] targets = new Coord[slots.length];
-	boolean[] pinned = Arrays.copyOf(seed, seed.length);
+	boolean[] pinned = Arrays.copyOf(seed, slots.length);
 	int[] order = packOrder(slots, vertical);
 	for (int attempt = 0; attempt <= slots.length; attempt++) {
 	    boolean[][] grid = copyGrid(mask, isz);
