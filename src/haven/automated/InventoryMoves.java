@@ -139,4 +139,134 @@ class InventoryMoves {
 	    return true;
 	}
     }
+
+    /** A move list, the layout it realises, and whether anything had to stay put. */
+    static class Plan {
+	final List<Op> ops;
+	final Coord[] targets;      // null at i: item i is pinned where it is
+	final boolean pinnedMulti;  // a multi-tile item had to stay put
+
+	Plan(List<Op> ops, Coord[] targets, boolean pinnedMulti) {
+	    this.ops = ops;
+	    this.targets = targets;
+	    this.pinnedMulti = pinnedMulti;
+	}
+    }
+
+    /**
+     * The move list that takes the inventory from `current` to the layout
+     * InventoryLayout picks, or as close to it as can actually be carried out.
+     *
+     * An item can fit its target and still be impossible to carry there - a
+     * large item whose destination is blocked by another large item, for
+     * instance. When that happens the item is pinned and the layout is
+     * recomputed around it, which is the same pin-and-restart loop
+     * assignTargets already runs for items that do not fit at all. Each restart
+     * pins one more item and the all-pinned state is the original layout, so
+     * this terminates in at most n passes.
+     */
+    static Plan plan(boolean[][] mask, Coord isz, Coord[] slots,
+		     Coord[] current, boolean vertical) {
+	boolean[] pinned = new boolean[slots.length];
+	for (int attempt = 0; attempt <= slots.length; attempt++) {
+	    Coord[] targets = InventoryLayout.assignTargets(mask, isz, slots, current,
+							    vertical, pinned);
+	    List<Op> ops = new ArrayList<>();
+	    int stuck = sequence(mask, isz, slots, current, targets, ops);
+	    if (stuck < 0) {
+		boolean multi = false;
+		for (int i = 0; i < slots.length; i++)
+		    if ((targets[i] == null) && !Sim.one(slots[i]))
+			multi = true;
+		return new Plan(ops, targets, multi);
+	    }
+	    pinned[stuck] = true;
+	}
+	throw new AssertionError("pin-and-restart did not converge");
+    }
+
+    /**
+     * Emits the moves realising `targets` into `ops`. Returns -1 on success, or
+     * the index of an item that cannot be carried to its target.
+     *
+     * Two move shapes, and no others:
+     *
+     *  - direct: the target rect is empty, so take and drop land cleanly. This
+     *    is the only shape a multi-tile item ever gets.
+     *  - chain: a 1x1 whose target holds exactly one other 1x1. Dropping swaps,
+     *    the displaced item comes up on the cursor, and it is dropped on its own
+     *    target in turn. The cycle closes on the hole the first take opened.
+     *
+     * Preferring direct moves is what removes the old eviction step entirely:
+     * an item moved to its own target is never in the way again, whereas the
+     * old code shoved items into whatever cell was free - including cells
+     * inside the very rect it was trying to clear.
+     */
+    private static int sequence(boolean[][] mask, Coord isz, Coord[] slots,
+				Coord[] current, Coord[] targets, List<Op> ops) {
+	Sim sim = new Sim(isz, mask, slots, current);
+	boolean[] done = new boolean[slots.length];
+	for (int i = 0; i < slots.length; i++)
+	    done[i] = (targets[i] == null) || targets[i].equals(current[i]);
+
+	for (;;) {
+	    int direct = -1, chain = -1;
+	    for (int i = 0; i < slots.length; i++) {
+		if (done[i]) continue;
+		int u = single(sim, targets[i], slots[i]);
+		if (u == EMPTY) {
+		    // a multi-tile item only ever gets this shape, so give it
+		    // the free rect before a 1x1 can settle into it
+		    if (!Sim.one(slots[i])) { direct = i; break; }
+		    if (direct < 0) direct = i;
+		} else if (u >= 0 && Sim.one(slots[i]) && Sim.one(slots[u]) && chain < 0) {
+		    chain = i;
+		}
+	    }
+
+	    int start = (direct >= 0) ? direct : chain;
+	    if (start < 0) break;
+
+	    if (!sim.take(start)) return start;
+	    ops.add(Op.take(start));
+	    while (sim.hand >= 0) {
+		int held = sim.hand;
+		if (targets[held] == null || !sim.drop(targets[held])) return held;
+		ops.add(Op.drop(targets[held]));
+		done[held] = true;
+	    }
+	}
+
+	for (int i = 0; i < slots.length; i++)
+	    if (!done[i]) {
+		// prefer pinning a multi-tile item: it is the one whose rect
+		// blocks everything else, and pinning a 1x1 would not unstick it
+		if (!Sim.one(slots[i])) return i;
+	    }
+	for (int i = 0; i < slots.length; i++)
+	    if (!done[i]) return i;
+	return -1;
+    }
+
+    private static final int EMPTY = -1, MANY = -2;
+
+    /**
+     * The single item under `at`, EMPTY if the rect is clear, or MANY if it is
+     * unusable - more than one item, off the grid, or masked.
+     */
+    private static int single(Sim sim, Coord at, Coord sz) {
+	if (at == null) return MANY;
+	if (at.x < 0 || at.y < 0 || at.x + sz.x > sim.isz.x || at.y + sz.y > sim.isz.y)
+	    return MANY;
+	int found = EMPTY;
+	for (int x = at.x; x < at.x + sz.x; x++)
+	    for (int y = at.y; y < at.y + sz.y; y++) {
+		if (sim.mask[x][y]) return MANY;
+		int o = sim.at(x, y);
+		if (o < 0) continue;
+		if (found != EMPTY && found != o) return MANY;
+		found = o;
+	    }
+	return found;
+    }
 }
