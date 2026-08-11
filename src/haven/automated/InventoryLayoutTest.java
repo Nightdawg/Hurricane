@@ -233,11 +233,11 @@ public class InventoryLayoutTest {
 	check("23c assignTargets, two 1x2 and eight 1x1 all fit a 4x3", Boolean.TRUE,
 	      allPlaced(t23));
 
-	// 24: um item fixado de fora fica onde está, e nada é mandado por cima
-	// dele. É o gancho que o planejador de movimentos usa quando descobre
-	// que um item até cabe no alvo, mas não há como levá-lo até lá.
+	// 24: a caller-pinned item stays where it is, and nothing is sent on
+	// top of it. This is the hook the move planner uses once it finds that
+	// an item would fit its target but there is no way to get it there.
 	Coord[] sl24 = coords(cat(rep(1, 2, 1), rep(10, 1, 1)));
-	Coord[] cur24 = coords(2,2,                                  // o 2x1 ocupa (2,2)-(3,2)
+	Coord[] cur24 = coords(2,2,                                  // the 2x1 spans (2,2)-(3,2)
 			       0,0, 1,0, 2,0, 3,0, 0,1, 1,1, 2,1, 3,1, 0,2, 1,2);
 	boolean[] pin24 = new boolean[sl24.length];
 	pin24[0] = true;

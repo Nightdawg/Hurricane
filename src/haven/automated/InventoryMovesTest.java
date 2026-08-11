@@ -51,34 +51,34 @@ public class InventoryMovesTest {
 
     private static void simTests() {
 	Coord isz43 = new Coord(4, 3);
-	// duas peças: um 2x1 em (0,0)-(1,0) e um 1x1 em (2,0)
+	// two pieces: a 2x1 at (0,0)-(1,0) and a 1x1 at (2,0)
 	Coord[] slots = coords(2,1, 1,1);
 	Coord[] cur = coords(0,0, 2,0);
 
-	// 1: take de mão vazia funciona, take com a mão ocupada não
+	// 1: a take off an empty cursor works, a take with a full one does not
 	InventoryMoves.Sim s1 = new InventoryMoves.Sim(isz43, grid(4, 3), slots, cur);
 	check("1a take with an empty cursor", Boolean.TRUE, s1.take(0));
 	check("1b take with a full cursor is refused", Boolean.FALSE, s1.take(1));
 
-	// 2: drop em retângulo vazio funciona
+	// 2: a drop into an empty rect works
 	InventoryMoves.Sim s2 = new InventoryMoves.Sim(isz43, grid(4, 3), slots, cur);
 	s2.take(0);
 	check("2a drop into an empty rect", Boolean.TRUE, s2.drop(new Coord(0, 1)));
 	check("2b the cursor is empty afterwards", -1, s2.hand);
 	check("2c the item is where it was dropped", new Coord(0, 1), s2.pos[0]);
 
-	// 3: drop fora dos limites é recusado
+	// 3: a drop out of bounds is refused
 	InventoryMoves.Sim s3 = new InventoryMoves.Sim(isz43, grid(4, 3), slots, cur);
 	s3.take(0);
 	check("3 drop past the right edge is refused", Boolean.FALSE, s3.drop(new Coord(3, 0)));
 
-	// 4: drop em célula mascarada é recusado
+	// 4: a drop onto a masked cell is refused
 	InventoryMoves.Sim s4 = new InventoryMoves.Sim(isz43, grid(4, 3, 0,2), slots, cur);
 	s4.take(0);
 	check("4 drop onto a masked cell is refused", Boolean.FALSE, s4.drop(new Coord(0, 2)));
 
-	// 5: 1x1 sobre 1x1 troca - o mecanismo da corrente, o único caso de
-	// troca que o planejador tem permissão de usar
+	// 5: 1x1 onto 1x1 swaps - the mechanism the chain rides on, and the
+	// only swap the planner is allowed to use
 	Coord[] sl5 = coords(rep(2, 1, 1));
 	Coord[] cur5 = coords(0,0, 1,0);
 	InventoryMoves.Sim s5 = new InventoryMoves.Sim(isz43, grid(4, 3), sl5, cur5);
@@ -87,20 +87,21 @@ public class InventoryMovesTest {
 	check("5b the swapped item is now on the cursor", 1, s5.hand);
 	check("5c the dropped item took its place", new Coord(1, 0), s5.pos[0]);
 
-	// 6: 1x1 sobre item grande NÃO troca. É a política conservadora: essa
-	// troca é justamente o acidente que hoje deixa o item grande na mão.
+	// 6: 1x1 onto a multi-tile item does NOT swap. That is the conservative
+	// policy: this swap is exactly the accident that leaves the multi-tile
+	// item stuck on the cursor today.
 	InventoryMoves.Sim s6 = new InventoryMoves.Sim(isz43, grid(4, 3), slots, cur);
 	s6.take(1);
 	check("6 1x1 dropped onto a multi-tile item is refused", Boolean.FALSE,
 	      s6.drop(new Coord(0, 0)));
 
-	// 7: item grande sobre um único 1x1 também não troca
+	// 7: a multi-tile item onto a single 1x1 does not swap either
 	InventoryMoves.Sim s7 = new InventoryMoves.Sim(isz43, grid(4, 3), slots, cur);
 	s7.take(0);
 	check("7 a multi-tile item dropped onto a 1x1 is refused", Boolean.FALSE,
 	      s7.drop(new Coord(2, 0)));
 
-	// 8: dois itens embaixo nunca aceita
+	// 8: two items underneath is never accepted
 	Coord[] sl8 = coords(2,1, 1,1, 1,1);
 	Coord[] cur8 = coords(0,2, 0,0, 1,0);
 	InventoryMoves.Sim s8 = new InventoryMoves.Sim(isz43, grid(4, 3), sl8, cur8);
@@ -153,10 +154,10 @@ public class InventoryMovesTest {
     private static void planTests() {
 	Coord isz43 = new Coord(4, 3);
 
-	// 9: um armário 4x3 cheio até a última célula, com um 2x1 que precisa
-	// sair de (2,2). É o relato do usuário: hoje a evicção não encontra
-	// célula livre, avisa "inventory too full" e a fase 2 deixa o item
-	// grande na mão. O plano tem de sair sem uma única recusa.
+	// 9: a 4x3 cupboard packed to the last cell, with a 2x1 that has to
+	// leave (2,2). This is the user's report: today eviction finds no free
+	// cell, warns "inventory too full", and phase 2 leaves the multi-tile
+	// item on the cursor. The plan has to come out without a single refusal.
 	Coord[] sl9 = coords(cat(rep(1, 2, 1), rep(10, 1, 1)));
 	Coord[] cur9 = coords(2,2,
 			      0,0, 1,0, 2,0, 3,0, 0,1, 1,1, 2,1, 3,1, 0,2, 1,2);
@@ -164,8 +165,8 @@ public class InventoryMovesTest {
 	check("9 full 4x3 with a 2x1 that has to move", null,
 	      replay(grid(4, 3), isz43, sl9, cur9, p9));
 
-	// 10: o mesmo armário com uma célula livre. Hoje esse caso falha em
-	// silêncio - nenhuma mensagem, e mesmo assim um item no cursor.
+	// 10: the same cupboard with one free cell. Today this case fails
+	// silently - no message, and an item left on the cursor anyway.
 	Coord[] sl10 = coords(cat(rep(1, 2, 1), rep(9, 1, 1)));
 	Coord[] cur10 = coords(2,2,
 			       0,0, 1,0, 2,0, 3,0, 0,1, 1,1, 2,1, 0,2, 1,2);
@@ -173,39 +174,40 @@ public class InventoryMovesTest {
 	check("10 same cupboard with one free cell", null,
 	      replay(grid(4, 3), isz43, sl10, cur10, p10));
 
-	// 11: doze 1x1 num 4x3 cheio, em ordem invertida. Puro ciclo: sem
-	// nenhuma célula livre, a única saída é a corrente de trocas.
+	// 11: twelve 1x1 in a full 4x3, in reverse order. A pure cycle: with no
+	// free cell at all, the swap chain is the only way out.
 	Coord[] sl11 = coords(rep(12, 1, 1));
 	Coord[] cur11 = coords(3,2, 2,2, 1,2, 0,2, 3,1, 2,1, 1,1, 0,1, 3,0, 2,0, 1,0, 0,0);
 	InventoryMoves.Plan p11 = InventoryMoves.plan(grid(4, 3), isz43, sl11, cur11, false);
 	check("11 a full grid of 1x1 in reverse order", null,
 	      replay(grid(4, 3), isz43, sl11, cur11, p11));
 
-	// 12: dois itens grandes disputando lugar. Fora de escopo resolver o
-	// movimento em cadeia deles - mas o plano continua obrigado a ser
-	// executável, fixando o que não dá para mover.
+	// 12: two multi-tile items contending for the same spot. Solving their
+	// chained movement is out of scope - but the plan is still required to
+	// be executable, pinning whatever cannot be moved.
 	Coord[] sl12 = coords(2,1, 2,1);
 	Coord[] cur12 = coords(2,0, 0,1);
 	InventoryMoves.Plan p12 = InventoryMoves.plan(grid(4, 3), isz43, sl12, cur12, false);
 	check("12 two multi-tile items contending for one spot", null,
 	      replay(grid(4, 3), isz43, sl12, cur12, p12));
 
-	// 13: nada a fazer produz plano vazio, não uma volta inútil
+	// 13: nothing to do produces an empty plan, not a pointless round trip
 	Coord[] sl13 = coords(rep(2, 1, 1));
 	Coord[] cur13 = coords(0,0, 1,0);
 	InventoryMoves.Plan p13 = InventoryMoves.plan(grid(4, 3), isz43, sl13, cur13, false);
 	check("13a an already sorted inventory plans no moves", 0, p13.ops.size());
 	check("13b and reports nothing pinned", Boolean.FALSE, p13.pinnedMulti);
 
-	// 14: modo vertical passa pelo mesmo contrato
+	// 14: vertical mode is held to the same contract
 	InventoryMoves.Plan p14 = InventoryMoves.plan(grid(4, 3), isz43, sl9, cur9, true);
 	check("14 full 4x3 with a 2x1, vertical fill", null,
 	      replay(grid(4, 3), isz43, sl9, cur9, p14));
 
-	// 15: um 2x1 cujo alvo cobre a própria célula atual - exatamente o caso
-	// em que single() via o próprio item como "ocupante" e nunca liberava a
-	// vaga. Ignorar quem está prestes a ser pego é o que permite o take;
-	// sem isso o item ficava fixado para sempre, mesmo sobrando espaço.
+	// 15: a 2x1 whose target covers its own current cell - exactly the case
+	// where single() saw the item itself as the "occupant" and never freed
+	// the spot. Ignoring the item that is about to be picked up is what
+	// makes the take possible; without that the item stayed pinned forever,
+	// even with room to spare.
 	Coord[] sl15 = coords(2,1);
 	Coord[] cur15 = coords(1,0);
 	InventoryMoves.Plan p15 = InventoryMoves.plan(grid(4, 3), isz43, sl15, cur15, false);
@@ -214,14 +216,14 @@ public class InventoryMovesTest {
 	check("15b and the item actually leaves where it started", Boolean.TRUE,
 	      p15.targets[0] != null && !p15.targets[0].equals(cur15[0]));
 
-	// 16: uma grade 3x2 cheia com um 2x1 e quatro 1x1. A corrente que troca
-	// os 1x1 entre si esbarra, no meio do caminho, num alvo que o 2x1 ainda
-	// ocupa - ele só sai de lá mais tarde, quando (nunca, nesta grade sem
-	// folga) sobrar espaço para ele. Commitando a corrente sem testar antes,
-	// o código antigo culpava a vítima da troca pelo bloqueio e fixava o
-	// item errado; a grade inteira saía quase toda fixada. Adiando a
-	// corrente em vez disso, só o 2x1 - que de fato não cabe em lugar
-	// nenhum numa grade cheia - fica pra trás.
+	// 16: a packed 3x2 grid with one 2x1 and four 1x1. The chain that swaps
+	// the 1x1 among themselves runs, halfway through, into a target the 2x1
+	// still occupies - and the 2x1 only leaves later, once (never, on a grid
+	// this tight) there is room for it. Committing the chain without trying
+	// it first, the old code blamed the swap victim for the block and pinned
+	// the wrong item; nearly the whole grid came out pinned. Deferring the
+	// chain instead, only the 2x1 - which genuinely fits nowhere on a full
+	// grid - is left behind.
 	Coord isz32 = new Coord(3, 2);
 	Coord[] sl16 = coords(2,1, 1,1, 1,1, 1,1, 1,1);
 	Coord[] cur16 = coords(1,0, 0,1, 1,1, 2,1, 0,0);
@@ -230,11 +232,11 @@ public class InventoryMovesTest {
 	      replay(grid(3, 2), isz32, sl16, cur16, p16));
 	check("16b and only the multi-tile item ends up pinned", 1, pinnedCount(p16.targets));
 
-	// 17: a mesma grade cheia do teste 9, mas agora checando se ela
-	// realmente ordena - não só se executa sem recusa. É a asserção que
-	// teria pegado o defeito inteiro: antes das correções, plan() passava
-	// no replay já que fixar um item nunca é uma recusa, mas saía da
-	// função com quase a grade inteira fixada em vez de ordenada.
+	// 17: the same packed grid as test 9, but now checking that it actually
+	// sorts - not merely that it runs without a refusal. This is the
+	// assertion that would have caught the whole defect: before the fixes,
+	// plan() passed replay() because pinning an item is never a refusal, and
+	// still returned with nearly the whole grid pinned instead of sorted.
 	check("17 a packed grid with one multi-tile item pins at most it", Boolean.TRUE,
 	      pinnedCount(p9.targets) <= 1);
     }
@@ -290,22 +292,22 @@ public class InventoryMovesTest {
     }
 
     /**
-     * Uma configuração de sweep; relata o primeiro layout que falhar, se
-     * algum falhar. "Falhar" cobre duas coisas, não só uma: uma recusa
-     * (replay != null) e um plano bom demais na forma, ruim demais no
-     * conteúdo - fixar mais itens do que existem itens grandes no layout.
-     * Essa segunda checagem é a razão de o sweep existir: o Task 3 já
-     * mandou um planejador que passava em replay() sempre, porque um plano
-     * que não move nada nunca é recusado, e mesmo assim fixava 21 de 22
-     * itens num armário cheio. Só contar itens fixados pegou aquilo; um
-     * sweep que só chamasse replay() teria deixado passar.
+     * One sweep configuration; reports the first layout that fails, if any
+     * does. "Fails" covers two things, not one: a refusal (replay != null),
+     * and a plan that is fine in shape but wrong in substance - pinning more
+     * items than there are multi-tile items in the layout. That second check
+     * is the reason the sweep exists: Task 3 already shipped a planner that
+     * passed replay() every time, because a plan that moves nothing is never
+     * refused, and still pinned 21 of 22 items in a packed cupboard. Only
+     * counting pinned items caught that; a sweep calling replay() alone would
+     * have let it through.
      */
     private static void sweep(String name, Coord isz, int nmulti, int freeCells,
 			      boolean vertical, long seed) {
-	// invariante medida empiricamente sobre estas mesmas configurações
-	// (máximo observado nunca passou de nmulti, em 2000 layouts cada):
-	// só um item grande fica pra trás, nunca um 1x1. Para nmulti == 0
-	// isso vira "nada fica fixado", que é o caso puro-permutação.
+	// an invariant measured empirically over these same configurations
+	// (the observed maximum never exceeded nmulti, over 2000 layouts each):
+	// only a multi-tile item is left behind, never a 1x1. For nmulti == 0
+	// this becomes "nothing is pinned", which is the pure-permutation case.
 	sweep(name, isz, nmulti, freeCells, vertical, seed, grid(isz.x, isz.y), nmulti);
     }
 
@@ -337,10 +339,10 @@ public class InventoryMovesTest {
 	    }
 	    if (bad != null) first = "layout " + r + ": " + bad;
 	}
-	// só reporta "poucos layouts utilizáveis" se nada mais específico já
-	// falhou - um defeito real interrompe o laço logo nos primeiros
-	// sorteios, e essa contagem baixa não pode apagar o índice e a causa
-	// que já foram encontrados
+	// only report "too few usable layouts" if nothing more specific has
+	// already failed - a real defect stops the loop within the first few
+	// draws, and that low count must not erase the index and the cause that
+	// were already found
 	if (first == null && drawn < runs / 2)
 	    first = "only " + drawn + " of " + runs + " layouts were usable";
 	check(name, null, first);
@@ -359,26 +361,25 @@ public class InventoryMovesTest {
 	sweep("19b sweep 4x3, 1 multi, packed", isz43, 1, 0, false, 9);
 	sweep("19c sweep 4x3, 1 multi, packed, vertical", isz43, 1, 0, true, 9);
 
-	// 20.x/21.x: as mesmas 2000 tiradas de antes, mas agora com células
-	// mascaradas - a única cobertura de máscara que passa por plan() em vez
-	// de cutucar Sim.drop() direto (ver simTests teste 4). A máscara é a
-	// mesma tanto em randomLayout (via used) quanto em plan/replay abaixo:
-	// nenhum dos dois vê uma grade mais livre do que a outra.
+	// 20.x/21.x: the same 2000 draws as before, but now with masked cells -
+	// the only mask coverage that goes through plan() instead of poking
+	// Sim.drop() directly (see simTests case 4). The mask is the same one in
+	// randomLayout (via used) and in plan/replay below: neither of them sees
+	// a freer grid than the other.
 	//
-	// O limite de itens fixados foi medido antes de virar asserção, do
-	// mesmo jeito que o limite sem máscara: instrumentando uma cópia
-	// descartável destas mesmas configurações por 2000 tiradas cada. Em
-	// todas elas o máximo observado foi exatamente nmulti (nunca mais),
-	// então o limite abaixo é o mesmo de sempre, só que agora verificado
-	// também com máscara em vez de só suposto.
+	// The pinned-item bound was measured before it became an assertion, the
+	// same way the unmasked bound was: by instrumenting a throwaway copy of
+	// these same configurations for 2000 draws each. In all of them the
+	// observed maximum was exactly nmulti (never more), so the bound below
+	// is the usual one, only now verified under a mask instead of assumed.
 	boolean[][] mask56 = grid(5, 6, 2,2, 4,0, 0,5, 1,3, 3,1, 4,5);
 	sweep("20a masked sweep 5x6, 2 multi, 3 free, horizontal",
 	      isz56, 2, 3, false, 55, mask56, 2);
 	sweep("20b masked sweep 5x6, 2 multi, 3 free, vertical",
 	      isz56, 2, 3, true, 55, mask56, 2);
-	// pacote quase até a última célula livre - o caso que mais aperta a
-	// interação entre assignTargets (que decide alvos vendo a máscara) e
-	// Sim (que recusa jogadas vendo a mesma máscara)
+	// packed to the last free cell - the case that squeezes hardest on the
+	// interaction between assignTargets (which picks targets seeing the
+	// mask) and Sim (which refuses moves seeing that same mask)
 	sweep("20c masked sweep 5x6, 2 multi, 0 free, horizontal",
 	      isz56, 2, 0, false, 55, mask56, 2);
 	sweep("20d masked sweep 5x6, 2 multi, 0 free, vertical",
