@@ -84,14 +84,15 @@ public class InventorySorter implements Defer.Callable<Void> {
 	Inventory last = null;
 	for (Inventory inv : inventories) {
 	    if (inv.parent == null) return null;
-	    // Between inventories, a non-blocking read: a cursor that is already
-	    // occupied is certain trouble, and sorting the next inventory on top
-	    // of it would scramble that one too. A null reading may just be lag,
-	    // which the settle below is for.
-	    if (gui.vhand != null) {
-		gui.error("Sort stopped early — item left on cursor");
-		return null;
-	    }
+	    // No cursor check here between inventories: widget messages are
+	    // reliable and ordered, so the server applies this inventory's first
+	    // take strictly after the previous inventory's last drop regardless
+	    // of what gui.vhand reads locally right now. What matters is the
+	    // cursor being empty server-side when each message is processed, and
+	    // ordering already guarantees that - a local read could only tell us
+	    // about echoes that have made it back, which is a different question.
+	    // A stray item left on the cursor at the very end is still caught by
+	    // settle below.
 	    doSort(inv);
 	    last = inv;
 	}
@@ -116,6 +117,17 @@ public class InventorySorter implements Defer.Callable<Void> {
 	Thread.sleep(SETTLE_MS);
 	WItem held = gui.vhand;
 	if (held == null) return;
+	// inv passed the same parent == null check in call()'s loop before it was
+	// sorted, but the wait above gives the window time to close too. A closed
+	// inv still has a populated child tree (Widget.remove() unlinks it from
+	// its parent but never clears its own children), so freeRect would
+	// happily compute a plausible-looking cell and the drop message would
+	// silently vanish - reporting "returned to inventory" would then be a
+	// lie, worse than the truth that it is still on the cursor.
+	if (inv.parent == null) {
+	    gui.error("Sort stopped early — item left on cursor");
+	    return;
+	}
 	Coord free = freeRect(inv, held.sz.div(sqsz));
 	if (free != null) {
 	    inv.wdgmsg("drop", free);
