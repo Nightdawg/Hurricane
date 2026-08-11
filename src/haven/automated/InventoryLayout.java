@@ -31,6 +31,73 @@ class InventoryLayout {
 	return null;
     }
 
+    /**
+     * Order to pack items in: largest first, ties broken along the fill
+     * direction, then by display order. Placing the big items while the grid is
+     * still whole is what keeps first-fit from splitting the free space into
+     * pieces too small for them - packing in display order does not, and can
+     * fail to re-home an item set that demonstrably fits.
+     *
+     * Returns indices into slots. Stable, so items of one size keep their
+     * display order relative to each other.
+     */
+    static int[] packOrder(Coord[] slots, boolean vertical) {
+	Integer[] order = new Integer[slots.length];
+	for (int i = 0; i < order.length; i++)
+	    order[i] = i;
+	Arrays.sort(order, (a, b) -> {
+	    Coord sa = slots[a], sb = slots[b];
+	    int c = (sb.x * sb.y) - (sa.x * sa.y);
+	    if (c != 0) return c;
+	    // along the fill direction first: a vertical sort cares about height
+	    c = vertical ? (sb.y - sa.y) : (sb.x - sa.x);
+	    if (c != 0) return c;
+	    c = vertical ? (sb.x - sa.x) : (sb.y - sa.y);
+	    if (c != 0) return c;
+	    return a - b;
+	});
+	int[] out = new int[order.length];
+	for (int i = 0; i < out.length; i++)
+	    out[i] = order[i];
+	return out;
+    }
+
+    /**
+     * Target position for every item, packed largest-first but returned aligned
+     * to the caller's display order. Null means the item did not fit anywhere
+     * and is pinned where it already is.
+     *
+     * An item that does not fit is pinned rather than skipped: its current rect
+     * is reserved and the pass restarts, so no other item is ever assigned a
+     * target on top of it. That terminates - each restart pins one more item,
+     * and the all-pinned state is the original layout, which fits by
+     * construction.
+     */
+    static Coord[] assignTargets(boolean[][] mask, Coord isz, Coord[] slots,
+				 Coord[] current, boolean vertical) {
+	Coord[] targets = new Coord[slots.length];
+	boolean[] pinned = new boolean[slots.length];
+	int[] order = packOrder(slots, vertical);
+	for (int attempt = 0; attempt <= slots.length; attempt++) {
+	    boolean[][] grid = copyGrid(mask, isz);
+	    for (int i = 0; i < slots.length; i++)
+		if (pinned[i])
+		    markOccupied(grid, isz, current[i], slots[i], true);
+	    Arrays.fill(targets, null);
+	    int failed = -1;
+	    for (int idx : order) {
+		if (pinned[idx]) continue;
+		Coord pos = findFit(grid, isz, slots[idx], vertical);
+		if (pos == null) { failed = idx; break; }
+		targets[idx] = pos;
+		markGrid(grid, pos, slots[idx], true);
+	    }
+	    if (failed < 0) return targets;
+	    pinned[failed] = true;
+	}
+	return targets;
+    }
+
     static boolean fits(boolean[][] grid, int ox, int oy, Coord slots) {
 	for (int x = 0; x < slots.x; x++)
 	    for (int y = 0; y < slots.y; y++)

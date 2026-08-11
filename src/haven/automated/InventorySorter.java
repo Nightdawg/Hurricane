@@ -146,13 +146,18 @@ public class InventorySorter implements Defer.Callable<Void> {
 	// Sort all items together
 	entries.sort(Comparator.comparing(e -> e.w, ITEM_COMPARATOR));
 
-	// Assign target positions in scan order, respecting each item's size
-	boolean[][] assignGrid = InventoryLayout.copyGrid(maskGrid, inv.isz);
-	for (Entry e : entries) {
-	    Coord pos = InventoryLayout.findFit(assignGrid, inv.isz, e.slots, vertical);
-	    if (pos == null) break;
-	    e.target = pos;
-	    InventoryLayout.markGrid(assignGrid, pos, e.slots, true);
+	// Assign target positions, largest item first so the big ones get their
+	// rects before first-fit can fragment the free space around them
+	Coord[] slots = new Coord[entries.size()];
+	Coord[] current = new Coord[entries.size()];
+	for (int i = 0; i < slots.length; i++) {
+	    slots[i] = entries.get(i).slots;
+	    current[i] = entries.get(i).current;
+	}
+	Coord[] targets = InventoryLayout.assignTargets(maskGrid, inv.isz, slots, current, vertical);
+	for (int i = 0; i < targets.length; i++) {
+	    if (targets[i] != null)
+		entries.get(i).target = targets[i];
 	}
 
 	List<Entry> singles = entries.stream().filter(e -> e.slots.x * e.slots.y == 1).collect(Collectors.toList());

@@ -93,6 +93,147 @@ public class InventoryLayoutTest {
 	      InventoryLayout.findFit(grid(2, 2), new Coord(2, 2), new Coord(3, 3), true));
     }
 
+    /** Coord list from flat (x,y) pairs - used for both sizes and positions. */
+    private static Coord[] coords(int... xy) {
+	Coord[] s = new Coord[xy.length / 2];
+	for (int i = 0; i < s.length; i++)
+	    s[i] = new Coord(xy[i * 2], xy[i * 2 + 1]);
+	return s;
+    }
+
+    /** n items of w*h, appended to the list being built. */
+    private static int[] rep(int n, int w, int h) {
+	int[] out = new int[n * 2];
+	for (int i = 0; i < n; i++) { out[i * 2] = w; out[i * 2 + 1] = h; }
+	return out;
+    }
+
+    private static int[] cat(int[]... parts) {
+	int len = 0;
+	for (int[] p : parts) len += p.length;
+	int[] out = new int[len];
+	int o = 0;
+	for (int[] p : parts) { System.arraycopy(p, 0, out, o, p.length); o += p.length; }
+	return out;
+    }
+
+    /** Every item got a target. */
+    private static boolean allPlaced(Coord[] targets) {
+	for (Coord t : targets)
+	    if (t == null) return false;
+	return true;
+    }
+
+    private static int placed(Coord[] targets) {
+	int n = 0;
+	for (Coord t : targets)
+	    if (t != null) n++;
+	return n;
+    }
+
+    /**
+     * The invariant every sort must hold: with unplaced items staying where
+     * they are, no two item rects may share a cell. A violation means the
+     * sorter will drop an item onto a cell another item still occupies.
+     */
+    private static boolean noOverlap(Coord[] targets, Coord[] current, Coord[] slots, Coord isz) {
+	int[][] count = new int[isz.x][isz.y];
+	for (int i = 0; i < slots.length; i++) {
+	    Coord at = targets[i] != null ? targets[i] : current[i];
+	    for (int x = at.x; x < at.x + slots[i].x; x++)
+		for (int y = at.y; y < at.y + slots[i].y; y++) {
+		    if (x < 0 || x >= isz.x || y < 0 || y >= isz.y) return false;
+		    if (++count[x][y] > 1) return false;
+		}
+	}
+	return true;
+    }
+
+    private static void assignTargetsTests() {
+	Coord isz43 = new Coord(4, 3);
+	Coord isz24 = new Coord(2, 4);
+
+	// 17: sanity - twelve 1x1 fill a 4x3 exactly, in both modes
+	Coord[] sl17 = coords(rep(12, 1, 1));
+	Coord[] cur17 = coords(0,0, 1,0, 2,0, 3,0, 0,1, 1,1, 2,1, 3,1, 0,2, 1,2, 2,2, 3,2);
+	check("17a assignTargets horizontal, twelve 1x1 in 4x3", Boolean.TRUE,
+	      allPlaced(InventoryLayout.assignTargets(grid(4, 3), isz43, sl17, cur17, false)));
+	check("17b assignTargets vertical, twelve 1x1 in 4x3", Boolean.TRUE,
+	      allPlaced(InventoryLayout.assignTargets(grid(4, 3), isz43, sl17, cur17, true)));
+
+	// 18: a full 4x3 holding ten 1x1 and one 1x2. The pre-sort layout is proof
+	// the set fits; sorting must not turn that into "no room". The 1x2 sorts
+	// last by name, so packing in display order scatters the 1x1 across both
+	// free cells first and leaves the 1x2 homeless.
+	Coord[] sl18 = coords(cat(rep(10, 1, 1), rep(1, 1, 2)));
+	Coord[] cur18 = coords(0,0, 1,0, 2,0, 0,1, 1,1, 2,1, 0,2, 1,2, 2,2, 3,2,
+			       3,0);   // the 1x2 spans (3,0)-(3,1)
+	Coord[] t18 = InventoryLayout.assignTargets(grid(4, 3), isz43, sl18, cur18, false);
+	check("18a assignTargets horizontal, 1x2 after ten 1x1 in a full 4x3", Boolean.TRUE,
+	      allPlaced(t18));
+	check("18b assignTargets horizontal, the full 4x3 stays consistent", Boolean.TRUE,
+	      noOverlap(t18, cur18, sl18, isz43));
+
+	// 19: the vertical counterpart - a 2x1 after five 1x1 in a 2x4
+	Coord[] sl19 = coords(cat(rep(5, 1, 1), rep(1, 2, 1)));
+	Coord[] cur19 = coords(0,0, 1,0, 0,1, 1,1, 0,2,
+			       0,3);   // the 2x1 spans (0,3)-(1,3)
+	Coord[] t19 = InventoryLayout.assignTargets(grid(2, 4), isz24, sl19, cur19, true);
+	check("19a assignTargets vertical, 2x1 after five 1x1 in a 2x4", Boolean.TRUE,
+	      allPlaced(t19));
+	check("19b assignTargets vertical, the 2x4 stays consistent", Boolean.TRUE,
+	      noOverlap(t19, cur19, sl19, isz24));
+
+	// 20: an item that genuinely cannot be re-homed. sqmask comes from the
+	// server, so it need not match where the items already sit: row 1 is
+	// masked while a 1x3 still spans (0,0)-(0,2). No column has three free
+	// rows, so the 1x3 has to stay put - and that must cost nothing else.
+	// It sits mid-list on purpose: at the end, aborting would cost nothing
+	// and the assertion below would pass for the wrong reason.
+	boolean[][] m20 = grid(4, 3, 0,1, 1,1, 2,1, 3,1);
+	Coord[] sl20 = coords(cat(rep(3, 1, 1), rep(1, 1, 3), rep(3, 1, 1)));
+	Coord[] cur20 = coords(1,0, 2,0, 3,0,
+			       0,0,               // the 1x3 spans (0,0)-(0,2)
+			       1,2, 2,2, 3,2);
+	Coord[] t20 = InventoryLayout.assignTargets(m20, isz43, sl20, cur20, false);
+	check("20a assignTargets pins the item that cannot be re-homed", null, t20[3]);
+	check("20b assignTargets, a misfit does not strand the items after it", 6,
+	      placed(t20));
+	check("20c assignTargets, no target lands on the pinned item", Boolean.TRUE,
+	      noOverlap(t20, cur20, sl20, isz43));
+
+	// 21: no two rects may overlap once pinned items are left in place
+	Coord[] sl21 = coords(cat(rep(10, 1, 1), rep(1, 1, 2)));
+	Coord[] cur21 = coords(0,0, 1,0, 2,0, 0,1, 1,1, 2,1, 0,2, 1,2, 2,2, 3,2, 3,0);
+	Coord[] t21 = InventoryLayout.assignTargets(grid(4, 3), isz43, sl21, cur21, false);
+	check("21 assignTargets, targets never overlap a pinned item", Boolean.TRUE,
+	      noOverlap(t21, cur21, sl21, isz43));
+
+	// 22: masked cells are honoured - a 4x3 with column 0 masked holds a 1x2
+	boolean[][] m22 = grid(4, 3, 0,0, 0,1, 0,2);
+	Coord[] sl22 = coords(cat(rep(4, 1, 1), rep(1, 1, 2)));
+	Coord[] cur22 = coords(1,0, 2,0, 3,0, 1,1,
+			       2,1);   // the 1x2 spans (2,1)-(2,2)
+	Coord[] t22 = InventoryLayout.assignTargets(m22, isz43, sl22, cur22, false);
+	check("22a assignTargets respects the mask", Boolean.TRUE, allPlaced(t22));
+	for (Coord t : t22)
+	    if (t != null && t.x == 0)
+		check("22b assignTargets placed an item in the masked column",
+		      "no target in column 0", t);
+
+	// 23: packing largest-first must not reshuffle items of the same size.
+	// Two 1x2 in display order A then B: A takes the earlier scan position.
+	Coord[] sl23 = coords(cat(rep(2, 1, 2), rep(8, 1, 1)));
+	Coord[] cur23 = coords(0,0, 1,0, 2,0, 3,0, 2,1, 3,1, 0,2, 1,2, 2,2, 3,2);
+	Coord[] t23 = InventoryLayout.assignTargets(grid(4, 3), isz43, sl23, cur23, false);
+	check("23a assignTargets, same-size items keep display order (first)", new Coord(0, 0),
+	      t23[0]);
+	check("23b assignTargets, same-size items keep display order (second)", new Coord(1, 0),
+	      t23[1]);
+	check("23c assignTargets, two 1x2 and eight 1x1 all fit a 4x3", Boolean.TRUE,
+	      allPlaced(t23));
+    }
+
     private static void copyGridTests() {
 	boolean[][] src = grid(4, 3, 1, 1);
 	boolean[][] copy = InventoryLayout.copyGrid(src, new Coord(4, 3));
@@ -163,6 +304,7 @@ public class InventoryLayoutTest {
     public static void main(String[] args) {
 	findFreeCellTests();
 	findFitTests();
+	assignTargetsTests();
 	copyGridTests();
 	markOccupiedTests();
 	System.out.println();
