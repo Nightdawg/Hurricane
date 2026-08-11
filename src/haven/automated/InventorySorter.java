@@ -81,15 +81,60 @@ public class InventorySorter implements Defer.Callable<Void> {
 
     @Override
     public Void call() throws InterruptedException {
+	Inventory last = null;
 	for (Inventory inv : inventories) {
 	    if (inv.parent == null) return null;
-	    if (!doSort(inv)) return null;
+	    // Between inventories, a non-blocking read: a cursor that is already
+	    // occupied is certain trouble, and sorting the next inventory on top
+	    // of it would scramble that one too. A null reading may just be lag,
+	    // which the settle below is for.
+	    if (gui.vhand != null) {
+		gui.error("Sort stopped early — item left on cursor");
+		return null;
+	    }
+	    doSort(inv);
+	    last = inv;
 	}
 	synchronized (lock) {
 	    if (current == this) current = null;
 	}
 	gui.ui.sfxrl(sfx_done);
+	if (last != null) settle(last);
 	return null;
+    }
+
+    /** How long to let the server catch up before reading the cursor. */
+    private static final int SETTLE_MS = 500;
+
+    /**
+     * Runs after the completion sound, so the wait costs no time the player
+     * sees - the items have already moved on screen by then. The plan is built
+     * so the server accepts every move, so this only ever fires when something
+     * outside the sort touched the inventory mid-run.
+     */
+    private void settle(Inventory inv) throws InterruptedException {
+	Thread.sleep(SETTLE_MS);
+	WItem held = gui.vhand;
+	if (held == null) return;
+	Coord free = freeRect(inv, held.sz.div(sqsz));
+	if (free != null) {
+	    inv.wdgmsg("drop", free);
+	    gui.error("Sort stopped early — item returned to inventory");
+	} else {
+	    gui.error("Sort stopped early — item left on cursor");
+	}
+    }
+
+    /** First rect of `slots` free in the inventory as it stands right now. */
+    private static Coord freeRect(Inventory inv, Coord slots) {
+	boolean[][] grid = maskGrid(inv);
+	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
+	    if (!wdg.visible || !(wdg instanceof WItem)) continue;
+	    WItem w = (WItem) wdg;
+	    InventoryLayout.markOccupied(grid, inv.isz, w.c.sub(1, 1).div(sqsz),
+					 w.sz.div(sqsz), true);
+	}
+	return InventoryLayout.findFit(grid, inv.isz, slots, false);
     }
 
     private static class Entry {
@@ -116,7 +161,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	return mask;
     }
 
-    private boolean doSort(Inventory inv) throws InterruptedException {
+    private void doSort(Inventory inv) throws InterruptedException {
 	// Collect all items, skip those with unloaded sprites
 	List<Entry> entries = new ArrayList<>();
 	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
@@ -159,7 +204,6 @@ public class InventorySorter implements Defer.Callable<Void> {
 	// otherwise look like silent failure.
 	if (plan.ops.isEmpty() && plan.pinnedMulti)
 	    gui.error("No room to move anything — inventory too tightly packed");
-	return true;
     }
 
     public static void cancel() {
