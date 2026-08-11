@@ -42,7 +42,11 @@ class InventoryMoves {
 
     /**
      * The server's view of one inventory, as far as take and drop are
-     * concerned. pos[i] == null means item i is on the cursor.
+     * concerned. The cursor starts empty; pos[i] == null thereafter arises
+     * only through take, so current must be fully populated - a Sim built
+     * from a state where an item is already mid-drag would think the cursor
+     * is empty and allow a second take, reaching a state a single int hand
+     * cannot represent.
      */
     static class Sim {
 	final Coord isz;
@@ -51,6 +55,17 @@ class InventoryMoves {
 	final Coord[] pos;
 	int hand = -1;
 
+	/**
+	 * isz, mask, slots and the Coord objects inside them (including
+	 * current) are held, not copied - only the pos array itself is a
+	 * fresh copy. That is safe because nothing in this class ever writes
+	 * a Coord's x or y field; every move here is reference reassignment
+	 * (pos[i] = ...), never mutation. Callers must not mutate a Coord (or
+	 * mask, or slots) they have handed to a live Sim: haven.Coord is
+	 * mutable and in-place mutation is an idiom elsewhere in this
+	 * codebase, but InventorySorter's coords come from sub/div, which
+	 * always return fresh objects, so nothing here actually does that.
+	 */
 	Sim(Coord isz, boolean[][] mask, Coord[] slots, Coord[] current) {
 	    this.isz = isz;
 	    this.mask = mask;
@@ -85,6 +100,11 @@ class InventoryMoves {
 	    return out;
 	}
 
+	// An out-of-range item is a caller bug, not a refused move, so this
+	// throws rather than returning false like drop does - collapsing the
+	// two would let a planner indexing error masquerade as "that move
+	// wasn't possible" and quietly yield a worse plan instead of failing
+	// loudly in the tests.
 	boolean take(int item) {
 	    if (hand >= 0 || pos[item] == null) return false;
 	    hand = item;
