@@ -239,10 +239,116 @@ public class InventoryMovesTest {
 	      pinnedCount(p9.targets) <= 1);
     }
 
+    /**
+     * Builds a layout with `nmulti` multi-tile items and 1x1 filling the rest
+     * except `freeCells`. Returns {slots, current} or null if the multi-tile
+     * items would not fit - the caller just skips those draws.
+     */
+    private static Coord[][] randomLayout(Coord isz, int nmulti, int freeCells,
+					  java.util.Random rnd) {
+	Coord[] shapes = coords(2,1, 1,2, 2,2, 3,1);
+	java.util.List<Coord> sl = new java.util.ArrayList<>();
+	java.util.List<Coord> at = new java.util.ArrayList<>();
+	boolean[][] used = new boolean[isz.x][isz.y];
+	for (int i = 0; i < nmulti; i++) {
+	    Coord sz = shapes[rnd.nextInt(shapes.length)];
+	    boolean placed = false;
+	    for (int tries = 0; tries < 60 && !placed; tries++) {
+		int x = rnd.nextInt(Math.max(1, isz.x - sz.x + 1));
+		int y = rnd.nextInt(Math.max(1, isz.y - sz.y + 1));
+		if (x + sz.x > isz.x || y + sz.y > isz.y) continue;
+		boolean ok = true;
+		for (int dx = 0; dx < sz.x && ok; dx++)
+		    for (int dy = 0; dy < sz.y && ok; dy++)
+			if (used[x + dx][y + dy]) ok = false;
+		if (!ok) continue;
+		for (int dx = 0; dx < sz.x; dx++)
+		    for (int dy = 0; dy < sz.y; dy++)
+			used[x + dx][y + dy] = true;
+		sl.add(sz);
+		at.add(new Coord(x, y));
+		placed = true;
+	    }
+	    if (!placed) return null;
+	}
+	java.util.List<Coord> free = new java.util.ArrayList<>();
+	for (int y = 0; y < isz.y; y++)
+	    for (int x = 0; x < isz.x; x++)
+		if (!used[x][y]) free.add(new Coord(x, y));
+	if (free.size() < freeCells) return null;
+	java.util.Collections.shuffle(free, rnd);
+	for (int i = freeCells; i < free.size(); i++) {
+	    sl.add(new Coord(1, 1));
+	    at.add(free.get(i));
+	}
+	return new Coord[][] {sl.toArray(new Coord[0]), at.toArray(new Coord[0])};
+    }
+
+    /**
+     * Uma configuração de sweep; relata o primeiro layout que falhar, se
+     * algum falhar. "Falhar" cobre duas coisas, não só uma: uma recusa
+     * (replay != null) e um plano bom demais na forma, ruim demais no
+     * conteúdo - fixar mais itens do que existem itens grandes no layout.
+     * Essa segunda checagem é a razão de o sweep existir: o Task 3 já
+     * mandou um planejador que passava em replay() sempre, porque um plano
+     * que não move nada nunca é recusado, e mesmo assim fixava 21 de 22
+     * itens num armário cheio. Só contar itens fixados pegou aquilo; um
+     * sweep que só chamasse replay() teria deixado passar.
+     */
+    private static void sweep(String name, Coord isz, int nmulti, int freeCells,
+			      boolean vertical, long seed) {
+	java.util.Random rnd = new java.util.Random(seed);
+	int runs = 2000, drawn = 0;
+	String first = null;
+	for (int r = 0; r < runs && first == null; r++) {
+	    Coord[][] layout = randomLayout(isz, nmulti, freeCells, rnd);
+	    if (layout == null) continue;
+	    drawn++;
+	    Coord[] slots = layout[0], cur = layout[1];
+	    boolean[][] mask = grid(isz.x, isz.y);
+	    InventoryMoves.Plan p = InventoryMoves.plan(mask, isz, slots, cur, vertical);
+	    String bad = replay(mask, isz, slots, cur, p);
+	    if (bad == null) {
+		// invariante medida empiricamente sobre estas mesmas configurações
+		// (máximo observado nunca passou de nmulti, em 2000 layouts cada):
+		// só um item grande fica pra trás, nunca um 1x1. Para nmulti == 0
+		// isso vira "nada fica fixado", que é o caso puro-permutação.
+		int pinned = pinnedCount(p.targets);
+		if (pinned > nmulti)
+		    bad = "pinned " + pinned + " items, more than the " + nmulti
+			+ " multi-tile item(s) in the layout";
+	    }
+	    if (bad != null) first = "layout " + r + ": " + bad;
+	}
+	// só reporta "poucos layouts utilizáveis" se nada mais específico já
+	// falhou - um defeito real interrompe o laço logo nos primeiros
+	// sorteios, e essa contagem baixa não pode apagar o índice e a causa
+	// que já foram encontrados
+	if (first == null && drawn < runs / 2)
+	    first = "only " + drawn + " of " + runs + " layouts were usable";
+	check(name, null, first);
+    }
+
+    private static void sweepTests() {
+	Coord isz56 = new Coord(5, 6);
+	Coord isz43 = new Coord(4, 3);
+	for (int free : new int[] {0, 1, 3, 8}) {
+	    sweep("18." + free + "h sweep 5x6, 2 multi, " + free + " free, horizontal",
+		  isz56, 2, free, false, 42 + free);
+	    sweep("18." + free + "v sweep 5x6, 2 multi, " + free + " free, vertical",
+		  isz56, 2, free, true, 42 + free);
+	}
+	sweep("19a sweep 5x6, no multi, packed", isz56, 0, 0, false, 7);
+	sweep("19b sweep 4x3, 1 multi, packed", isz43, 1, 0, false, 9);
+	sweep("19c sweep 4x3, 1 multi, packed, vertical", isz43, 1, 0, true, 9);
+    }
+
     public static void main(String[] args) {
 	simTests();
 	System.out.println();
 	planTests();
+	System.out.println();
+	sweepTests();
 	System.out.println();
 	System.out.println(failures == 0
 			   ? (total + " of " + total + " passed")
