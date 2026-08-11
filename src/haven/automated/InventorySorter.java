@@ -128,7 +128,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    gui.error("Sort stopped early — item left on cursor");
 	    return;
 	}
-	Coord free = freeRect(inv, held.sz.div(sqsz));
+	Coord free = freeRect(inv, held.sz.div(sqsz), vertical);
 	if (free != null) {
 	    inv.wdgmsg("drop", free);
 	    gui.error("Sort stopped early — item returned to inventory");
@@ -137,8 +137,13 @@ public class InventorySorter implements Defer.Callable<Void> {
 	}
     }
 
-    /** First rect of `slots` free in the inventory as it stands right now. */
-    private static Coord freeRect(Inventory inv, Coord slots) {
+    /**
+     * First rect of `slots` free in the inventory as it stands right now.
+     * `vertical` only matters for which free rect is found first, not whether
+     * one is found - but it might as well agree with the sort that just ran
+     * rather than always scanning rows first.
+     */
+    private static Coord freeRect(Inventory inv, Coord slots, boolean vertical) {
 	boolean[][] grid = maskGrid(inv);
 	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
 	    if (!wdg.visible || !(wdg instanceof WItem)) continue;
@@ -146,7 +151,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    InventoryLayout.markOccupied(grid, inv.isz, w.c.sub(1, 1).div(sqsz),
 					 w.sz.div(sqsz), true);
 	}
-	return InventoryLayout.findFit(grid, inv.isz, slots, false);
+	return InventoryLayout.findFit(grid, inv.isz, slots, vertical);
     }
 
     private static class Entry {
