@@ -201,11 +201,25 @@ class InventoryMoves {
      * an item moved to its own target is never in the way again, whereas the
      * old code shoved items into whatever cell was free - including cells
      * inside the very rect it was trying to clear.
+     *
+     * A chain is tried on a scratch copy of the simulator before it is
+     * committed. Any drop along the chain can be refused - not because the
+     * chain's starting item is unmovable, but because something further down
+     * is blocked, often a multi-tile item that simply has not had its own
+     * turn yet. Blaming that on the swap victim (returning its index as
+     * stuck, as an earlier version of this method did) pins the wrong item
+     * and gives up on a chain that would have worked once the real blocker
+     * moved. So a chain that cannot close is deferred instead - left alone
+     * for a later iteration of this same pass, once something else has moved
+     * and the board looks different. Deferrals are cleared on every commit,
+     * since a commit is the only event that can make a previously-blocked
+     * chain viable.
      */
     private static int sequence(boolean[][] mask, Coord isz, Coord[] slots,
 				Coord[] current, Coord[] targets, List<Op> ops) {
 	Sim sim = new Sim(isz, mask, slots, current);
 	boolean[] done = new boolean[slots.length];
+	boolean[] deferred = new boolean[slots.length];
 	for (int i = 0; i < slots.length; i++)
 	    done[i] = (targets[i] == null) || targets[i].equals(current[i]);
 
@@ -213,28 +227,60 @@ class InventoryMoves {
 	    int direct = -1, chain = -1;
 	    for (int i = 0; i < slots.length; i++) {
 		if (done[i]) continue;
-		int u = single(sim, targets[i], slots[i]);
+		int u = single(sim, targets[i], slots[i], i);
 		if (u == EMPTY) {
 		    // a multi-tile item only ever gets this shape, so give it
 		    // the free rect before a 1x1 can settle into it
 		    if (!Sim.one(slots[i])) { direct = i; break; }
 		    if (direct < 0) direct = i;
-		} else if (u >= 0 && Sim.one(slots[i]) && Sim.one(slots[u]) && chain < 0) {
+		} else if (!deferred[i] && u >= 0
+			  && Sim.one(slots[i]) && Sim.one(slots[u]) && chain < 0) {
 		    chain = i;
 		}
 	    }
 
-	    int start = (direct >= 0) ? direct : chain;
-	    if (start < 0) break;
-
-	    if (!sim.take(start)) return start;
-	    ops.add(Op.take(start));
-	    while (sim.hand >= 0) {
-		int held = sim.hand;
-		if (targets[held] == null || !sim.drop(targets[held])) return held;
-		ops.add(Op.drop(targets[held]));
-		done[held] = true;
+	    if (direct >= 0) {
+		// the target rect was just confirmed empty (self ignored), so
+		// this take/drop pair cannot fail - no trial needed
+		if (!sim.take(direct)) return direct;
+		ops.add(Op.take(direct));
+		if (!sim.drop(targets[direct])) return direct;
+		ops.add(Op.drop(targets[direct]));
+		done[direct] = true;
+		Arrays.fill(deferred, false);
+		continue;
 	    }
+
+	    if (chain >= 0) {
+		Sim trial = new Sim(isz, mask, slots, sim.pos);
+		if (!trial.take(chain)) return chain;
+		List<Op> trialOps = new ArrayList<>();
+		trialOps.add(Op.take(chain));
+		List<Integer> touched = new ArrayList<>();
+		boolean closed = true;
+		while (trial.hand >= 0) {
+		    int held = trial.hand;
+		    if (targets[held] == null || !trial.drop(targets[held])) {
+			closed = false;
+			break;
+		    }
+		    trialOps.add(Op.drop(targets[held]));
+		    touched.add(held);
+		}
+		if (closed) {
+		    sim = trial;
+		    ops.addAll(trialOps);
+		    for (int t : touched) done[t] = true;
+		    Arrays.fill(deferred, false);
+		} else {
+		    // not blamed on the swap victim - left for a later
+		    // iteration, once the real blocker has had its turn
+		    deferred[chain] = true;
+		}
+		continue;
+	    }
+
+	    break;
 	}
 
 	for (int i = 0; i < slots.length; i++)
@@ -252,9 +298,16 @@ class InventoryMoves {
 
     /**
      * The single item under `at`, EMPTY if the rect is clear, or MANY if it is
-     * unusable - more than one item, off the grid, or masked.
+     * unusable - more than one item, off the grid, or masked. `ignore` is
+     * treated as absent even though it is still sitting in the simulator: this
+     * is called before the take that would actually remove it, to predict what
+     * a subsequent drop will see. Without that, an item whose target rect
+     * overlaps its own current rect would report itself as the occupant and
+     * could never move - for a 1x1 this never bites, since a target equal to
+     * its own current cell is already handled as "nothing to do", but a
+     * multi-tile item's target can genuinely overlap where it is now.
      */
-    private static int single(Sim sim, Coord at, Coord sz) {
+    private static int single(Sim sim, Coord at, Coord sz, int ignore) {
 	if (at == null) return MANY;
 	if (at.x < 0 || at.y < 0 || at.x + sz.x > sim.isz.x || at.y + sz.y > sim.isz.y)
 	    return MANY;
@@ -262,11 +315,22 @@ class InventoryMoves {
 	for (int x = at.x; x < at.x + sz.x; x++)
 	    for (int y = at.y; y < at.y + sz.y; y++) {
 		if (sim.mask[x][y]) return MANY;
-		int o = sim.at(x, y);
+		int o = occupant(sim, x, y, ignore);
 		if (o < 0) continue;
 		if (found != EMPTY && found != o) return MANY;
 		found = o;
 	    }
 	return found;
+    }
+
+    /** Like Sim.at, but treats `ignore` as though it were not on the board. */
+    private static int occupant(Sim sim, int x, int y, int ignore) {
+	for (int i = 0; i < sim.pos.length; i++) {
+	    if (i == ignore || sim.pos[i] == null) continue;
+	    if (x >= sim.pos[i].x && x < sim.pos[i].x + sim.slots[i].x
+		&& y >= sim.pos[i].y && y < sim.pos[i].y + sim.slots[i].y)
+		return i;
+	}
+	return -1;
     }
 }

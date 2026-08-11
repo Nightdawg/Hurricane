@@ -143,6 +143,13 @@ public class InventoryMovesTest {
 	return null;
     }
 
+    /** How many items a plan left pinned - i.e. how many null entries in targets. */
+    private static int pinnedCount(Coord[] targets) {
+	int n = 0;
+	for (Coord t : targets) if (t == null) n++;
+	return n;
+    }
+
     private static void planTests() {
 	Coord isz43 = new Coord(4, 3);
 
@@ -194,6 +201,42 @@ public class InventoryMovesTest {
 	InventoryMoves.Plan p14 = InventoryMoves.plan(grid(4, 3), isz43, sl9, cur9, true);
 	check("14 full 4x3 with a 2x1, vertical fill", null,
 	      replay(grid(4, 3), isz43, sl9, cur9, p14));
+
+	// 15: um 2x1 cujo alvo cobre a própria célula atual - exatamente o caso
+	// em que single() via o próprio item como "ocupante" e nunca liberava a
+	// vaga. Ignorar quem está prestes a ser pego é o que permite o take;
+	// sem isso o item ficava fixado para sempre, mesmo sobrando espaço.
+	Coord[] sl15 = coords(2,1);
+	Coord[] cur15 = coords(1,0);
+	InventoryMoves.Plan p15 = InventoryMoves.plan(grid(4, 3), isz43, sl15, cur15, false);
+	check("15a a target overlapping the item's own current cell is still assigned",
+	      Boolean.TRUE, p15.targets[0] != null);
+	check("15b and the item actually leaves where it started", Boolean.TRUE,
+	      p15.targets[0] != null && !p15.targets[0].equals(cur15[0]));
+
+	// 16: uma grade 3x2 cheia com um 2x1 e quatro 1x1. A corrente que troca
+	// os 1x1 entre si esbarra, no meio do caminho, num alvo que o 2x1 ainda
+	// ocupa - ele só sai de lá mais tarde, quando (nunca, nesta grade sem
+	// folga) sobrar espaço para ele. Commitando a corrente sem testar antes,
+	// o código antigo culpava a vítima da troca pelo bloqueio e fixava o
+	// item errado; a grade inteira saía quase toda fixada. Adiando a
+	// corrente em vez disso, só o 2x1 - que de fato não cabe em lugar
+	// nenhum numa grade cheia - fica pra trás.
+	Coord isz32 = new Coord(3, 2);
+	Coord[] sl16 = coords(2,1, 1,1, 1,1, 1,1, 1,1);
+	Coord[] cur16 = coords(1,0, 0,1, 1,1, 2,1, 0,0);
+	InventoryMoves.Plan p16 = InventoryMoves.plan(grid(3, 2), isz32, sl16, cur16, false);
+	check("16a a chain blocked by an unmoved multi-tile item still sorts", null,
+	      replay(grid(3, 2), isz32, sl16, cur16, p16));
+	check("16b and only the multi-tile item ends up pinned", 1, pinnedCount(p16.targets));
+
+	// 17: a mesma grade cheia do teste 9, mas agora checando se ela
+	// realmente ordena - não só se executa sem recusa. É a asserção que
+	// teria pegado o defeito inteiro: antes das correções, plan() passava
+	// no replay já que fixar um item nunca é uma recusa, mas saía da
+	// função com quase a grade inteira fixada em vez de ordenada.
+	check("17 a packed grid with one multi-tile item pins at most it", Boolean.TRUE,
+	      pinnedCount(p9.targets) <= 1);
     }
 
     public static void main(String[] args) {
