@@ -241,15 +241,20 @@ public class InventoryMovesTest {
 
     /**
      * Builds a layout with `nmulti` multi-tile items and 1x1 filling the rest
-     * except `freeCells`. Returns {slots, current} or null if the multi-tile
-     * items would not fit - the caller just skips those draws.
+     * except `freeCells`. `mask` cells are treated as already occupied, so
+     * neither the multi-tile items nor the 1x1 filler ever land on one -
+     * exactly what a real container with permanently blocked squares
+     * (Inventory.sqmask) does. Returns {slots, current} or null if the
+     * multi-tile items would not fit - the caller just skips those draws.
      */
     private static Coord[][] randomLayout(Coord isz, int nmulti, int freeCells,
-					  java.util.Random rnd) {
+					  boolean[][] mask, java.util.Random rnd) {
 	Coord[] shapes = coords(2,1, 1,2, 2,2, 3,1);
 	java.util.List<Coord> sl = new java.util.ArrayList<>();
 	java.util.List<Coord> at = new java.util.ArrayList<>();
 	boolean[][] used = new boolean[isz.x][isz.y];
+	for (int x = 0; x < isz.x; x++)
+	    used[x] = java.util.Arrays.copyOf(mask[x], isz.y);
 	for (int i = 0; i < nmulti; i++) {
 	    Coord sz = shapes[rnd.nextInt(shapes.length)];
 	    boolean placed = false;
@@ -297,26 +302,38 @@ public class InventoryMovesTest {
      */
     private static void sweep(String name, Coord isz, int nmulti, int freeCells,
 			      boolean vertical, long seed) {
+	// invariante medida empiricamente sobre estas mesmas configurações
+	// (máximo observado nunca passou de nmulti, em 2000 layouts cada):
+	// só um item grande fica pra trás, nunca um 1x1. Para nmulti == 0
+	// isso vira "nada fica fixado", que é o caso puro-permutação.
+	sweep(name, isz, nmulti, freeCells, vertical, seed, grid(isz.x, isz.y), nmulti);
+    }
+
+    /**
+     * As above, but with a mask - the same grid is threaded through both
+     * plan() and replay(), which is the whole point: passing an unmasked grid
+     * to either one would make a masked case pass for free instead of
+     * actually exercising the mask. `pinnedBound` is a separate parameter
+     * rather than always `nmulti` because a masked bound has to be measured,
+     * not assumed - see sweepTests() for the measurements behind the calls
+     * below.
+     */
+    private static void sweep(String name, Coord isz, int nmulti, int freeCells,
+			      boolean vertical, long seed, boolean[][] mask, int pinnedBound) {
 	java.util.Random rnd = new java.util.Random(seed);
 	int runs = 2000, drawn = 0;
 	String first = null;
 	for (int r = 0; r < runs && first == null; r++) {
-	    Coord[][] layout = randomLayout(isz, nmulti, freeCells, rnd);
+	    Coord[][] layout = randomLayout(isz, nmulti, freeCells, mask, rnd);
 	    if (layout == null) continue;
 	    drawn++;
 	    Coord[] slots = layout[0], cur = layout[1];
-	    boolean[][] mask = grid(isz.x, isz.y);
 	    InventoryMoves.Plan p = InventoryMoves.plan(mask, isz, slots, cur, vertical);
 	    String bad = replay(mask, isz, slots, cur, p);
 	    if (bad == null) {
-		// invariante medida empiricamente sobre estas mesmas configurações
-		// (máximo observado nunca passou de nmulti, em 2000 layouts cada):
-		// só um item grande fica pra trás, nunca um 1x1. Para nmulti == 0
-		// isso vira "nada fica fixado", que é o caso puro-permutação.
 		int pinned = pinnedCount(p.targets);
-		if (pinned > nmulti)
-		    bad = "pinned " + pinned + " items, more than the " + nmulti
-			+ " multi-tile item(s) in the layout";
+		if (pinned > pinnedBound)
+		    bad = "pinned " + pinned + " items, more than the bound of " + pinnedBound;
 	    }
 	    if (bad != null) first = "layout " + r + ": " + bad;
 	}
@@ -341,6 +358,37 @@ public class InventoryMovesTest {
 	sweep("19a sweep 5x6, no multi, packed", isz56, 0, 0, false, 7);
 	sweep("19b sweep 4x3, 1 multi, packed", isz43, 1, 0, false, 9);
 	sweep("19c sweep 4x3, 1 multi, packed, vertical", isz43, 1, 0, true, 9);
+
+	// 20.x/21.x: as mesmas 2000 tiradas de antes, mas agora com células
+	// mascaradas - a única cobertura de máscara que passa por plan() em vez
+	// de cutucar Sim.drop() direto (ver simTests teste 4). A máscara é a
+	// mesma tanto em randomLayout (via used) quanto em plan/replay abaixo:
+	// nenhum dos dois vê uma grade mais livre do que a outra.
+	//
+	// O limite de itens fixados foi medido antes de virar asserção, do
+	// mesmo jeito que o limite sem máscara: instrumentando uma cópia
+	// descartável destas mesmas configurações por 2000 tiradas cada. Em
+	// todas elas o máximo observado foi exatamente nmulti (nunca mais),
+	// então o limite abaixo é o mesmo de sempre, só que agora verificado
+	// também com máscara em vez de só suposto.
+	boolean[][] mask56 = grid(5, 6, 2,2, 4,0, 0,5, 1,3, 3,1, 4,5);
+	sweep("20a masked sweep 5x6, 2 multi, 3 free, horizontal",
+	      isz56, 2, 3, false, 55, mask56, 2);
+	sweep("20b masked sweep 5x6, 2 multi, 3 free, vertical",
+	      isz56, 2, 3, true, 55, mask56, 2);
+	// pacote quase até a última célula livre - o caso que mais aperta a
+	// interação entre assignTargets (que decide alvos vendo a máscara) e
+	// Sim (que recusa jogadas vendo a mesma máscara)
+	sweep("20c masked sweep 5x6, 2 multi, 0 free, horizontal",
+	      isz56, 2, 0, false, 55, mask56, 2);
+	sweep("20d masked sweep 5x6, 2 multi, 0 free, vertical",
+	      isz56, 2, 0, true, 55, mask56, 2);
+
+	boolean[][] mask43 = grid(4, 3, 2,1, 0,2);
+	sweep("21a masked sweep 4x3, 1 multi, packed, horizontal",
+	      isz43, 1, 0, false, 77, mask43, 1);
+	sweep("21b masked sweep 4x3, 1 multi, packed, vertical",
+	      isz43, 1, 0, true, 77, mask43, 1);
     }
 
     public static void main(String[] args) {
