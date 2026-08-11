@@ -76,9 +76,12 @@ class InventoryMoves {
 	static boolean one(Coord s) { return s.x == 1 && s.y == 1; }
 
 	/** Index of the item covering a cell, or -1. */
-	int at(int x, int y) {
+	int at(int x, int y) { return at(x, y, -1); }
+
+	/** As above, but `ignore` is treated as though it were not on the board. */
+	int at(int x, int y, int ignore) {
 	    for (int i = 0; i < pos.length; i++) {
-		if (pos[i] == null) continue;
+		if (i == ignore || pos[i] == null) continue;
 		if (x >= pos[i].x && x < pos[i].x + slots[i].x
 		    && y >= pos[i].y && y < pos[i].y + slots[i].y)
 		    return i;
@@ -203,17 +206,29 @@ class InventoryMoves {
      * inside the very rect it was trying to clear.
      *
      * A chain is tried on a scratch copy of the simulator before it is
-     * committed. Any drop along the chain can be refused - not because the
-     * chain's starting item is unmovable, but because something further down
-     * is blocked, often a multi-tile item that simply has not had its own
-     * turn yet. Blaming that on the swap victim (returning its index as
-     * stuck, as an earlier version of this method did) pins the wrong item
-     * and gives up on a chain that would have worked once the real blocker
-     * moved. So a chain that cannot close is deferred instead - left alone
-     * for a later iteration of this same pass, once something else has moved
-     * and the board looks different. Deferrals are cleared on every commit,
-     * since a commit is the only event that can make a previously-blocked
-     * chain viable.
+     * committed. A drop along the chain is only ever refused because its
+     * target holds a multi-tile item - a 1x1 target either continues the
+     * swap or closes the chain. Blaming that on the swap victim (returning
+     * its index as stuck, as an earlier version of this method did) pins the
+     * wrong item: a swap only ever exchanges 1x1s among themselves, so it can
+     * never free the multi-tile item's cells, and pinning the victim does
+     * nothing to unblock the chain either - the multi-tile item is the actual
+     * obstruction. So a chain that cannot close is deferred instead, which
+     * does two things: it stops this same doomed candidate being re-picked
+     * forever, and it lets the other chain candidates in this pass - who may
+     * be blocked by the same item, or not blocked at all - still be tried. A
+     * deferred chain does not become viable later in this same pass: closing
+     * it requires the blocking multi-tile item to move, that item can only
+     * move via a direct rect that this pass has already established does not
+     * exist for it, and no chain commit can create one, since a chain only
+     * ever rearranges cells among the 1x1s already in it. Deferrals are
+     * cleared on every commit purely because the candidate set has changed
+     * and is worth rescanning, not because a previously-blocked chain could
+     * now succeed. What actually resolves the block is the tail below
+     * choosing to pin a multi-tile item over a 1x1: once that item is pinned,
+     * plan()'s outer loop reruns this method from scratch, with fresh
+     * deferred state, against a layout that no longer routes anything
+     * through the pinned item's cells.
      */
     private static int sequence(boolean[][] mask, Coord isz, Coord[] slots,
 				Coord[] current, Coord[] targets, List<Op> ops) {
@@ -273,8 +288,8 @@ class InventoryMoves {
 		    for (int t : touched) done[t] = true;
 		    Arrays.fill(deferred, false);
 		} else {
-		    // not blamed on the swap victim - left for a later
-		    // iteration, once the real blocker has had its turn
+		    // not blamed on the swap victim - just skipped, so the
+		    // rest of this pass can still try other candidates
 		    deferred[chain] = true;
 		}
 		continue;
@@ -315,22 +330,11 @@ class InventoryMoves {
 	for (int x = at.x; x < at.x + sz.x; x++)
 	    for (int y = at.y; y < at.y + sz.y; y++) {
 		if (sim.mask[x][y]) return MANY;
-		int o = occupant(sim, x, y, ignore);
+		int o = sim.at(x, y, ignore);
 		if (o < 0) continue;
 		if (found != EMPTY && found != o) return MANY;
 		found = o;
 	    }
 	return found;
-    }
-
-    /** Like Sim.at, but treats `ignore` as though it were not on the board. */
-    private static int occupant(Sim sim, int x, int y, int ignore) {
-	for (int i = 0; i < sim.pos.length; i++) {
-	    if (i == ignore || sim.pos[i] == null) continue;
-	    if (x >= sim.pos[i].x && x < sim.pos[i].x + sim.slots[i].x
-		&& y >= sim.pos[i].y && y < sim.pos[i].y + sim.slots[i].y)
-		return i;
-	}
-	return -1;
     }
 }
