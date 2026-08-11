@@ -75,8 +75,20 @@ class InventoryLayout {
      */
     static Coord[] assignTargets(boolean[][] mask, Coord isz, Coord[] slots,
 				 Coord[] current, boolean vertical) {
+	return assignTargets(mask, isz, slots, current, vertical, new boolean[slots.length]);
+    }
+
+    /**
+     * As above, with items the caller has already given up on. Used by
+     * InventoryMoves: an item can fit its target and still be impossible to
+     * carry there, and only the move planner knows which.
+     *
+     * `seed` is not modified.
+     */
+    static Coord[] assignTargets(boolean[][] mask, Coord isz, Coord[] slots,
+				 Coord[] current, boolean vertical, boolean[] seed) {
 	Coord[] targets = new Coord[slots.length];
-	boolean[] pinned = new boolean[slots.length];
+	boolean[] pinned = Arrays.copyOf(seed, seed.length);
 	int[] order = packOrder(slots, vertical);
 	for (int attempt = 0; attempt <= slots.length; attempt++) {
 	    boolean[][] grid = copyGrid(mask, isz);

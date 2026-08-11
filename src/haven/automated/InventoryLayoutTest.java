@@ -232,6 +232,20 @@ public class InventoryLayoutTest {
 	      t23[1]);
 	check("23c assignTargets, two 1x2 and eight 1x1 all fit a 4x3", Boolean.TRUE,
 	      allPlaced(t23));
+
+	// 24: um item fixado de fora fica onde está, e nada é mandado por cima
+	// dele. É o gancho que o planejador de movimentos usa quando descobre
+	// que um item até cabe no alvo, mas não há como levá-lo até lá.
+	Coord[] sl24 = coords(cat(rep(1, 2, 1), rep(10, 1, 1)));
+	Coord[] cur24 = coords(2,2,                                  // o 2x1 ocupa (2,2)-(3,2)
+			       0,0, 1,0, 2,0, 3,0, 0,1, 1,1, 2,1, 3,1, 0,2, 1,2);
+	boolean[] pin24 = new boolean[sl24.length];
+	pin24[0] = true;
+	Coord[] t24 = InventoryLayout.assignTargets(grid(4, 3), isz43, sl24, cur24, false, pin24);
+	check("24a assignTargets keeps a caller-pinned item put", null, t24[0]);
+	check("24b assignTargets places everything else around it", 10, placed(t24));
+	check("24c assignTargets, no target lands on the caller-pinned item", Boolean.TRUE,
+	      noOverlap(t24, cur24, sl24, isz43));
     }
 
     private static void copyGridTests() {
