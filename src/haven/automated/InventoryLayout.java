@@ -145,14 +145,4 @@ class InventoryLayout {
 		    grid[x][y] = val;
     }
 
-    /** First free, unmasked cell in row-major scan order, or null. */
-    static Coord findFreeCell(Coord isz, boolean[][] mask, boolean[][] occupied) {
-	for (int y = 0; y < isz.y; y++)
-	    for (int x = 0; x < isz.x; x++) {
-		if (mask[x][y]) continue;
-		if (occupied[x][y]) continue;
-		return new Coord(x, y);
-	    }
-	return null;
-    }
 }
