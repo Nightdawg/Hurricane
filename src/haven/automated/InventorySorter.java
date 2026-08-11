@@ -5,7 +5,6 @@ import haven.res.ui.tt.q.quality.Quality;
 
 import java.awt.Color;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static haven.Inventory.sqsz;
 
@@ -96,128 +95,70 @@ public class InventorySorter implements Defer.Callable<Void> {
     private static class Entry {
 	final WItem w;
 	final Coord slots;
-	Coord current;
-	Coord target;
+	final Coord current;
 
 	Entry(WItem w, Coord slots, Coord current) {
 	    this.w = w;
 	    this.slots = slots;
 	    this.current = current;
-	    this.target = current;
 	}
     }
 
-    /**
-     * Moves an entry to a new cell, keeping the occupancy grid in step. Clears the
-     * old rect before reassigning current, so callers cannot get the order wrong.
-     */
-    private static void relocate(Entry e, Coord to, boolean[][] occupied, Coord isz) {
-	InventoryLayout.markOccupied(occupied, isz, e.current, e.slots, false);
-	e.current = to;
-	InventoryLayout.markOccupied(occupied, isz, e.current, e.slots, true);
-    }
-
-    private boolean doSort(Inventory inv) throws InterruptedException {
-	// Build mask grid (permanently blocked cells)
-	boolean[][] maskGrid = new boolean[inv.isz.x][inv.isz.y];
+    /** The permanently blocked cells, as the server last described them. */
+    private static boolean[][] maskGrid(Inventory inv) {
+	boolean[][] mask = new boolean[inv.isz.x][inv.isz.y];
 	if (inv.sqmask != null) {
 	    int mo = 0;
 	    for (int y = 0; y < inv.isz.y; y++)
 		for (int x = 0; x < inv.isz.x; x++)
-		    maskGrid[x][y] = inv.sqmask[mo++];
+		    mask[x][y] = inv.sqmask[mo++];
 	}
+	return mask;
+    }
 
+    private boolean doSort(Inventory inv) throws InterruptedException {
 	// Collect all items, skip those with unloaded sprites
 	List<Entry> entries = new ArrayList<>();
 	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
 	    if (!wdg.visible || !(wdg instanceof WItem)) continue;
 	    WItem w = (WItem) wdg;
 	    if (w.item.spr() == null) continue;
-	    Coord slots = w.sz.div(sqsz);
-	    Coord current = w.c.sub(1, 1).div(sqsz);
-	    entries.add(new Entry(w, slots, current));
+	    entries.add(new Entry(w, w.sz.div(sqsz), w.c.sub(1, 1).div(sqsz)));
 	}
-
-	// Live occupancy, kept in step with every move made below
-	boolean[][] occupiedGrid = new boolean[inv.isz.x][inv.isz.y];
-	for (Entry e : entries)
-	    InventoryLayout.markOccupied(occupiedGrid, inv.isz, e.current, e.slots, true);
-
-	// Sort all items together
 	entries.sort(Comparator.comparing(e -> e.w, ITEM_COMPARATOR));
 
-	// Assign target positions, largest item first so the big ones get their
-	// rects before first-fit can fragment the free space around them
 	Coord[] slots = new Coord[entries.size()];
 	Coord[] current = new Coord[entries.size()];
 	for (int i = 0; i < slots.length; i++) {
 	    slots[i] = entries.get(i).slots;
 	    current[i] = entries.get(i).current;
 	}
-	Coord[] targets = InventoryLayout.assignTargets(maskGrid, inv.isz, slots, current, vertical);
-	for (int i = 0; i < targets.length; i++) {
-	    if (targets[i] != null)
-		entries.get(i).target = targets[i];
-	}
 
-	List<Entry> singles = entries.stream().filter(e -> e.slots.x * e.slots.y == 1).collect(Collectors.toList());
-	List<Entry> multis  = entries.stream().filter(e -> e.slots.x * e.slots.y > 1).collect(Collectors.toList());
+	// The plan is validated against the server's own rules before a single
+	// message goes out, so nothing below can be refused. Messages are
+	// delivered in order, so no step waits for the one before it.
+	InventoryMoves.Plan plan =
+	    InventoryMoves.plan(maskGrid(inv), inv.isz, slots, current, vertical);
 
-	// Phase 1: place multi-tile items
-	// For each, first evict any 1x1 items from its target cells, then take+drop it
-	boolean anyMultiSkipped = false;
-	for (Entry me : multis) {
-	    if (me.current.equals(me.target)) continue;
-	    boolean blocked = false;
-	    for (int tx = me.target.x; tx < me.target.x + me.slots.x && !blocked; tx++) {
-		for (int ty = me.target.y; ty < me.target.y + me.slots.y && !blocked; ty++) {
-		    Coord cell = new Coord(tx, ty);
-		    for (Entry se : singles) {
-			if (se.current.equals(cell)) {
-			    Coord free = InventoryLayout.findFreeCell(inv.isz, maskGrid, occupiedGrid);
-			    if (free == null) { blocked = true; break; }
-			    se.w.item.wdgmsg("take", Coord.z);
-			    Thread.sleep(10);
-			    inv.wdgmsg("drop", free);
-			    Thread.sleep(10);
-			    relocate(se, free, occupiedGrid, inv.isz);
-			    break;
-			}
-		    }
-		}
+	for (InventoryMoves.Op op : plan.ops) {
+	    if (op.kind == InventoryMoves.TAKE) {
+		entries.get(op.item).w.item.wdgmsg("take", Coord.z);
+		// throttle only, not synchronisation: one pause per take is
+		// what the chain already cost, and half what a large item cost
+		Thread.sleep(10);
+	    } else {
+		inv.wdgmsg("drop", op.cell);
 	    }
-	    if (blocked) { anyMultiSkipped = true; continue; }
-	    me.w.item.wdgmsg("take", Coord.z);
-	    Thread.sleep(10);
-	    inv.wdgmsg("drop", me.target);
-	    Thread.sleep(10);
-	    relocate(me, me.target, occupiedGrid, inv.isz);
 	}
-	if (anyMultiSkipped)
-	    gui.error("Could not move all large items — inventory too full");
 
-	// Phase 2: sort 1x1 items using chain/swap algorithm
-	for (Entry se : singles) {
-	    if (se.current.equals(se.target)) continue;
-	    se.w.item.wdgmsg("take", Coord.z);
-	    Entry handu = se;
-	    // a legitimate cycle visits each single at most once, so n+1 is one spare
-	    int guard = singles.size() + 1;
-	    while (handu != null) {
-		if (--guard < 0) {
-		    gui.error("Sort incomplete — placement chain too long, check your cursor");
-		    return false;
-		}
-		inv.wdgmsg("drop", handu.target);
-		Entry next = null;
-		for (Entry x : singles) {
-		    if (x != handu && x.current.equals(handu.target)) { next = x; break; }
-		}
-		handu.current = handu.target;
-		handu = next;
-	    }
-	    Thread.sleep(10);
-	}
+	// A pinned large item is normal, not newsworthy: under the conservative
+	// swap policy a multi-tile item can only move into wholly empty space,
+	// so in a packed cupboard it stays put on nearly every sort, and there
+	// is nothing the player could do about it anyway. What is worth a toast
+	// is the sort achieving nothing at all - the one outcome that would
+	// otherwise look like silent failure.
+	if (plan.ops.isEmpty() && plan.pinnedMulti)
+	    gui.error("No room to move anything — inventory too tightly packed");
 	return true;
     }
 
