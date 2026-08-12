@@ -68,4 +68,42 @@ public abstract class SkyLib {
 	Expression v = param(IN, VEC3).ref();
 	code.add(raw("return normalize(vec3($0.x, $0.z, $0.y));\n", v));
     }};
+
+    /* --- shared output transform ------------------------------------- */
+
+    /* Reinhard + gamma. Sky colour and fog colour MUST both pass through
+     * this and only this, or they diverge and the horizon seam returns. */
+    public static final Function tone = new Function.Def(VEC3, "sky_tone") {{
+	Expression c = param(IN, VEC3).ref();
+	code.add(raw("vec3 sk_c = $0 / ($0 + vec3(0.72));\n" +
+		     "return pow(sk_c, vec3(1.0 / 2.2));\n", c));
+    }};
+
+    /* Pull a colour toward its own luminance. This is what stops the
+     * saturated sunrise band from making the sky/ground seam obvious. */
+    public static final Function desat = new Function.Def(VEC3, "sky_desat") {{
+	Expression c = param(IN, VEC3).ref();
+	Expression a = param(IN, FLOAT).ref();
+	code.add(raw("return mix($0, vec3(dot($0, vec3(0.2126, 0.7152, 0.0722))), $1);\n", c, a));
+    }};
+
+    /* --- shared sky features (Y-up) ---------------------------------- */
+
+    public static final Function disc = new Function.Def(VEC3, "sky_disc") {{
+	Expression d = param(IN, VEC3).ref();
+	Expression s = param(IN, VEC3).ref();
+	code.add(raw("return vec3(1.0, 0.96, 0.86) * pow(max(dot($0, $1), 0.0), 3000.0) * 6.0;\n", d, s));
+    }};
+
+    public static final Function stars = new Function.Def(VEC3, "sky_stars") {{
+	Expression d = param(IN, VEC3).ref();
+	Expression s = param(IN, VEC3).ref();
+	Expression t = param(IN, FLOAT).ref();
+	code.add(raw("float sk_night = clamp(-$1.y * 3.0, 0.0, 1.0);\n" +
+		     "if(sk_night <= 0.001) return vec3(0.0);\n" +
+		     "vec2 sk_uv = floor($0.xz / (abs($0.y) + 0.25) * 240.0);\n" +
+		     "float sk_n = fract(sin(dot(sk_uv, vec2(127.1, 311.7))) * 43758.5453123);\n" +
+		     "float sk_st = smoothstep(0.9965, 1.0, sk_n) * (0.6 + 0.4 * sin($2 * 2.0 + sk_n * 90.0));\n" +
+		     "return vec3(sk_st) * sk_night * clamp($0.y * 3.0, 0.0, 1.0);\n", d, s, t));
+    }};
 }
