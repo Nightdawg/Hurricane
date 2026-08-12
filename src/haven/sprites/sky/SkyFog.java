@@ -32,10 +32,16 @@ public class SkyFog extends State {
      * had to be opaque by 540 to cover the worst-case edge distance, which
      * erased most of the terrain the client had already drawn.
      *
-     * 260 still took visible terrain: the band only has to be wide enough to
-     * hide the cut boundary, and everything beyond that is view the player
-     * paid for and cannot see. 110 is a little under half a cut. */
-    public static final double BAND = 110.0;
+     * 260 still took visible terrain, and so did 110. The band only has to be
+     * wide enough to hide the cut boundary; everything past that is view the
+     * client already loaded and drew. 70 units is about six and a half tiles.
+     *
+     * Zoomed out is the case that decides this. FreeCam pulls back to 3000
+     * (MapView.java:305), which puts the whole 1375-unit loaded square on
+     * screen at once, and the band then eats a visible fraction of it from
+     * every side -- worst at the corners, where both edges are near and the
+     * min() over the rectangle makes the fade start at 70 * sqrt(2). */
+    public static final double BAND = 70.0;
 
     public static final SkyFog quality = new SkyFog(true);
     public static final SkyFog cheap = new SkyFog(false);

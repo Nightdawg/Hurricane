@@ -225,12 +225,15 @@ public abstract class SkyLib {
 	Expression oct = param(IN, INT).ref();
 	/* The 0.45 is the cloud deck's height over its own distance: raising
 	 * it from 0.12 stops the pattern piling up at the horizon and spreads
-	 * it across the band that is actually on screen. The 6.0 is frequency,
-	 * up from 1.6: the visible sky is one 28-degree window, and at 1.6 that
-	 * window covered well under one noise cell, so the "clouds" resolved to
-	 * a single flat wash. */
+	 * it across the band that is actually on screen.
+	 *
+	 * The 2.0 is frequency. 1.6 put well under one noise cell on screen,
+	 * so the clouds resolved to a single flat wash; 6.0 overshot the other
+	 * way into fine mottle, roughly 20 features across the window, which
+	 * reads as grain rather than as cloud. 2.0 gives two or three masses
+	 * across the field with the higher octaves supplying their edges. */
 	code.add(raw("if($0.y <= 0.005) return $3;\n" +
-		     "vec2 sk_uv = ($0.xz / ($0.y + 0.45) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 6.0;\n" +
+		     "vec2 sk_uv = ($0.xz / ($0.y + 0.45) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 2.0;\n" +
 		     "float sk_p = 0.0;\n" +
 		     "{\n" +
 		     "    vec2 sk_q = sk_uv;\n" +
@@ -248,12 +251,18 @@ public abstract class SkyLib {
 		     "        sk_amp *= 0.5;\n" +
 		     "    }\n" +
 		     "}\n" +
-		     /* 0.48 to 0.86 was measured over 200k samples at three
-		      * octaves: mean 0.437, maximum 0.807. The upper end was
-		      * unreachable and coverage came out at 5.8%, so the sky
-		      * was in practice cloudless. 0.38 to 0.58 gives about 35%
-		      * -- partly cloudy. */
-		     "float sk_c = smoothstep(0.38, 0.58, sk_p);\n" +
+		     /* Thresholds measured over 300k samples of this noise
+		      * (four octaves: mean 0.469, standard deviation 0.123).
+		      *
+		      * 0.48 to 0.86 was the prototype's: the upper bound sat
+		      * above the noise's own maximum, so coverage came out at
+		      * 5.8% and the sky was in practice cloudless. 0.38 to 0.58
+		      * fixed the coverage but the ramp was 1.6 standard
+		      * deviations wide, so 30% of the sky landed at a partial
+		      * value -- neither cloud nor clear, which renders as a
+		      * diffuse veil rather than as clouds. This window is half
+		      * a standard deviation: 30% coverage, 8% partial. */
+		     "float sk_c = smoothstep(0.51, 0.57, sk_p);\n" +
 		     "float sk_fade = smoothstep(0.0, 0.10, $0.y);\n" +
 		     "float sk_lit = clamp(dot(normalize(vec3($0.x, 0.35, $0.z)), $1) * 0.5 + 0.62, 0.0, 1.0);\n" +
 		     "float sk_day = clamp($1.y * 3.0 + 0.35, 0.05, 1.0);\n" +
@@ -316,7 +325,7 @@ public abstract class SkyLib {
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
 		     baseB.call(d, s), disc.call(d, s), stars.call(d, s, t),
-		     clouds.call(d, s, t, col, Cons.l(6)),
+		     clouds.call(d, s, t, col, Cons.l(5)),
 		     tone.call(col), night, e));
     }};
 
