@@ -233,8 +233,27 @@ public abstract class SkyLib {
 	 * covering half the screen with no shape to read. 4.5 gives several
 	 * masses with sky between them. (6.0 goes too far the other way, into
 	 * roughly twenty features across the window, which reads as grain.) */
+	/* The wind is added OUTSIDE the frequency multiply, and that placement
+	 * is load-bearing. It used to be inside, which tied drift speed to
+	 * cloud size: raising the frequency from 2.0 to 4.5 to give the clouds
+	 * shape silently made them drift 2.25 times faster as well. Keep them
+	 * separate so either can be tuned without touching the other.
+	 *
+	 * The constants are in noise cells per GAME second, and game time runs
+	 * fast: measured 3.56 game-seconds per real second off the in-game
+	 * clock (15:12:10 to 15:12:38 across a 7.87 s capture), which matches
+	 * Glob.itimefac = 3.0 plus the server's own rate.
+	 *
+	 * The old 0.010 therefore worked out at 0.045 * 3.56 = 0.160 cells per
+	 * REAL second. The visible band is about 4.3 cells wide, so a cloud
+	 * crossed the screen in 27 seconds -- measured independently by block
+	 * correlation on a capture at 65 to 90 px/s. Real clouds take minutes:
+	 * a deck at 2 km under a 10 m/s wind sweeps this 53-degree field in
+	 * roughly 380 s. 0.0050 gives 243 s, close to that and still plainly
+	 * moving -- 7.8 px/s, so a cloud shifts its own width in about a
+	 * minute. */
 	code.add(raw("if($0.y <= 0.005) return $3;\n" +
-		     "vec2 sk_uv = ($0.xz / ($0.y + 0.45) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 4.5;\n" +
+		     "vec2 sk_uv = $0.xz / ($0.y + 0.45) * (0.55 * 4.5) + vec2($2 * 0.0050, $2 * 0.0020);\n" +
 		     "float sk_p = 0.0;\n" +
 		     "{\n" +
 		     "    vec2 sk_q = sk_uv;\n" +
