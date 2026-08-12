@@ -12,6 +12,7 @@ import static haven.MCache.tilesz;
  * the label and the button, then a pack - so the button starts hidden and only
  * appears once a label proves the find is directly below us. */
 public class ProspectingWnd extends Window {
+    private static final int GAP = UI.scale(5);
     private final Button mark;
     private String detected = null;
     private Coord2d pc = null;
@@ -47,16 +48,33 @@ public class ProspectingWnd extends Window {
 	if(mark != null) {
 	    for(Button btn : children(Button.class)) {
 		if(btn != mark) {
-		    /* A large button's box is taller than the frame it draws,
-		     * which sits centred in it - so matching box tops would
-		     * leave ours riding high. Centre the boxes instead and the
-		     * frames line up whichever size the server's button is. */
-		    mark.c = Coord.of(mark.c.x, btn.c.y + ((btn.sz.y - mark.sz.y) / 2));
+		    layout(btn);
 		    break;
 		}
 	    }
 	}
 	super.pack();
+    }
+
+    /* The server lays the window out for its one button and then packs it to
+     * the text, so a long line leaves the button sitting off to the left -
+     * with or without ours beside it. Centre the whole row under the text. */
+    private void layout(Button dismiss) {
+	int width = 0;
+	for(Widget wdg = child; wdg != null; wdg = wdg.next) {
+	    if((wdg == deco) || !wdg.visible || (wdg instanceof Button))
+		continue;
+	    width = Math.max(width, wdg.c.x + wdg.sz.x);
+	}
+	int roww = dismiss.sz.x + (mark.visible ? (GAP + mark.sz.x) : 0);
+	int x = Math.max(0, (width - roww) / 2);
+	dismiss.c = Coord.of(x, dismiss.c.y);
+	/* A large button's box is taller than the frame it draws, which sits
+	 * centred in it - so matching box tops would leave ours riding high.
+	 * Centre the boxes instead and the frames line up whichever size the
+	 * server's button is. */
+	mark.c = Coord.of(x + dismiss.sz.x + GAP,
+			  dismiss.c.y + ((dismiss.sz.y - mark.sz.y) / 2));
     }
 
     private Coord2d playerc() {
