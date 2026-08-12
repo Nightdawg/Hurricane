@@ -1,5 +1,6 @@
 package haven;
 
+import java.awt.Color;
 import java.util.Random;
 
 import haven.MapFile.PMarker;
@@ -85,8 +86,12 @@ public class ProspectingWnd extends Window {
 	}
 	MapFile file = mapfile.file;
 	Coord tc = loc.tc.add(pc.floor(tilesz));
-	file.add(new PMarker(file, loc.seg.id, tc, ProspectingText.markerName(detected),
+	String name = ProspectingText.markerName(detected);
+	file.add(new PMarker(file, loc.seg.id, tc, name,
 			     BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)], true));
+	/* The failures above all speak, so the success says its piece too -
+	 * and it names the marker, which is how you find it on the map. */
+	gui.msg("Marked: " + name, Color.WHITE);
 	/* One find, one marker. Greyed out rather than hidden: a disabled
 	 * button ignores clicks all the same, and hiding it would leave the
 	 * hole its own width carved into the window. */
