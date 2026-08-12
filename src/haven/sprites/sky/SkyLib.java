@@ -187,4 +187,88 @@ public abstract class SkyLib {
 		     "return mix($3, sk_cc, sk_c * sk_fade * 0.88);\n",
 		     d, s, t, sky, oct));
     }};
+
+    /* --- public entry points (Z-up in, tonemapped out) --------------- */
+
+    public static final Function colA = new Function.Def(VEC3, "sky_colA") {{
+	Expression wd = param(IN, VEC3).ref();
+	Expression ws = param(IN, VEC3).ref();
+	Expression night = param(IN, FLOAT).ref();
+	Expression t = param(IN, FLOAT).ref();
+	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
+	code.add(raw("vec3 sk_d = $0;\n" +
+		     "vec3 sk_s = $1;\n" +
+		     "vec3 sk_col = $2 + $3 + $4;\n" +
+		     "sk_col = $5;\n" +
+		     "return mix($6, vec3(1.0), $7);\n",
+		     yup.call(wd), yup.call(ws),
+		     baseA.call(d, s), disc.call(d, s), stars.call(d, s, t),
+		     clouds.call(d, s, t, col, Cons.l(3)),
+		     tone.call(col), night));
+    }};
+
+    public static final Function colB = new Function.Def(VEC3, "sky_colB") {{
+	Expression wd = param(IN, VEC3).ref();
+	Expression ws = param(IN, VEC3).ref();
+	Expression night = param(IN, FLOAT).ref();
+	Expression t = param(IN, FLOAT).ref();
+	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
+	code.add(raw("vec3 sk_d = $0;\n" +
+		     "vec3 sk_s = $1;\n" +
+		     "vec3 sk_col = $2 + $3 + $4;\n" +
+		     "sk_col = $5;\n" +
+		     "return mix($6, vec3(1.0), $7);\n",
+		     yup.call(wd), yup.call(ws),
+		     baseB.call(d, s), disc.call(d, s), stars.call(d, s, t),
+		     clouds.call(d, s, t, col, Cons.l(5)),
+		     tone.call(col), night));
+    }};
+
+    /* Fog colour. Deliberately calls base* (no sun disc) so a 6x overbright
+     * disc can never be averaged into the haze, and deliberately shares
+     * tone() with col* so fog and sky stay in one colour space. */
+    public static final Function horA = new Function.Def(VEC3, "sky_horA") {{
+	Expression wd = param(IN, VEC3).ref();
+	Expression ws = param(IN, VEC3).ref();
+	Expression night = param(IN, FLOAT).ref();
+	Expression h = id("sk_h"), s = id("sk_s"), acc = id("sk_acc");
+	code.add(raw("vec3 sk_w = $0;\n" +
+		     "vec3 sk_s = $1;\n" +
+		     "vec3 sk_h = normalize(vec3(sk_w.x, 0.26, sk_w.z));\n" +
+		     "vec3 sk_acc = $2;\n" +
+		     "return mix($3, vec3(1.0), $4);\n",
+		     yup.call(wd), yup.call(ws),
+		     baseA.call(h, s),
+		     tone.call(desat.call(acc, Cons.l(DESAT))),
+		     night));
+    }};
+
+    public static final Function horB = new Function.Def(VEC3, "sky_horB") {{
+	Expression wd = param(IN, VEC3).ref();
+	Expression ws = param(IN, VEC3).ref();
+	Expression night = param(IN, FLOAT).ref();
+	Expression s = id("sk_s"), acc = id("sk_acc");
+	Expression t0 = id("sk_t0"), t1 = id("sk_t1"), t2 = id("sk_t2"), t3 = id("sk_t3"), t4 = id("sk_t4");
+	code.add(raw("vec3 sk_w = $0;\n" +
+		     "vec3 sk_s = $1;\n" +
+		     /* Guard: looking straight down makes sk_w.xz zero, and
+		      * normalize(vec3(0)) is NaN -- which then poisons the
+		      * mix() in SkyFog even at a fog factor of 0. Reachable
+		      * on the free camera at steep elevation. */
+		     "vec2 sk_hz = sk_w.xz;\n" +
+		     "if(dot(sk_hz, sk_hz) < 1.0e-8) sk_hz = vec2(1.0, 0.0);\n" +
+		     "vec3 sk_f = normalize(vec3(sk_hz.x, 0.0, sk_hz.y));\n" +
+		     "vec3 sk_t0 = normalize(sk_f + vec3(0.0, 0.02, 0.0));\n" +
+		     "vec3 sk_t1 = normalize(sk_f + vec3(0.0, 0.09, 0.0));\n" +
+		     "vec3 sk_t2 = normalize(sk_f + vec3(0.0, 0.20, 0.0));\n" +
+		     "vec3 sk_t3 = normalize(sk_f + vec3(0.0, 0.36, 0.0));\n" +
+		     "vec3 sk_t4 = normalize(sk_f + vec3(0.0, 0.58, 0.0));\n" +
+		     "vec3 sk_acc = $2 * 0.16 + $3 * 0.22 + $4 * 0.26 + $5 * 0.22 + $6 * 0.14;\n" +
+		     "return mix($7, vec3(1.0), $8);\n",
+		     yup.call(wd), yup.call(ws),
+		     baseB.call(t0, s), baseB.call(t1, s), baseB.call(t2, s),
+		     baseB.call(t3, s), baseB.call(t4, s),
+		     tone.call(desat.call(acc, Cons.l(DESAT))),
+		     night));
+    }};
 }
