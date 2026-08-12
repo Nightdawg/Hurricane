@@ -87,8 +87,12 @@ public class ProspectingWnd extends Window {
 	MapFile file = mapfile.file;
 	Coord tc = loc.tc.add(pc.floor(tilesz));
 	String name = ProspectingText.markerName(detected);
+	/* onmap = false: no flag planted in the world. Prospecting is done in
+	 * bulk, and a flag per find would litter the ground. The marker is
+	 * still on the minimap and in the list, and "Display in world" turns
+	 * the flag on for the ones worth seeing from afar. */
 	file.add(new PMarker(file, loc.seg.id, tc, name,
-			     BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)], true));
+			     BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)], false));
 	/* The failures above all speak, so the success says its piece too -
 	 * and it names the marker, which is how you find it on the map. */
 	gui.msg("Marked: " + name, Color.WHITE);
