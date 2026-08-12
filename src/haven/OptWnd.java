@@ -34,6 +34,7 @@ import haven.resutil.Ridges;
 import haven.sprites.AggroCircleSprite;
 import haven.sprites.ChaseVectorSprite;
 import haven.sprites.PartyCircleSprite;
+import haven.sprites.sky.*;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -56,8 +57,6 @@ public class OptWnd extends Window {
 	public final Panel advancedSettings;
     public Panel current;
 	private PButton videoButton, audioButton, keybindButton;
-	private static final ScheduledExecutorService skyboxExecutor = Executors.newSingleThreadScheduledExecutor();
-	private static Future<?> skyboxFuture;
 	public static final Color msgGreen = new Color(8, 211, 0);
 	public static final Color msgGray = new Color(145, 145, 145);
 	public static final Color msgRed = new Color(197, 0, 0);
@@ -4188,7 +4187,7 @@ public class OptWnd extends Window {
 			enableSkyboxCheckBox.tooltip = enableSkyboxTooltip;
 
 			rightColumn = add(new Label("Skybox Style:"), rightColumn.pos("bl").adds(0, 4));
-			List<String> skyboxStyles = Arrays.asList("Clouds", "Galaxy");
+			List<String> skyboxStyles = Arrays.asList("Sky", "Galaxy");
 			add(new OldDropBox<String>(skyboxStyles.size(), skyboxStyles) {
 				{
 					super.change(skyboxStyles.get(Utils.getprefi("skyboxStyle", 0)));
@@ -4211,16 +4210,20 @@ public class OptWnd extends Window {
 					for (int i = 0; i < skyboxStyles.size(); i++){
 						if (item.equals(skyboxStyles.get(i))){
 							Utils.setprefi("skyboxStyle", i);
-							if (enableSkyboxCheckBox.a) { // ND: It's easier to just reset the checkbox to load the new skybox, haha...
-								enableSkyboxCheckBox.set(false);
-								if (skyboxFuture != null)
-									skyboxFuture.cancel(true);
-								skyboxFuture = skyboxExecutor.scheduleWithFixedDelay(OptWnd.this::resetSkyboxCheckbox, 200, 3000, TimeUnit.MILLISECONDS);
-							}
+							OptWnd.this.reloadSkybox();
 						}
 					}
 				}
 			}, rightColumn.pos("ur").adds(4, 0));
+
+			rightColumn = add(new CheckBox("High Quality Sky"){
+				{a = (Utils.getprefb("skyboxQuality", false));}
+				public void changed(boolean val) {
+					Utils.setprefb("skyboxQuality", val);
+					OptWnd.this.reloadSkybox();
+				}
+			}, rightColumn.pos("bl").adds(0, 4));
+			rightColumn.tooltip = skyboxQualityTooltip;
 
 			rightColumn = add(new Label("Trees & Bushes Scale:"), rightColumn.pos("bl").adds(0, 14).xs(290));
 			rightColumn = add(treeAndBushScaleSlider = new HSlider(UI.scale(200), 30, 100, Utils.getprefi("treeAndBushScale", 100)) {
@@ -5231,9 +5234,14 @@ public class OptWnd extends Window {
 		pack();
 	}
 
-	private void resetSkyboxCheckbox(){
-		enableSkyboxCheckBox.set(true);
-		skyboxFuture.cancel(true);
+	/* Rebuild the skybox overlay in place. Replaces an executor that
+	 * unchecked and re-checked the enable box on a timer. */
+	private void reloadSkybox() {
+		SkyPalette.reload();
+		if((enableSkyboxCheckBox == null) || !enableSkyboxCheckBox.a)
+			return;
+		if((ui != null) && (ui.sess != null))
+			ui.sess.glob.oc.gobAction(Gob::reloadSkybox);
 	}
 
 	// ND: Setting Tooltips
@@ -5581,6 +5589,11 @@ public class OptWnd extends Window {
 	private static final Object enableSkyboxTooltip = RichText.render("Adds a skybox to the game world." +
 			"\n" +
 			"\n$col[185,185,185]{Summon the sky above the hearthlands, and banish the endless void!}", UI.scale(190));
+	private static final Object skyboxQualityTooltip = RichText.render("Uses a physically based scattering model for the sky, and a wider, softer haze band where the world ends." +
+			"\n" +
+			"\n$col[185,185,185]{Costs more GPU time than the plain gradient.}" +
+			"\n" +
+			"\n$col[218,163,32]{Off by default because the client cannot detect an unsupported shader on its own. If the sky renders black, or the client fails to draw with this on, turn it back off.}", UI.scale(300));
 	private static final Object disableTreeAndBushSwayingTooltip = RichText.render("Trees and bushes will no longer move as if the wind is blowing them around." +
 			"\n" +
 			"\n$col[185,185,185]{Disabling swaying can improve your framerate.}", UI.scale(300));

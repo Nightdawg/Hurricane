@@ -566,6 +566,16 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	       && !(GameUI.backgroundSong.equals("cabin") || GameUI.backgroundSong.equals("cave")));
     }
 
+    /* Drop the skybox overlay so the next tick rebuilds it. Needed because
+     * the style and quality modes compile to different shader programs, so
+     * the sprite cannot be reconfigured in place. */
+    public void reloadSkybox() {
+	if(skyboxOverlay != null) {
+	    removeOl(skyboxOverlay);
+	    skyboxOverlay = null;
+	}
+    }
+
     public void ctick(double dt) {
 	for(GAttrib a : attr.values()){
 	    a.ctick(dt);
