@@ -87,7 +87,9 @@ public class ProspectingWnd extends Window {
 	Coord tc = loc.tc.add(pc.floor(tilesz));
 	file.add(new PMarker(file, loc.seg.id, tc, ProspectingText.markerName(detected),
 			     BuddyWnd.gc[new Random().nextInt(BuddyWnd.gc.length)], true));
-	/* One find, one marker. */
-	mark.hide();
+	/* One find, one marker. Greyed out rather than hidden: a disabled
+	 * button ignores clicks all the same, and hiding it would leave the
+	 * hole its own width carved into the window. */
+	mark.disable(true);
     }
 }
