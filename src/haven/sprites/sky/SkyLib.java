@@ -63,6 +63,49 @@ public abstract class SkyLib {
      * 0.35 for Mode B. */
     public static final double DESAT = 0.35;
 
+    /* --- where the sky sits on the screen ---------------------------- */
+
+    /* This game's camera never shows the horizon. FreeCam defaults to 45
+     * degrees above the player (MapView.java:287) with a 15-degree vertical
+     * half-field (MapView.java:124-128), so every ray on screen points 30 to
+     * 60 degrees BELOW horizontal. Feeding those directions to sky maths
+     * gives one flat colour, which is what the first revisions rendered.
+     *
+     * So the sky's elevation is driven by the ray's angle above the camera
+     * axis instead of by its world elevation, stretched by GAIN and dropped
+     * by TILT. Azimuth still comes from the world, so the sun stays where the
+     * shadows put it and the sky turns with the camera.
+     *
+     * GAIN stretches the 30-degree field into roughly 90 degrees of sky, so
+     * the gradient reads instead of being a slice. TILT then puts the sky's
+     * own horizon just under where the loaded terrain ends -- around 30% down
+     * the screen at the default zoom -- so the band the player actually sees
+     * is horizon haze at the bottom and open sky above it.
+     *
+     * Both fade out as the camera levels off (see sky_elev): at zero pitch
+     * the real horizon IS on screen, and the ray's own elevation is then the
+     * right answer with no stretching at all. */
+    public static final double GAIN = 3.0;
+    public static final double TILT = -0.227;   /* radians, about -13 degrees */
+
+    /* Sky elevation, in radians, for one fragment.
+     *
+     * ey, ez are the y and z of its eye-space position: atan(ey, -ez) is the
+     * angle above the camera axis, and its iso-lines are exactly horizontal
+     * screen rows. (Taking asin of the normalised direction instead bows them
+     * into arcs, which renders as a curved seam across the sky.)
+     *
+     * pitch is how far the camera looks down, in radians. */
+    public static final Function elev = new Function.Def(FLOAT, "sky_elev") {{
+	Expression ey = param(IN, FLOAT).ref();
+	Expression ez = param(IN, FLOAT).ref();
+	Expression pitch = param(IN, FLOAT).ref();
+	code.add(raw("float sk_a = atan($0, -$1);\n" +
+		     "float sk_k = clamp($2 / 0.7853982, 0.0, 1.0);\n" +
+		     "return (sk_a * mix(1.0, " + GAIN + ", sk_k)) + (" + TILT + " * sk_k);\n",
+		     ey, ez, pitch));
+    }};
+
     /* Z-up world direction -> Y-up sky-maths direction. */
     public static final Function yup = new Function.Def(VEC3, "sky_yup") {{
 	Expression v = param(IN, VEC3).ref();
@@ -112,10 +155,17 @@ public abstract class SkyLib {
     public static final Function baseA = new Function.Def(VEC3, "sky_baseA") {{
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
+	/* The day zenith is deeper, and the exponent higher, than the
+	 * prototype's. The prototype was judged on a full sky dome; here only
+	 * the 0-to-30-degree band above the terrain is ever on screen, and at
+	 * 0.42 that band was almost entirely the pale horizon end of the
+	 * gradient -- measured 12 points of separation across the whole
+	 * visible sky. 0.75 moves the pale part down into the strip the fog
+	 * covers and leaves open blue above it. */
 	code.add(raw("float sk_day = clamp($1.y * 2.5 + 0.25, 0.0, 1.0);\n" +
-		     "vec3 sk_zen = mix(vec3(0.015, 0.020, 0.055), vec3(0.16, 0.38, 0.78), sk_day);\n" +
-		     "vec3 sk_hor = mix(vec3(0.045, 0.050, 0.090), vec3(0.72, 0.83, 0.95), sk_day);\n" +
-		     "float sk_t = pow(clamp($0.y, 0.0, 1.0), 0.42);\n" +
+		     "vec3 sk_zen = mix(vec3(0.015, 0.020, 0.055), vec3(0.085, 0.27, 0.72), sk_day);\n" +
+		     "vec3 sk_hor = mix(vec3(0.045, 0.050, 0.090), vec3(0.70, 0.82, 0.95), sk_day);\n" +
+		     "float sk_t = pow(clamp($0.y, 0.0, 1.0), 0.75);\n" +
 		     "vec3 sk_col = mix(sk_hor, sk_zen, sk_t);\n" +
 		     "float sk_sd = max(dot($0, $1), 0.0);\n" +
 		     "float sk_dusk = exp(-abs($1.y) * 7.0);\n" +
@@ -173,8 +223,14 @@ public abstract class SkyLib {
 	Expression t = param(IN, FLOAT).ref();
 	Expression sky = param(IN, VEC3).ref();
 	Expression oct = param(IN, INT).ref();
+	/* The 0.45 is the cloud deck's height over its own distance: raising
+	 * it from 0.12 stops the pattern piling up at the horizon and spreads
+	 * it across the band that is actually on screen. The 6.0 is frequency,
+	 * up from 1.6: the visible sky is one 28-degree window, and at 1.6 that
+	 * window covered well under one noise cell, so the "clouds" resolved to
+	 * a single flat wash. */
 	code.add(raw("if($0.y <= 0.005) return $3;\n" +
-		     "vec2 sk_uv = ($0.xz / ($0.y + 0.12) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 1.6;\n" +
+		     "vec2 sk_uv = ($0.xz / ($0.y + 0.45) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 6.0;\n" +
 		     "float sk_p = 0.0;\n" +
 		     "{\n" +
 		     "    vec2 sk_q = sk_uv;\n" +
@@ -192,8 +248,13 @@ public abstract class SkyLib {
 		     "        sk_amp *= 0.5;\n" +
 		     "    }\n" +
 		     "}\n" +
-		     "float sk_c = smoothstep(0.48, 0.86, sk_p);\n" +
-		     "float sk_fade = smoothstep(0.0, 0.16, $0.y);\n" +
+		     /* 0.48 to 0.86 was measured over 200k samples at three
+		      * octaves: mean 0.437, maximum 0.807. The upper end was
+		      * unreachable and coverage came out at 5.8%, so the sky
+		      * was in practice cloudless. 0.38 to 0.58 gives about 35%
+		      * -- partly cloudy. */
+		     "float sk_c = smoothstep(0.38, 0.58, sk_p);\n" +
+		     "float sk_fade = smoothstep(0.0, 0.10, $0.y);\n" +
 		     "float sk_lit = clamp(dot(normalize(vec3($0.x, 0.35, $0.z)), $1) * 0.5 + 0.62, 0.0, 1.0);\n" +
 		     "float sk_day = clamp($1.y * 3.0 + 0.35, 0.05, 1.0);\n" +
 		     "vec3 sk_cc = mix(vec3(0.30, 0.32, 0.40), vec3(1.0, 0.97, 0.93), sk_lit) * sk_day;\n" +
@@ -209,25 +270,29 @@ public abstract class SkyLib {
 	Expression ws = param(IN, VEC3).ref();
 	Expression night = param(IN, FLOAT).ref();
 	Expression t = param(IN, FLOAT).ref();
-	Expression cy = param(IN, FLOAT).ref();
+	Expression e = param(IN, FLOAT).ref();
 	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
-		     /* Anchor elevation to screen height, keep azimuth from
-		      * the world. See SkyPalette.screenup for why. */
-		     "float sk_cy = clamp($8 * 0.5 + 0.5, 0.0, 1.0);\n" +
+		     /* Rebuild the ray: elevation from sky_elev, azimuth kept
+		      * from the world. An earlier revision used the elevation's
+		      * SINE here rather than its angle, which put the top of
+		      * the screen near the zenith and squeezed the whole
+		      * azimuth circle -- clouds and stars then covered a
+		      * fraction of one noise cell and rendered as flat wash. */
+		     "float sk_e = clamp($8, -1.5533, 1.5533);\n" +
 		     "vec2 sk_hz = vec2(sk_d.x, sk_d.z);\n" +
 		     "float sk_hl = length(sk_hz);\n" +
 		     "sk_hz = (sk_hl < 1.0e-5) ? vec2(1.0, 0.0) : (sk_hz / sk_hl);\n" +
-		     "sk_hz *= sqrt(max(1.0 - sk_cy * sk_cy, 0.0));\n" +
-		     "sk_d = vec3(sk_hz.x, sk_cy, sk_hz.y);\n" +
+		     "sk_hz *= cos(sk_e);\n" +
+		     "sk_d = vec3(sk_hz.x, sin(sk_e), sk_hz.y);\n" +
 		     "vec3 sk_col = $2 + $3 + $4;\n" +
 		     "sk_col = $5;\n" +
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
 		     baseA.call(d, s), disc.call(d, s), stars.call(d, s, t),
-		     clouds.call(d, s, t, col, Cons.l(3)),
-		     tone.call(col), night, cy));
+		     clouds.call(d, s, t, col, Cons.l(4)),
+		     tone.call(col), night, e));
     }};
 
     public static final Function colB = new Function.Def(VEC3, "sky_colB") {{
@@ -235,25 +300,24 @@ public abstract class SkyLib {
 	Expression ws = param(IN, VEC3).ref();
 	Expression night = param(IN, FLOAT).ref();
 	Expression t = param(IN, FLOAT).ref();
-	Expression cy = param(IN, FLOAT).ref();
+	Expression e = param(IN, FLOAT).ref();
 	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
-		     /* Anchor elevation to screen height, keep azimuth from
-		      * the world. See SkyPalette.screenup for why. */
-		     "float sk_cy = clamp($8 * 0.5 + 0.5, 0.0, 1.0);\n" +
+		     /* Same rebuild as colA -- see the note there. */
+		     "float sk_e = clamp($8, -1.5533, 1.5533);\n" +
 		     "vec2 sk_hz = vec2(sk_d.x, sk_d.z);\n" +
 		     "float sk_hl = length(sk_hz);\n" +
 		     "sk_hz = (sk_hl < 1.0e-5) ? vec2(1.0, 0.0) : (sk_hz / sk_hl);\n" +
-		     "sk_hz *= sqrt(max(1.0 - sk_cy * sk_cy, 0.0));\n" +
-		     "sk_d = vec3(sk_hz.x, sk_cy, sk_hz.y);\n" +
+		     "sk_hz *= cos(sk_e);\n" +
+		     "sk_d = vec3(sk_hz.x, sin(sk_e), sk_hz.y);\n" +
 		     "vec3 sk_col = $2 + $3 + $4;\n" +
 		     "sk_col = $5;\n" +
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
 		     baseB.call(d, s), disc.call(d, s), stars.call(d, s, t),
-		     clouds.call(d, s, t, col, Cons.l(5)),
-		     tone.call(col), night, cy));
+		     clouds.call(d, s, t, col, Cons.l(6)),
+		     tone.call(col), night, e));
     }};
 
     /* Fog colour. Deliberately calls base* (no sun disc) so a 6x overbright
@@ -266,7 +330,12 @@ public abstract class SkyLib {
 	Expression h = id("sk_h"), s = id("sk_s"), acc = id("sk_acc");
 	code.add(raw("vec3 sk_w = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
-		     "vec3 sk_h = normalize(vec3(sk_w.x, 0.26, sk_w.z));\n" +
+		     /* Low, because the fog has to meet the drawn sky where the
+		      * terrain stops -- a few degrees over the horizon, not the
+		      * 20 the old 0.26 worked out to. Too high and the fog
+		      * lands visibly bluer than the sky it is supposed to
+		      * dissolve into. */
+		     "vec3 sk_h = normalize(vec3(sk_w.x, 0.12, sk_w.z));\n" +
 		     "vec3 sk_acc = $2;\n" +
 		     "return mix($3, vec3(1.0), $4);\n",
 		     yup.call(wd), yup.call(ws),

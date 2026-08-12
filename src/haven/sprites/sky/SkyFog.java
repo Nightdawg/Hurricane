@@ -30,8 +30,12 @@ public class SkyFog extends State {
     /* Width of the fade band, in units, measured INWARD from the edge of the
      * loaded map. The old START/END pair measured from the player instead and
      * had to be opaque by 540 to cover the worst-case edge distance, which
-     * erased most of the terrain the client had already drawn. */
-    public static final double BAND = 260.0;
+     * erased most of the terrain the client had already drawn.
+     *
+     * 260 still took visible terrain: the band only has to be wide enough to
+     * hide the cut boundary, and everything beyond that is view the player
+     * paid for and cannot see. 110 is a little under half a cut. */
+    public static final double BAND = 110.0;
 
     public static final SkyFog quality = new SkyFog(true);
     public static final SkyFog cheap = new SkyFog(false);

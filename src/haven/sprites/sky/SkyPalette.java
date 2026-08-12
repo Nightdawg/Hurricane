@@ -185,36 +185,33 @@ public class SkyPalette extends State {
 	return(Cons.mul(u_icam.ref(), Cons.neg(Homo3D.fragedir(fctx).depref())));
     }
 
-    /* How high up the screen this fragment sits, -1 at the bottom edge to +1
-     * at the top: the y of the eye-space view direction.
+    /* This fragment's sky elevation, in radians. SkyLib.elev owns the maths
+     * and the reasoning; this only feeds it the eye-space y and z and the
+     * camera's pitch.
      *
-     * SkyLib anchors the sky's elevation to this rather than to world up.
-     * The reason is geometric, not aesthetic: FreeCam sits at 45 degrees with
-     * a 30-degree vertical field (MapView.java:287, Camera.resized()), so the
-     * screen spans 30 to 60 degrees BELOW horizontal and the true horizon is
-     * never in frame. Driving the gradient from world elevation therefore
-     * shows one thin, near-constant slice of the sky -- measured at 6% of the
-     * full range. Driving it from screen height shows the whole sphere at any
-     * camera pitch. Azimuth still comes from the world direction, so the sun
-     * keeps rising and setting where the shadows say it does. */
-    public static Expression screenup(FragmentContext fctx) {
-	return(Cons.mul(Cons.pick(Cons.neg(Homo3D.fragedir(fctx).depref()), "y"),
-			u_fovs.ref()));
+     * frageyev is the fragment's position in eye space, so atan(y, -z) is its
+     * angle above the camera axis. It is an AutoVarying, which resolves on the
+     * vertex context, so referencing it from inside a mod lambda is safe even
+     * though the fragment value-block is locked by then. */
+    public static Expression skyelev(FragmentContext fctx) {
+	return(SkyLib.elev.call(Cons.pick(Homo3D.frageyev.ref(), "y"),
+				Cons.pick(Homo3D.frageyev.ref(), "z"),
+				u_campitch.ref()));
     }
 
-    /* 1 / tan(half vertical field of view), read straight off the projection
-     * matrix: Projection.makefrustum sets m[5] = 2*near / (top - bottom),
-     * which for a symmetric frustum is exactly near/top.
+    /* How far the camera is looking down, in radians: 0 level, pi/2 straight
+     * down. FreeCam defaults to pi/4 and the drag can take it anywhere in
+     * between (MapView.java:287, 328-337).
      *
-     * screenup() needs this because the eye-space direction's y only spans
-     * +/- sin(half-fov) -- about +/- 0.26 on a 16:9 window, not +/- 1. An
-     * earlier revision left that unscaled, so the sky still showed a narrow
-     * slice, just a better-centred one: measured 12 points of gradient
-     * instead of the intended full range. Multiplying by m[5] puts the
-     * horizon at the bottom edge of the screen and the zenith at the top,
-     * whatever the window's aspect ratio. */
-    public static final Uniform u_fovs =
-	new Uniform(FLOAT, "skyfovs", p -> Homo3D.prjxf(p).m[5], Homo3D.prj);
+     * camxf is the world-to-eye rotation, so the camera's world forward is
+     * minus its third row, and m[10] -- column-major, so element (2,2) -- is
+     * the negated z of that. asin of it is the pitch directly, for any
+     * azimuth; verified against Camera.makepointed across four elevations and
+     * three azimuths. */
+    public static final Uniform u_campitch =
+	new Uniform(FLOAT, "skycampitch",
+		    p -> (float)Math.asin(Utils.clip(Homo3D.camxf(p).m[10], -1f, 1f)),
+		    Homo3D.cam);
 
     public ShaderMacro shader() {return(null);}
     public void apply(Pipe p) {p.put(slot, this);}
