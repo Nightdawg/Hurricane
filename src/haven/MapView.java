@@ -47,6 +47,7 @@ import haven.render.sl.Uniform;
 import haven.render.sl.Type;
 import haven.res.ui.obj.buddy.Buddy;
 import haven.sprites.ChaseVectorSprite;
+import haven.sprites.sky.*;
 
 public class MapView extends PView implements DTarget, Console.Directory, PFListener {
     public static boolean clickdb = false;
@@ -602,7 +603,9 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	this.glob = glob;
 	this.cc = cc;
 	this.plgob = plgob;
-	basic.add(new Outlines(false));
+	/* The outline pass is a screen quad with no Homo3D -- fog has nothing
+	 * meaningful to measure there. See SkyFog's macro guard. */
+	basic.add(new Outlines(false), SkyFog.slot.nil);
 	basic.add(this.gobs = new Gobs());
 	basic.add(this.terrain = new Terrain());
 	this.clickmap = new ClickMap();
@@ -1407,6 +1410,27 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    rweather.remove(rem).remove();
     }
 
+    private void updsky() {
+	/* Attach/detach only on the skybox option itself. Everything else --
+	 * caves, interiors, waiting for the server's first light packet --
+	 * rides on the fog-strength uniform, because attaching or detaching
+	 * SkyFog changes the shader macro set and recompiles every terrain,
+	 * gob and water program in the scene. */
+	if(!Gob.skyenabled()) {
+	    basic(SkyPalette.class, null);
+	    basic(SkyFog.class, null);
+	    return;
+	}
+	Coord3f cc;
+	try {
+	    cc = getcc();
+	} catch(Loading l) {
+	    return;
+	}
+	basic(SkyPalette.class, SkyPalette.from(glob, cc, Gob.skyvisible()));
+	basic(SkyFog.class, SkyFog.current());
+    }
+
     public RenderTree.Slot drawadd(RenderTree.Node extra) {
 	return(basic.add(extra));
     }
@@ -2040,6 +2064,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	amblight();
 	updsmap(amblight);
 	updweather();
+	updsky();
 	synchronized(glob.map) {
 	    terrain.tick();
 	    oltick();

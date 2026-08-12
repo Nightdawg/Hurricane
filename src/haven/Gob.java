@@ -544,6 +544,28 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	this(glob, c, -1);
     }
 
+    /* Is the skybox option on at all? Decides whether SkyFog is attached,
+     * which changes the shader set -- so it must change rarely.
+     *
+     * The null check is real: OptWnd.enableSkyboxCheckBox is a static field
+     * (OptWnd.java:3962) assigned only in the OptWnd constructor (:4182).
+     * Gob's existing use is reached only after isMe resolves, but MapView
+     * calls this from the first frame. */
+    public static boolean skyenabled() {
+	return((OptWnd.enableSkyboxCheckBox != null) && OptWnd.enableSkyboxCheckBox.a);
+    }
+
+    /* Is sky actually being drawn right now? Shared by Gob's skybox overlay
+     * and by MapView's fog strength -- the two must agree, or caves get fog
+     * with no sky above it.
+     *
+     * GameUI.backgroundSong cannot be null: GameUI.java:123 initialises it
+     * to "" and only string literals are ever assigned to it. */
+    public static boolean skyvisible() {
+	return(skyenabled()
+	       && !(GameUI.backgroundSong.equals("cabin") || GameUI.backgroundSong.equals("cave")));
+    }
+
     public void ctick(double dt) {
 	for(GAttrib a : attr.values()){
 	    a.ctick(dt);
@@ -573,12 +595,12 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if (isMe != null) {
 		setCustomPlayerName();
 		playPlayerAlarm();
-		if (OptWnd.enableSkyboxCheckBox.a && !(GameUI.backgroundSong.equals("cabin") || GameUI.backgroundSong.equals("cave")) && skyboxOverlay == null && isMe) {
+		if (skyvisible() && skyboxOverlay == null && isMe) {
 			skyboxOverlay = new Overlay(this, new SkyBoxSprite(this, null));
 			synchronized (ols) {
 				addol(skyboxOverlay);
 			}
-		} else if (!OptWnd.enableSkyboxCheckBox.a || (GameUI.backgroundSong.equals("cabin") || GameUI.backgroundSong.equals("cave"))) {
+		} else if (!skyvisible()) {
 			if (skyboxOverlay != null) {
 				removeOl(skyboxOverlay);
 				skyboxOverlay = null;
