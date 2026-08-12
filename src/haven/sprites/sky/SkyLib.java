@@ -209,16 +209,25 @@ public abstract class SkyLib {
 	Expression ws = param(IN, VEC3).ref();
 	Expression night = param(IN, FLOAT).ref();
 	Expression t = param(IN, FLOAT).ref();
+	Expression cy = param(IN, FLOAT).ref();
 	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
+		     /* Anchor elevation to screen height, keep azimuth from
+		      * the world. See SkyPalette.screenup for why. */
+		     "float sk_cy = clamp($8 * 0.5 + 0.5, 0.0, 1.0);\n" +
+		     "vec2 sk_hz = vec2(sk_d.x, sk_d.z);\n" +
+		     "float sk_hl = length(sk_hz);\n" +
+		     "sk_hz = (sk_hl < 1.0e-5) ? vec2(1.0, 0.0) : (sk_hz / sk_hl);\n" +
+		     "sk_hz *= sqrt(max(1.0 - sk_cy * sk_cy, 0.0));\n" +
+		     "sk_d = vec3(sk_hz.x, sk_cy, sk_hz.y);\n" +
 		     "vec3 sk_col = $2 + $3 + $4;\n" +
 		     "sk_col = $5;\n" +
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
 		     baseA.call(d, s), disc.call(d, s), stars.call(d, s, t),
 		     clouds.call(d, s, t, col, Cons.l(3)),
-		     tone.call(col), night));
+		     tone.call(col), night, cy));
     }};
 
     public static final Function colB = new Function.Def(VEC3, "sky_colB") {{
@@ -226,16 +235,25 @@ public abstract class SkyLib {
 	Expression ws = param(IN, VEC3).ref();
 	Expression night = param(IN, FLOAT).ref();
 	Expression t = param(IN, FLOAT).ref();
+	Expression cy = param(IN, FLOAT).ref();
 	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
+		     /* Anchor elevation to screen height, keep azimuth from
+		      * the world. See SkyPalette.screenup for why. */
+		     "float sk_cy = clamp($8 * 0.5 + 0.5, 0.0, 1.0);\n" +
+		     "vec2 sk_hz = vec2(sk_d.x, sk_d.z);\n" +
+		     "float sk_hl = length(sk_hz);\n" +
+		     "sk_hz = (sk_hl < 1.0e-5) ? vec2(1.0, 0.0) : (sk_hz / sk_hl);\n" +
+		     "sk_hz *= sqrt(max(1.0 - sk_cy * sk_cy, 0.0));\n" +
+		     "sk_d = vec3(sk_hz.x, sk_cy, sk_hz.y);\n" +
 		     "vec3 sk_col = $2 + $3 + $4;\n" +
 		     "sk_col = $5;\n" +
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
 		     baseB.call(d, s), disc.call(d, s), stars.call(d, s, t),
 		     clouds.call(d, s, t, col, Cons.l(5)),
-		     tone.call(col), night));
+		     tone.call(col), night, cy));
     }};
 
     /* Fog colour. Deliberately calls base* (no sun disc) so a 6x overbright

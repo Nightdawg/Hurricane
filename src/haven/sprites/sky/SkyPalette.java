@@ -185,6 +185,22 @@ public class SkyPalette extends State {
 	return(Cons.mul(u_icam.ref(), Cons.neg(Homo3D.fragedir(fctx).depref())));
     }
 
+    /* How high up the screen this fragment sits, -1 at the bottom edge to +1
+     * at the top: the y of the eye-space view direction.
+     *
+     * SkyLib anchors the sky's elevation to this rather than to world up.
+     * The reason is geometric, not aesthetic: FreeCam sits at 45 degrees with
+     * a 30-degree vertical field (MapView.java:287, Camera.resized()), so the
+     * screen spans 30 to 60 degrees BELOW horizontal and the true horizon is
+     * never in frame. Driving the gradient from world elevation therefore
+     * shows one thin, near-constant slice of the sky -- measured at 6% of the
+     * full range. Driving it from screen height shows the whole sphere at any
+     * camera pitch. Azimuth still comes from the world direction, so the sun
+     * keeps rising and setting where the shadows say it does. */
+    public static Expression screenup(FragmentContext fctx) {
+	return(Cons.pick(Cons.neg(Homo3D.fragedir(fctx).depref()), "y"));
+    }
+
     public ShaderMacro shader() {return(null);}
     public void apply(Pipe p) {p.put(slot, this);}
 

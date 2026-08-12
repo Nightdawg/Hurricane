@@ -221,7 +221,8 @@ public class SkyBoxSprite extends Sprite {
 					in -> vec4(f.call(SkyPalette.viewdir(prog.fctx),
 							  SkyPalette.u_sundir.ref(),
 							  SkyPalette.u_night.ref(),
-							  Glob.FrameInfo.globtime()),
+							  Glob.FrameInfo.globtime(),
+							  SkyPalette.screenup(prog.fctx)),
 						   pick(in, "a")), 0);
 			});
 		}
