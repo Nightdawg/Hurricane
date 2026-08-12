@@ -46,7 +46,11 @@ public class ProspectingWnd extends Window {
 	if(mark != null) {
 	    for(Button btn : children(Button.class)) {
 		if(btn != mark) {
-		    mark.c = Coord.of(mark.c.x, btn.c.y);
+		    /* A large button's box is taller than the frame it draws,
+		     * which sits centred in it - so matching box tops would
+		     * leave ours riding high. Centre the boxes instead and the
+		     * frames line up whichever size the server's button is. */
+		    mark.c = Coord.of(mark.c.x, btn.c.y + ((btn.sz.y - mark.sz.y) / 2));
 		    break;
 		}
 	    }
