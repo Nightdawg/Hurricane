@@ -21,17 +21,16 @@ public class SkyBoxSprite extends Sprite {
 	private static boolean galaxyfailed = false;
 
 	/* Blocking: RUtils.CubeFill.mktex does a Loading.waitfor
-	 * (RUtils.java:201). Call this from the UI thread only -- never from
-	 * a Uniform value lambda, which runs on the render thread every
-	 * frame and would both stall it and contend on this monitor.
+	 * (RUtils.java:201). Never call this from a Uniform value lambda,
+	 * which runs on the render thread every frame and would both stall it
+	 * and contend on this monitor.
 	 *
 	 * Its one caller, SkyboxShader.current(), runs from Sprite.added,
-	 * which the render tree invokes with tree.lock() held. So the first
-	 * galaxy-mode load still blocks the tree once. That is no worse than
-	 * the class-initialiser load it replaces and it happens at most once
-	 * per session; fixing it properly means an async load with a
-	 * procedural sky shown meanwhile, which is not worth the machinery
-	 * here. */
+	 * which is reached on a Loader-pool thread: Gob.addol(ol) delegates to
+	 * addol(ol, true), which defers the actual add0() (Gob.java:740-745).
+	 * Blocking there is what those threads are for, and galaxy() is
+	 * synchronized, so a concurrent second load waits rather than building
+	 * the texture twice. */
 	public static synchronized TextureCube.SamplerCube galaxy() {
 		if(galaxyfailed)
 			return(null);
@@ -175,10 +174,10 @@ public class SkyBoxSprite extends Sprite {
 		/* Picks a variant from the cached preferences. Galaxy degrades to
 		 * the procedural sky when its resource is unavailable.
 		 *
-		 * Called from Sprite.added, i.e. the UI thread -- which is where
-		 * the blocking galaxy() load belongs. The resolved sampler is
-		 * stored on the returned state, so the uniform never has to load
-		 * anything and never sees null. */
+		 * Called from Sprite.added, i.e. a Loader-pool thread -- which
+		 * is where the blocking galaxy() load belongs. The resolved
+		 * sampler is stored on the returned state, so the uniform never
+		 * has to load anything and never sees null. */
 		public static SkyboxShader current() {
 			if(SkyPalette.style == 1) {
 				TextureCube.SamplerCube tex = galaxy();
