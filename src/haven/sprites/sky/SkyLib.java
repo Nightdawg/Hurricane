@@ -227,13 +227,14 @@ public abstract class SkyLib {
 	 * it from 0.12 stops the pattern piling up at the horizon and spreads
 	 * it across the band that is actually on screen.
 	 *
-	 * The 2.0 is frequency. 1.6 put well under one noise cell on screen,
-	 * so the clouds resolved to a single flat wash; 6.0 overshot the other
-	 * way into fine mottle, roughly 20 features across the window, which
-	 * reads as grain rather than as cloud. 2.0 gives two or three masses
-	 * across the field with the higher octaves supplying their edges. */
+	 * The 4.5 is frequency. 1.6 put well under one noise cell on screen, so
+	 * the clouds resolved to a single flat wash, and 2.0 was barely better:
+	 * the visible band spans 2.6 by 1.6 cells there, so one cloud is a blur
+	 * covering half the screen with no shape to read. 4.5 gives several
+	 * masses with sky between them. (6.0 goes too far the other way, into
+	 * roughly twenty features across the window, which reads as grain.) */
 	code.add(raw("if($0.y <= 0.005) return $3;\n" +
-		     "vec2 sk_uv = ($0.xz / ($0.y + 0.45) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 2.0;\n" +
+		     "vec2 sk_uv = ($0.xz / ($0.y + 0.45) * 0.55 + vec2($2 * 0.010, $2 * 0.004)) * 4.5;\n" +
 		     "float sk_p = 0.0;\n" +
 		     "{\n" +
 		     "    vec2 sk_q = sk_uv;\n" +
@@ -264,9 +265,24 @@ public abstract class SkyLib {
 		      * a standard deviation: 30% coverage, 8% partial. */
 		     "float sk_c = smoothstep(0.51, 0.57, sk_p);\n" +
 		     "float sk_fade = smoothstep(0.0, 0.10, $0.y);\n" +
-		     "float sk_lit = clamp(dot(normalize(vec3($0.x, 0.35, $0.z)), $1) * 0.5 + 0.62, 0.0, 1.0);\n" +
+		     /* The lit colour has to be well over 1, and this is why:
+		      * tone() is Reinhard with a white point of 0.72, so a cloud
+		      * at 1.0 linear lands within a couple of levels of the sky
+		      * it sits on. Measured on the day sky at the elevations the
+		      * camera actually shows -- sky (151, 169, 191), cloud
+		      * (177, 177, 179) facing away from the sun -- the whole
+		      * difference was 10 levels of luminance, and mostly a loss
+		      * of saturation rather than a gain of brightness. Clouds
+		      * were being drawn over about 40% of the sky and read as
+		      * flat grey. At 2.2 the same comparison gives 29 levels
+		      * away from the sun and 53 toward it.
+		      *
+		      * The bias drops 0.62 to 0.55 so the lit term spans more of
+		      * its range instead of saturating; that is what puts shape
+		      * inside a cloud rather than one even tone. */
+		     "float sk_lit = clamp(dot(normalize(vec3($0.x, 0.35, $0.z)), $1) * 0.5 + 0.55, 0.0, 1.0);\n" +
 		     "float sk_day = clamp($1.y * 3.0 + 0.35, 0.05, 1.0);\n" +
-		     "vec3 sk_cc = mix(vec3(0.30, 0.32, 0.40), vec3(1.0, 0.97, 0.93), sk_lit) * sk_day;\n" +
+		     "vec3 sk_cc = mix(vec3(0.30, 0.32, 0.40), vec3(2.20, 2.13, 2.02), sk_lit) * sk_day;\n" +
 		     "sk_cc = mix(sk_cc, sk_cc * vec3(1.25, 0.85, 0.62), exp(-abs($1.y) * 6.0) * 0.85);\n" +
 		     "return mix($3, sk_cc, sk_c * sk_fade * 0.88);\n",
 		     d, s, t, sky, oct));
