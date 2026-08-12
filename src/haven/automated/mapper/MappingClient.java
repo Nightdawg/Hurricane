@@ -475,7 +475,7 @@ public class MappingClient {
 			obj.put("x", offset.x);
 			obj.put("y", offset.y);
 			obj.put("type", "shared");
-			obj.put("id", marker.oid);
+			obj.put("id", marker.oid.toString());
 			obj.put("image", marker.res.name);
 
 			scheduler.execute(new MarkerUpdate(new JSONArray(List.of(obj))));
