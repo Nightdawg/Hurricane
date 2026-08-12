@@ -113,6 +113,8 @@ public class Window extends Widget {
 	    Coord sz = UI.scale((Coord)args[0]);
 	    String cap = (args.length > 1) ? (String)args[1] : null;
 	    boolean lg = (args.length > 2) ? Utils.bv(args[2]) : false;
+	    if("Prospecting".equals(cap))
+		return(new ProspectingWnd(sz, cap, lg));
 	    return(new Window(sz, cap, lg));
 	}
     }
