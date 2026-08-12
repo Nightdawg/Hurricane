@@ -198,8 +198,23 @@ public class SkyPalette extends State {
      * camera pitch. Azimuth still comes from the world direction, so the sun
      * keeps rising and setting where the shadows say it does. */
     public static Expression screenup(FragmentContext fctx) {
-	return(Cons.pick(Cons.neg(Homo3D.fragedir(fctx).depref()), "y"));
+	return(Cons.mul(Cons.pick(Cons.neg(Homo3D.fragedir(fctx).depref()), "y"),
+			u_fovs.ref()));
     }
+
+    /* 1 / tan(half vertical field of view), read straight off the projection
+     * matrix: Projection.makefrustum sets m[5] = 2*near / (top - bottom),
+     * which for a symmetric frustum is exactly near/top.
+     *
+     * screenup() needs this because the eye-space direction's y only spans
+     * +/- sin(half-fov) -- about +/- 0.26 on a 16:9 window, not +/- 1. An
+     * earlier revision left that unscaled, so the sky still showed a narrow
+     * slice, just a better-centred one: measured 12 points of gradient
+     * instead of the intended full range. Multiplying by m[5] puts the
+     * horizon at the bottom edge of the screen and the zenith at the top,
+     * whatever the window's aspect ratio. */
+    public static final Uniform u_fovs =
+	new Uniform(FLOAT, "skyfovs", p -> Homo3D.prjxf(p).m[5], Homo3D.prj);
 
     public ShaderMacro shader() {return(null);}
     public void apply(Pipe p) {p.put(slot, this);}
