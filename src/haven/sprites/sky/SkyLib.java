@@ -121,6 +121,15 @@ public abstract class SkyLib {
 		     "float sk_dusk = exp(-abs($1.y) * 7.0);\n" +
 		     "sk_col += vec3(1.0, 0.42, 0.13) * pow(sk_sd, 5.0) * (1.0 - clamp($0.y, 0.0, 1.0)) * sk_dusk * 1.1;\n" +
 		     "sk_col += vec3(1.0, 0.72, 0.35) * pow(sk_sd, 40.0) * clamp($1.y + 0.15, 0.0, 1.0) * 0.8;\n" +
+		     /* Below the horizon the gradient term above is clamped
+		      * flat, and that is the only region this game's camera
+		      * ever shows: FreeCam sits at 45 degrees with a 30-degree
+		      * vertical field, so the screen spans 30 to 60 degrees
+		      * BELOW horizontal and the horizon is never in frame.
+		      * Continue into a ground haze so the visible band has
+		      * depth instead of being one flat colour. */
+		     "sk_col = mix(sk_col, sk_hor * vec3(0.55, 0.54, 0.52),\n" +
+		     "             pow(clamp(-$0.y, 0.0, 1.0), 0.7));\n" +
 		     "return sk_col;\n", d, s));
     }};
 
@@ -148,7 +157,12 @@ public abstract class SkyLib {
 		     "              * (exp(-sk_pos.y * 16.0) + 0.1) * sk_Kr / sk_Br)\n" +
 		     "              * exp(-sk_pos.y * exp(-sk_pos.y * 8.0) * 4.0) * exp(-sk_pos.y * 2.0) * 4.0;\n" +
 		     "vec3 sk_nit = vec3(1.0 - exp($1.y)) * 0.2;\n" +
-		     "return sk_ray * sk_mie * mix(sk_day, sk_nit, -$1.y * 0.2 + 0.5);\n", d, s));
+		     "vec3 sk_out = sk_ray * sk_mie * mix(sk_day, sk_nit, -$1.y * 0.2 + 0.5);\n" +
+		     /* Same below-horizon continuation as baseA -- see the
+		      * note there. sk_pos.y was already clamped positive, so
+		      * sk_out holds the horizon value for downward rays. */
+		     "return mix(sk_out, sk_out * vec3(0.55, 0.54, 0.52),\n" +
+		     "           pow(clamp(-$0.y, 0.0, 1.0), 0.7));\n", d, s));
     }};
 
     /* --- clouds (Y-up) ----------------------------------------------- */

@@ -4,6 +4,7 @@ import haven.*;
 import haven.render.*;
 import haven.render.sl.*;
 import static haven.render.sl.Type.*;
+import static haven.MCache.tilesz;
 
 /* Game state -> sky uniforms. No GLSL maths lives here; SkyLib owns that.
  *
@@ -21,10 +22,20 @@ public class SkyPalette extends State {
 
     /* World-space (Z-up), normalised, pointing at the sun. */
     public final float sx, sy, sz;
-    /* Player position in RENDER space, horizontal only -- the origin SkyFog
-     * measures its distances from. Render space is map space with y negated;
-     * see from(). */
-    public final float px, py;
+    /* The loaded map rectangle in RENDER space: {minx, miny, maxx, maxy}.
+     * SkyFog measures how close a fragment is to the nearest edge of THIS,
+     * not how far it is from the player.
+     *
+     * That distinction is the whole point. The cut grid is aligned to the
+     * world, not to the player, so the map edge sits anywhere from 550 to
+     * 825 units away depending on where inside their centre cut the player
+     * happens to stand. Fogging on distance-from-player therefore has to be
+     * opaque by 550 to cover the worst case -- which erases roughly 60% of
+     * the terrain the client already loaded and drew. Measuring to the edge
+     * itself fogs a band of constant width wherever the player stands.
+     *
+     * Render space is map space with y negated; see from(). */
+    public final float rx0, ry0, rx1, ry1;
     /* Night Mode lift already halved -- see Glob.nightVisionBrightness. */
     public final float night;
     /* Fog strength, 0 or 1. Gating this rather than attaching and detaching
@@ -32,12 +43,31 @@ public class SkyPalette extends State {
      * in the scene. */
     public final float fog;
 
-    public SkyPalette(Coord3f sundir, Coord3f plpos, double night, boolean fog) {
+    public SkyPalette(Coord3f sundir, float[] rect, double night, boolean fog) {
 	Coord3f n = sundir.norm();
 	this.sx = n.x; this.sy = n.y; this.sz = n.z;
-	this.px = plpos.x; this.py = plpos.y;
+	this.rx0 = rect[0]; this.ry0 = rect[1]; this.rx1 = rect[2]; this.ry1 = rect[3];
 	this.night = (float)night;
 	this.fog = fog ? 1f : 0f;
+    }
+
+    /* The loaded cut rectangle, in render space. MapRaster.tick
+     * (MapView.java:971-973) computes the same thing for its own use, but it
+     * is a field on a private inner class, so this recomputes rather than
+     * reaching into it. One cut is MCache.cutsz * MCache.tilesz = 275 units.
+     *
+     * Map y grows the opposite way from render y, so the negation also swaps
+     * which corner is the minimum -- hence the min/max rather than a
+     * straight copy. */
+    public static float[] maprect(Coord2d plpos, int view) {
+	Coord cc = plpos.floor(tilesz).div(MCache.cutsz);
+	Coord cs = MCache.cutsz.mul(Coord.of((int)tilesz.x, (int)tilesz.y));
+	Coord ul = cc.sub(view, view).mul(cs);
+	Coord br = cc.add(view + 1, view + 1).mul(cs);
+	return(new float[] {
+		Math.min(ul.x, br.x), Math.min(-ul.y, -br.y),
+		Math.max(ul.x, br.x), Math.max(-ul.y, -br.y),
+	    });
     }
 
     /* The sun as the world lighting sees it. Identical expression to
@@ -57,8 +87,7 @@ public class SkyPalette extends State {
      * Never returns null: before the server sends light data there is
      * nothing to draw a sky from, but detaching the state would churn the
      * shader set, so it reports fog = false and a default sun instead. */
-    public static SkyPalette from(Glob glob, Coord3f plpos, boolean fog) {
-	Coord3f rc = plpos.invy();
+    public static SkyPalette from(Glob glob, float[] rect, boolean fog) {
 	double elev, ang;
 	boolean lit;
 	synchronized(glob) {
@@ -67,9 +96,46 @@ public class SkyPalette extends State {
 	    ang = glob.lightang;
 	}
 	if(!lit)
-	    return(new SkyPalette(new Coord3f(0f, 0f, 1f), rc, 0.0, false));
-	return(new SkyPalette(Coord3f.o.sadd((float)elev, (float)ang, 1f), rc,
+	    return(new SkyPalette(new Coord3f(0f, 0f, 1f), rect, 0.0, false));
+	probe(glob, elev);
+	return(new SkyPalette(Coord3f.o.sadd((float)elev, (float)ang, 1f), rect,
 			      Glob.nightVisionBrightness * NIGHT_SHARE, fog));
+    }
+
+    /* TEMPORARY -- Task 10 measurement, delete once the range is known.
+     *
+     * Everything night-related in SkyLib is gated on the sun's elevation
+     * going negative, and nothing in the client establishes that the
+     * server's lightelev ever does. This answers that.
+     *
+     * from() runs on every MapView.tick, so this reports only when an
+     * extreme or the night flag actually moves -- an unthrottled print
+     * floods the log and skews the timing being measured.
+     *
+     * It writes to ~/skyprobe.log as well as stderr because the client is
+     * normally launched through Steam, which swallows stderr; nothing in
+     * this tree redirects it to a file. */
+    private static final java.io.File plog =
+	new java.io.File(System.getProperty("user.home"), "skyprobe.log");
+    private static double pmin = Double.POSITIVE_INFINITY, pmax = Double.NEGATIVE_INFINITY;
+    private static Boolean pnight = null;
+    private static void probe(Glob glob, double elev) {
+	Astronomy ast = glob.ast;
+	Boolean night = (ast == null) ? null : ast.night;
+	boolean chg = false;
+	if(elev < pmin) {pmin = elev; chg = true;}
+	if(elev > pmax) {pmax = elev; chg = true;}
+	if(!Utils.eq(night, pnight)) {pnight = night; chg = true;}
+	if(!chg)
+	    return;
+	String ln = String.format("skyprobe elev=%.4f min=%.4f max=%.4f night=%s dt=%.4f",
+				  elev, pmin, pmax, night, (ast == null) ? -1.0 : ast.dt);
+	System.err.println(ln);
+	try(java.io.FileWriter w = new java.io.FileWriter(plog, true)) {
+	    w.write(ln + "\n");
+	} catch(java.io.IOException e) {
+	    /* The measurement is not worth breaking a frame over. */
+	}
     }
 
     /* The sky takes half the lift the terrain takes. Full strength washes
@@ -98,9 +164,10 @@ public class SkyPalette extends State {
 	    SkyPalette s = p.get(slot);
 	    return((s == null) ? 0f : s.night);
 	}, slot);
-    public static final Uniform u_plpos = new Uniform(VEC2, "skyplpos", p -> {
+    public static final Uniform u_maprect = new Uniform(VEC4, "skymaprect", p -> {
 	    SkyPalette s = p.get(slot);
-	    return((s == null) ? new float[] {0f, 0f} : new float[] {s.px, s.py});
+	    return((s == null) ? new float[] {0f, 0f, 0f, 0f}
+		   : new float[] {s.rx0, s.ry0, s.rx1, s.ry1});
 	}, slot);
     public static final Uniform u_fogstr = new Uniform(FLOAT, "skyfogstr", p -> {
 	    SkyPalette s = p.get(slot);
@@ -126,18 +193,19 @@ public class SkyPalette extends State {
 	    return(false);
 	SkyPalette t = (SkyPalette)o;
 	return((sx == t.sx) && (sy == t.sy) && (sz == t.sz)
-	       && (px == t.px) && (py == t.py)
+	       && (rx0 == t.rx0) && (ry0 == t.ry0) && (rx1 == t.rx1) && (ry1 == t.ry1)
 	       && (night == t.night) && (fog == t.fog));
     }
 
     public int hashCode() {
 	return(Float.hashCode(sx) ^ Float.hashCode(sy) ^ Float.hashCode(sz)
-	       ^ Float.hashCode(px) ^ Float.hashCode(py)
+	       ^ Float.hashCode(rx0) ^ Float.hashCode(ry0)
+	       ^ Float.hashCode(rx1) ^ Float.hashCode(ry1)
 	       ^ Float.hashCode(night) ^ Float.hashCode(fog));
     }
 
     public String toString() {
-	return(String.format("#<skypalette sun=(%f, %f, %f) pl=(%f, %f) night=%f fog=%f>",
-			     sx, sy, sz, px, py, night, fog));
+	return(String.format("#<skypalette sun=(%f, %f, %f) rect=(%f, %f, %f, %f) night=%f fog=%f>",
+			     sx, sy, sz, rx0, ry0, rx1, ry1, night, fog));
     }
 }

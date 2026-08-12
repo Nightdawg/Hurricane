@@ -27,9 +27,11 @@ import static haven.render.sl.Type.*;
 public class SkyFog extends State {
     public static final Slot<SkyFog> slot = new Slot<>(Slot.Type.DRAW, SkyFog.class);
 
-    /* Tuned in Task 12. END must stay <= 550. */
-    public static final double START = 300.0;
-    public static final double END = 540.0;
+    /* Width of the fade band, in units, measured INWARD from the edge of the
+     * loaded map. The old START/END pair measured from the player instead and
+     * had to be opaque by 540 to cover the worst-case edge distance, which
+     * erased most of the terrain the client had already drawn. */
+    public static final double BAND = 260.0;
 
     public static final SkyFog quality = new SkyFog(true);
     public static final SkyFog cheap = new SkyFog(false);
@@ -65,9 +67,15 @@ public class SkyFog extends State {
 	     * so fog covers lit colour rather than being lit itself. The only
 	     * mod above this anywhere in the tree is Lighting.java:490 at 50000. */
 	    FragColor.fragcol(prog.fctx).mod(in -> {
-		    Expression dist = length(sub(pick(Homo3D.fragmapv.ref(), "xy"),
-						 SkyPalette.u_plpos.ref()));
-		    Expression f = mul(smoothstep(l(START), l(END), dist),
+		    /* Distance from this fragment to the nearest edge of the
+		     * loaded map, measured inside it: min over the four sides
+		     * of the rectangle. Fog rises as that distance falls, so
+		     * the band has constant width wherever the player stands. */
+		    Expression p = pick(Homo3D.fragmapv.ref(), "xy");
+		    Expression r = SkyPalette.u_maprect.ref();
+		    Expression ins = min(sub(p, pick(r, "xy")), sub(pick(r, "zw"), p));
+		    Expression edge = min(pick(ins, "x"), pick(ins, "y"));
+		    Expression f = mul(sub(l(1.0), smoothstep(l(0.0), l(BAND), edge)),
 				       SkyPalette.u_fogstr.ref());
 		    Expression col = hor.call(SkyPalette.viewdir(prog.fctx),
 					      SkyPalette.u_sundir.ref(),

@@ -1421,13 +1421,13 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    basic(SkyFog.class, null);
 	    return;
 	}
-	Coord3f cc;
+	float[] rect;
 	try {
-	    cc = getcc();
+	    rect = SkyPalette.maprect(new Coord2d(getcc()), view);
 	} catch(Loading l) {
 	    return;
 	}
-	basic(SkyPalette.class, SkyPalette.from(glob, cc, Gob.skyvisible()));
+	basic(SkyPalette.class, SkyPalette.from(glob, rect, Gob.skyvisible()));
 	basic(SkyFog.class, SkyFog.current());
     }
 
