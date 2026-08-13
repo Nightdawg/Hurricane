@@ -1428,7 +1428,27 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    return;
 	}
 	basic(SkyPalette.class, SkyPalette.from(glob, rect, Gob.skyvisible()));
-	basic(SkyFog.class, SkyFog.current());
+	/* Not a plain basic(SkyFog.class, SkyFog.current()). Replacing one
+	 * SkyFog with another leaves the state slot defined, and RenderTree
+	 * only recompiles shader programs when a slot changes between defined
+	 * and undefined (RenderTree.java:611); a slot that stays defined gets
+	 * its uniforms refreshed and nothing else (GLDrawList.java:1032). So
+	 * every terrain and gob would keep the program built from the old fog
+	 * macro while the applier resolves the new one, which is the
+	 * ProgramMismatchException at GLDrawList.java:966-967. cheap and
+	 * quality differ in exactly that way -- SkyLib.horA against horB.
+	 *
+	 * Dropping the state first makes the slot undefined and forces the
+	 * full recompile. This is the same idiom lights() uses below when the
+	 * LightCompiler changes, and updsmap() when the shadow resolution
+	 * does. Guarded, so it costs nothing on the ticks where the
+	 * fog is unchanged, and runs only when the user changes the style or
+	 * the quality option. SkyPalette above needs no such care: its
+	 * shader() is null (SkyPalette.java:284), so it is uniforms only. */
+	SkyFog nfog = SkyFog.current();
+	if(basic(SkyFog.class) != nfog)
+	    basic(SkyFog.class, null);
+	basic(SkyFog.class, nfog);
     }
 
     public RenderTree.Slot drawadd(RenderTree.Node extra) {
