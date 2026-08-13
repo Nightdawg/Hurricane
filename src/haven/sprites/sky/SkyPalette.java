@@ -97,20 +97,30 @@ public class SkyPalette extends State {
 	}
 	if(!lit)
 	    return(new SkyPalette(new Coord3f(0f, 0f, 1f), rect, 0.0, false));
-	probe(glob, elev);
+	probe(glob, elev, ang);
 	return(new SkyPalette(Coord3f.o.sadd((float)elev, (float)ang, 1f), rect,
 			      Glob.nightVisionBrightness * NIGHT_SHARE, fog));
     }
 
-    /* TEMPORARY -- Task 10 measurement, delete once the range is known.
+    /* TEMPORARY -- sky measurement, delete once the sun's source is decided.
      *
-     * Everything night-related in SkyLib is gated on the sun's elevation
-     * going negative, and nothing in the client establishes that the
-     * server's lightelev ever does. This answers that.
+     * Task 10 asked whether the server's lightelev ever goes negative. It
+     * does not: 4745 samples spanning dt 0.37 to 0.75 gave 0.4018 to 1.1781
+     * rad, and the descent stops dead at 0.4018 -- a floor the server holds
+     * so night lighting keeps a direction rather than an astronomical
+     * elevation. That answered the night question but not this one: the sun
+     * disc is missing from the sky at times when its ELEVATION is inside the
+     * drawable band, which leaves the azimuth as the remaining unknown -- and
+     * the old probe never logged it.
      *
-     * from() runs on every MapView.tick, so this reports only when an
-     * extreme or the night flag actually moves -- an unthrottled print
-     * floods the log and skews the timing being measured.
+     * So this now samples on a clock instead of on extremes. Reporting only
+     * when a new min or max appeared meant a value that stops moving stops
+     * being reported, which is exactly the case that needed observing: the
+     * log went silent for twenty minutes with the client running fine.
+     *
+     * Throttled on ast.dt rather than on wall time, at 0.002 of a day --
+     * about three game-minutes, roughly 500 samples per game day. A game day
+     * is 6.7 real hours, so expect partial coverage per session.
      *
      * It writes to ~/skyprobe.log as well as stderr because the client is
      * normally launched through Steam, which swallows stderr; nothing in
@@ -118,18 +128,21 @@ public class SkyPalette extends State {
     private static final java.io.File plog =
 	new java.io.File(System.getProperty("user.home"), "skyprobe.log");
     private static double pmin = Double.POSITIVE_INFINITY, pmax = Double.NEGATIVE_INFINITY;
+    private static double plastdt = Double.NaN;
     private static Boolean pnight = null;
-    private static void probe(Glob glob, double elev) {
+    private static void probe(Glob glob, double elev, double ang) {
 	Astronomy ast = glob.ast;
 	Boolean night = (ast == null) ? null : ast.night;
-	boolean chg = false;
-	if(elev < pmin) {pmin = elev; chg = true;}
-	if(elev > pmax) {pmax = elev; chg = true;}
-	if(!Utils.eq(night, pnight)) {pnight = night; chg = true;}
+	double dt = (ast == null) ? -1.0 : ast.dt;
+	if(elev < pmin) pmin = elev;
+	if(elev > pmax) pmax = elev;
+	boolean chg = Double.isNaN(plastdt) || (Math.abs(dt - plastdt) >= 0.002)
+	    || !Utils.eq(night, pnight);
 	if(!chg)
 	    return;
-	String ln = String.format("skyprobe elev=%.4f min=%.4f max=%.4f night=%s dt=%.4f",
-				  elev, pmin, pmax, night, (ast == null) ? -1.0 : ast.dt);
+	plastdt = dt; pnight = night;
+	String ln = String.format("skyprobe dt=%.5f elev=%.4f ang=%.4f night=%s min=%.4f max=%.4f",
+				  dt, elev, ang, night, pmin, pmax);
 	System.err.println(ln);
 	try(java.io.FileWriter w = new java.io.FileWriter(plog, true)) {
 	    w.write(ln + "\n");
