@@ -88,6 +88,17 @@ public abstract class SkyLib {
     public static final double GAIN = 3.0;
     public static final double TILT = -0.227;   /* radians, about -13 degrees */
 
+    /* How much sky elevation one radian of screen angle buys, at this pitch.
+     *
+     * Anything that wants to be round ON SCREEN has to divide its elevation
+     * offsets by this, because elevation reaches the screen stretched by it
+     * and azimuth does not. sky_elev is the only place it may be applied. */
+    public static final Function gain = new Function.Def(FLOAT, "sky_gain") {{
+	Expression pitch = param(IN, FLOAT).ref();
+	code.add(raw("return mix(1.0, " + GAIN + ", clamp($0 / 0.7853982, 0.0, 1.0));\n",
+		     pitch));
+    }};
+
     /* Sky elevation, in radians, for one fragment.
      *
      * ey, ez are the y and z of its eye-space position: atan(ey, -ez) is the
@@ -102,8 +113,8 @@ public abstract class SkyLib {
 	Expression pitch = param(IN, FLOAT).ref();
 	code.add(raw("float sk_a = atan($0, -$1);\n" +
 		     "float sk_k = clamp($2 / 0.7853982, 0.0, 1.0);\n" +
-		     "return (sk_a * mix(1.0, " + GAIN + ", sk_k)) + (" + TILT + " * sk_k);\n",
-		     ey, ez, pitch));
+		     "return (sk_a * $3) + (" + TILT + " * sk_k);\n",
+		     ey, ez, pitch, gain.call(pitch)));
     }};
 
     /* Z-up world direction -> Y-up sky-maths direction. */
@@ -132,10 +143,47 @@ public abstract class SkyLib {
 
     /* --- shared sky features (Y-up) ---------------------------------- */
 
+    /* The sun.
+     *
+     * The obvious dot(d, s) measures the angle between two directions in the
+     * SKY, and the sky is not what the player sees: elevation arrives on
+     * screen divided by sky_gain. A disc that is round in sky angle therefore
+     * lands as an ellipse three times wider than tall at full pitch, which is
+     * what the earlier revisions drew -- 44 px across and 14 px high.
+     *
+     * So the offset is measured the way the screen measures it. Two scales,
+     * both verified against the client's own ray construction across five
+     * pitches (agreement to 1.6%, the residual being the perspective term):
+     *
+     *   pixels per radian of azimuth   = S * cos(phi)
+     *   pixels per radian of elevation = S / gain
+     *
+     * where phi is the ray's TRUE world elevation, not the fabricated sky one.
+     * The azimuth scale foreshortens because a ray pointing steeply down sweeps
+     * more azimuth per pixel; at the default 45 degrees of pitch the two scales
+     * differ by 2.43, not by the gain's 3.0, and the difference is entirely
+     * that cosine. Weighting azimuth by cos(phi) also keeps the disc a fixed
+     * size in pixels rather than growing as the camera tips.
+     *
+     * At a level camera gain is 1, the sky elevation IS the ray elevation, and
+     * this reduces exactly to the angle between the two directions -- which is
+     * what dot(d, s) was. Along the horizontal it also stays the old function
+     * to second order, since pow(cos(a), 3000) is exp(-1500 a^2), so the width
+     * and the tuning that produced it carry over untouched. */
+    public static final double DISC = 1500.0;   /* half brightness at 1.23 degrees */
+
     public static final Function disc = new Function.Def(VEC3, "sky_disc") {{
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
-	code.add(raw("return vec3(1.0, 0.96, 0.86) * pow(max(dot($0, $1), 0.0), 3000.0) * 6.0;\n", d, s));
+	Expression g = param(IN, FLOAT).ref();
+	Expression ch = param(IN, FLOAT).ref();
+	code.add(raw("float sk_da = atan($0.z, $0.x) - atan($1.z, $1.x);\n" +
+		     "sk_da = (mod(sk_da + 3.14159265, 6.2831853) - 3.14159265) * $3;\n" +
+		     "float sk_de = (asin(clamp($0.y, -1.0, 1.0))\n" +
+		     "               - asin(clamp($1.y, -1.0, 1.0))) / $2;\n" +
+		     "return vec3(1.0, 0.96, 0.86)\n" +
+		     "       * exp(-(sk_da * sk_da + sk_de * sk_de) * " + DISC + ") * 6.0;\n",
+		     d, s, g, ch));
     }};
 
     /* Stars.
@@ -167,6 +215,7 @@ public abstract class SkyLib {
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
 	Expression t = param(IN, FLOAT).ref();
+	Expression g = param(IN, FLOAT).ref();
 	/* 2*pi*226 is 1419.9999, an integer to one part in ten million, so
 	 * wrapping the column index closes the ring at azimuth +-pi with no
 	 * seam and no runt cell. */
@@ -174,7 +223,7 @@ public abstract class SkyLib {
 		     "float sk_hz = clamp($0.y * 3.0, 0.0, 1.0);\n" +
 		     "if(sk_night <= 0.001 || sk_hz <= 0.0) return vec3(0.0);\n" +
 		     "vec2 sk_g = vec2((atan($0.z, $0.x) + 3.14159265) * " + STAR_CELL + ",\n" +
-		     "                 asin(clamp($0.y, -1.0, 1.0)) * (" + STAR_CELL + " / " + GAIN + "));\n" +
+		     "                 asin(clamp($0.y, -1.0, 1.0)) * (" + STAR_CELL + " / $3));\n" +
 		     "vec2 sk_c = floor(sk_g), sk_f = sk_g - sk_c;\n" +
 		     "sk_c.x = mod(sk_c.x, " + STAR_NCOL + ");\n" +
 		     /* Hoskins hash42: four decorrelated values without sin(),
@@ -192,7 +241,7 @@ public abstract class SkyLib {
 		     "             * sin($2 * 1.2 + sk_h.w * 6.2831853);\n" +
 		     "vec3 sk_tint = mix(vec3(0.80, 0.87, 1.00), vec3(1.00, 0.89, 0.78),\n" +
 		     "                   fract(sk_h.w * 13.0));\n" +
-		     "return sk_tint * (sk_v * sk_night * sk_hz);\n", d, s, t));
+		     "return sk_tint * (sk_v * sk_night * sk_hz);\n", d, s, t, g));
     }};
 
     /* --- Mode A: analytic gradient (Y-up, no sun disc) ---------------- */
@@ -360,7 +409,11 @@ public abstract class SkyLib {
 	Expression night = param(IN, FLOAT).ref();
 	Expression t = param(IN, FLOAT).ref();
 	Expression e = param(IN, FLOAT).ref();
+	Expression g = param(IN, FLOAT).ref();
 	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
+	/* cos of the ray's true world elevation -- declared by the rebuild
+	 * below, and read before the rebuild overwrites sk_d. */
+	Expression ch = id("sk_hl");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
 		     /* Rebuild the ray: elevation from sky_elev, azimuth kept
@@ -379,7 +432,7 @@ public abstract class SkyLib {
 		     "sk_col = $5;\n" +
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
-		     baseA.call(d, s), disc.call(d, s), stars.call(d, s, t),
+		     baseA.call(d, s), disc.call(d, s, g, ch), stars.call(d, s, t, g),
 		     clouds.call(d, s, t, col, Cons.l(4)),
 		     tone.call(col), night, e));
     }};
@@ -390,7 +443,11 @@ public abstract class SkyLib {
 	Expression night = param(IN, FLOAT).ref();
 	Expression t = param(IN, FLOAT).ref();
 	Expression e = param(IN, FLOAT).ref();
+	Expression g = param(IN, FLOAT).ref();
 	Expression d = id("sk_d"), s = id("sk_s"), col = id("sk_col");
+	/* cos of the ray's true world elevation -- declared by the rebuild
+	 * below, and read before the rebuild overwrites sk_d. */
+	Expression ch = id("sk_hl");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
 		     /* Same rebuild as colA -- see the note there. */
@@ -404,7 +461,7 @@ public abstract class SkyLib {
 		     "sk_col = $5;\n" +
 		     "return mix($6, vec3(1.0), $7);\n",
 		     yup.call(wd), yup.call(ws),
-		     baseB.call(d, s), disc.call(d, s), stars.call(d, s, t),
+		     baseB.call(d, s), disc.call(d, s, g, ch), stars.call(d, s, t, g),
 		     clouds.call(d, s, t, col, Cons.l(5)),
 		     tone.call(col), night, e));
     }};

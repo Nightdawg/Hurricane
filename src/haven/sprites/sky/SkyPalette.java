@@ -260,6 +260,13 @@ public class SkyPalette extends State {
 				u_campitch.ref()));
     }
 
+    /* The elevation stretch in force at this pitch. Anything drawn round on
+     * screen -- the sun's disc, the stars -- divides its elevation offsets by
+     * it. Same uniform as skyelev, so the two can never disagree. */
+    public static Expression skygain(FragmentContext fctx) {
+	return(SkyLib.gain.call(u_campitch.ref()));
+    }
+
     /* How far the camera is looking down, in radians: 0 level, pi/2 straight
      * down. FreeCam defaults to pi/4 and the drag can take it anywhere in
      * between (MapView.java:287, 328-337).

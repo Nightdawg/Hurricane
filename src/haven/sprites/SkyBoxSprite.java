@@ -222,7 +222,8 @@ public class SkyBoxSprite extends Sprite {
 							  SkyPalette.u_sundir.ref(),
 							  SkyPalette.u_night.ref(),
 							  Glob.FrameInfo.globtime(),
-							  SkyPalette.skyelev(prog.fctx)),
+							  SkyPalette.skyelev(prog.fctx),
+							  SkyPalette.skygain(prog.fctx)),
 						   pick(in, "a")), 0);
 			});
 		}
