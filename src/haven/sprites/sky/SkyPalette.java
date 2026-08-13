@@ -150,6 +150,26 @@ public class SkyPalette extends State {
 	return(PEAK * Math.sin(Math.PI * (dt - 0.25) / 0.5));
     }
 
+    /* What the compression above costs everything downstream.
+     *
+     * The drawn arc peaks at PEAK. The sun the server's own lighting describes
+     * peaks at NOON -- the maximum of lightelev, measured at 1.1781 rad and
+     * reached at dt 0.500 to 0.525, solar noon. (lightelev is not this sine
+     * over the rest of the day; it flattens onto a floor at 0.4018. Only the
+     * peak is borrowed, because only the peak is being matched.)
+     *
+     * So DECOMP turns a DRAWN elevation back into a real one, and any
+     * PHYSICAL falloff applied to the sun has to undo the compression with it
+     * first -- exactly as ADR-0005 makes anything round on screen divide by
+     * sky_gain. Skipping it is what kept the twilight glow alive at -38 real
+     * degrees, painting dawn over the sky at 03:37 game time. See ADR-0010.
+     *
+     * Angles only. A drawn elevation reaches the shader as sin(elev) inside
+     * the sun vector, so undoing it means asin() first -- which is what
+     * SkyLib.sunh does. */
+    public static final double NOON = 1.1781;         /* rad, 67.5 degrees */
+    public static final double DECOMP = NOON / PEAK;  /* 2.4544 */
+
     /* TEMPORARY -- sky measurement, delete once the sun's source is decided.
      *
      * Task 10 asked whether the server's lightelev ever goes negative. It

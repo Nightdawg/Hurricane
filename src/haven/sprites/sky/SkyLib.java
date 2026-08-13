@@ -123,6 +123,44 @@ public abstract class SkyLib {
 	code.add(raw("return normalize(vec3($0.x, $0.z, $0.y));\n", v));
     }};
 
+    /* The sun's REAL elevation, in radians, from the Y-up sun vector.
+     *
+     * The vector's own y is the sine of the DRAWN elevation, and the drawn
+     * elevation is compressed to fit the band of ADR-0004 -- so it is a
+     * fabricated quantity and no physical falloff may be applied to it
+     * directly (SkyPalette.DECOMP). Everything below that models an
+     * atmosphere -- twilight, the day blend, star visibility, the cloud tint
+     * -- goes through this first.
+     *
+     * The coefficients those places carry were written against sun.y and are
+     * kept as they stand. They now read per radian of real elevation instead
+     * of per unit of compressed sine, which leaves each one unchanged at the
+     * horizon, where the look was judged, and only alters how fast it lets go
+     * away from it. That is the whole of the fix. */
+    public static final Function sunh = new Function.Def(FLOAT, "sky_sunh") {{
+	Expression s = param(IN, VEC3).ref();
+	code.add(raw("return asin(clamp($0.y, -1.0, 1.0)) * " + SkyPalette.DECOMP + ";\n", s));
+    }};
+
+    /* The twilight boundaries, as astronomy defines them: the sun's depression
+     * below the horizon at which each stage ends. They are used as the scale
+     * of the falloffs below, so those falloffs land on the real clock. */
+    public static final double CIVIL = 0.10472;   /* rad, 6 degrees */
+    public static final double ASTRO = 0.31416;   /* rad, 18 degrees */
+
+    /* Twilight brightness against the sun's depression. Set so the glow is 1%
+     * of its horizon value at the astronomical end: exp(-ASTRO * TWI) = 0.01.
+     *
+     * The old form was exp(-abs(sun.y) * 7.0) on the compressed sine, which
+     * never fell below 0.15 through the whole night and still stood at 0.04 at
+     * noon, because that sine cannot exceed sin(PEAK) = 0.46. */
+    public static final double TWI = 14.66;       /* per radian of depression */
+
+    /* Cloud tops keep the sun after the ground has lost it, so their tint
+     * outlives the sky's band -- 37% at civil twilight against the sky's 21%.
+     * Wider on purpose; this is the one constant here chosen by eye. */
+    public static final double TWI_CLOUD = 9.5;
+
     /* --- shared output transform ------------------------------------- */
 
     /* Reinhard + gamma. Sky colour and fog colour MUST both pass through
@@ -172,18 +210,33 @@ public abstract class SkyLib {
      * and the tuning that produced it carry over untouched. */
     public static final double DISC = 1500.0;   /* half brightness at 1.23 degrees */
 
+    /* How far the sun sinks before the disc is gone, in real radians. The sun
+     * is about half a degree across, so a body that sets crosses its own
+     * diameter in roughly that much depression; 1.5 degrees keeps the last of
+     * it from popping out on a frame boundary. */
+    public static final double SET = 0.0262;    /* rad, 1.5 degrees */
+
     public static final Function disc = new Function.Def(VEC3, "sky_disc") {{
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
 	Expression g = param(IN, FLOAT).ref();
 	Expression ch = param(IN, FLOAT).ref();
-	code.add(raw("float sk_da = atan($0.z, $0.x) - atan($1.z, $1.x);\n" +
+	Expression sh = param(IN, FLOAT).ref();
+	/* Nothing else hides a set sun. The projection of ADR-0004 shows only
+	 * a band 30 to 60 degrees BELOW horizontal, so there is no terrain
+	 * edge and no sky horizon in frame to occlude it: without this gate the
+	 * disc is drawn all night, wherever the compressed elevation puts it.
+	 * Rendered offline at dt 0.1535 -- 03:37 game time, the sun 38 real
+	 * degrees under -- and the disc was plainly on screen. */
+	code.add(raw("float sk_up = clamp($4 / " + SET + " + 1.0, 0.0, 1.0);\n" +
+		     "if(sk_up <= 0.0) return vec3(0.0);\n" +
+		     "float sk_da = atan($0.z, $0.x) - atan($1.z, $1.x);\n" +
 		     "sk_da = (mod(sk_da + 3.14159265, 6.2831853) - 3.14159265) * $3;\n" +
 		     "float sk_de = (asin(clamp($0.y, -1.0, 1.0))\n" +
 		     "               - asin(clamp($1.y, -1.0, 1.0))) / $2;\n" +
 		     "return vec3(1.0, 0.96, 0.86)\n" +
-		     "       * exp(-(sk_da * sk_da + sk_de * sk_de) * " + DISC + ") * 6.0;\n",
-		     d, s, g, ch));
+		     "       * exp(-(sk_da * sk_da + sk_de * sk_de) * " + DISC + ") * 6.0 * sk_up;\n",
+		     d, s, g, ch, sh));
     }};
 
     /* Stars.
@@ -216,10 +269,15 @@ public abstract class SkyLib {
 	Expression s = param(IN, VEC3).ref();
 	Expression t = param(IN, FLOAT).ref();
 	Expression g = param(IN, FLOAT).ref();
+	Expression sh = param(IN, FLOAT).ref();
 	/* 2*pi*226 is 1419.9999, an integer to one part in ten million, so
 	 * wrapping the column index closes the ring at azimuth +-pi with no
 	 * seam and no runt cell. */
-	code.add(raw("float sk_night = clamp(-$1.y * 3.0, 0.0, 1.0);\n" +
+	/* Full strength at the astronomical end of twilight, which is what that
+	 * boundary means: the point where the sky stops interfering with the
+	 * stars. The old gate on the compressed sine reached full only at 47
+	 * real degrees of depression -- deep into the night. */
+	code.add(raw("float sk_night = clamp(-$4 / " + ASTRO + ", 0.0, 1.0);\n" +
 		     "float sk_hz = clamp($0.y * 3.0, 0.0, 1.0);\n" +
 		     "if(sk_night <= 0.001 || sk_hz <= 0.0) return vec3(0.0);\n" +
 		     "vec2 sk_g = vec2((atan($0.z, $0.x) + 3.14159265) * " + STAR_CELL + ",\n" +
@@ -241,7 +299,7 @@ public abstract class SkyLib {
 		     "             * sin($2 * 1.2 + sk_h.w * 6.2831853);\n" +
 		     "vec3 sk_tint = mix(vec3(0.80, 0.87, 1.00), vec3(1.00, 0.89, 0.78),\n" +
 		     "                   fract(sk_h.w * 13.0));\n" +
-		     "return sk_tint * (sk_v * sk_night * sk_hz);\n", d, s, t, g));
+		     "return sk_tint * (sk_v * sk_night * sk_hz);\n", d, s, t, g, sh));
     }};
 
     /* --- Mode A: analytic gradient (Y-up, no sun disc) ---------------- */
@@ -249,6 +307,9 @@ public abstract class SkyLib {
     public static final Function baseA = new Function.Def(VEC3, "sky_baseA") {{
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
+	/* The sun's real elevation, from sky_sunh. Passed rather than computed
+	 * here so the entry point pays for the asin once. */
+	Expression sh = param(IN, FLOAT).ref();
 	/* The day zenith is deeper, and the exponent higher, than the
 	 * prototype's. The prototype was judged on a full sky dome; here only
 	 * the 0-to-30-degree band above the terrain is ever on screen, and at
@@ -256,15 +317,32 @@ public abstract class SkyLib {
 	 * gradient -- measured 12 points of separation across the whole
 	 * visible sky. 0.75 moves the pale part down into the strip the fog
 	 * covers and leaves open blue above it. */
-	code.add(raw("float sk_day = clamp($1.y * 2.5 + 0.25, 0.0, 1.0);\n" +
+	code.add(raw("float sk_sh = $2;\n" +
+		     /* Above the horizon the old line stands. Below it, twilight
+		      * does not stop at a point -- it decays -- so the linear
+		      * branch, which hit zero at 5.7 degrees of depression and
+		      * left civil twilight rendering as full night, continues as
+		      * the exponential that matches it in both value and slope
+		      * there: 0.25 * exp(10 * sh), since 0.25 * 10 = 2.5. The
+		      * rate is the linear branch's own, not a chosen one.
+		      *
+		      * Measured over the dawn: this lifts 05:40 from 0.350 to
+		      * 0.421 mean and halves the 05:40-to-05:50 step, while
+		      * 06:00, 12:00 and 18:00 come out bit-identical. */
+		     "float sk_day = (sk_sh >= 0.0) ? clamp(sk_sh * 2.5 + 0.25, 0.0, 1.0)\n" +
+		     "                              : (0.25 * exp(sk_sh * 10.0));\n" +
 		     "vec3 sk_zen = mix(vec3(0.015, 0.020, 0.055), vec3(0.085, 0.27, 0.72), sk_day);\n" +
 		     "vec3 sk_hor = mix(vec3(0.045, 0.050, 0.090), vec3(0.70, 0.82, 0.95), sk_day);\n" +
 		     "float sk_t = pow(clamp($0.y, 0.0, 1.0), 0.75);\n" +
 		     "vec3 sk_col = mix(sk_hor, sk_zen, sk_t);\n" +
 		     "float sk_sd = max(dot($0, $1), 0.0);\n" +
-		     "float sk_dusk = exp(-abs($1.y) * 7.0);\n" +
+		     "float sk_dusk = exp(-abs(sk_sh) * " + TWI + ");\n" +
 		     "sk_col += vec3(1.0, 0.42, 0.13) * pow(sk_sd, 5.0) * (1.0 - clamp($0.y, 0.0, 1.0)) * sk_dusk * 1.1;\n" +
-		     "sk_col += vec3(1.0, 0.72, 0.35) * pow(sk_sd, 40.0) * clamp($1.y + 0.15, 0.0, 1.0) * 0.8;\n" +
+		     /* The tight halo is direct sunlight scattered forward, so it
+		      * ends when the sun does rather than lingering to the 21 real
+		      * degrees of depression the old gate on sun.y allowed. */
+		     "sk_col += vec3(1.0, 0.72, 0.35) * pow(sk_sd, 40.0)\n" +
+		     "          * clamp((sk_sh + " + CIVIL + ") / " + CIVIL + ", 0.0, 1.0) * 0.8;\n" +
 		     /* Below the horizon the gradient term above is clamped
 		      * flat, and that is the only region this game's camera
 		      * ever shows: FreeCam sits at 45 degrees with a 30-degree
@@ -274,7 +352,7 @@ public abstract class SkyLib {
 		      * depth instead of being one flat colour. */
 		     "sk_col = mix(sk_col, sk_hor * vec3(0.55, 0.54, 0.52),\n" +
 		     "             pow(clamp(-$0.y, 0.0, 1.0), 0.7));\n" +
-		     "return sk_col;\n", d, s));
+		     "return sk_col;\n", d, s, sh));
     }};
 
     /* --- Mode B: Rayleigh + Mie (Y-up, no sun disc) ------------------- */
@@ -317,6 +395,7 @@ public abstract class SkyLib {
 	Expression t = param(IN, FLOAT).ref();
 	Expression sky = param(IN, VEC3).ref();
 	Expression oct = param(IN, INT).ref();
+	Expression sh = param(IN, FLOAT).ref();
 	/* The 0.45 is the cloud deck's height over its own distance: raising
 	 * it from 0.12 stops the pattern piling up at the horizon and spreads
 	 * it across the band that is actually on screen.
@@ -394,11 +473,16 @@ public abstract class SkyLib {
 		      * its range instead of saturating; that is what puts shape
 		      * inside a cloud rather than one even tone. */
 		     "float sk_lit = clamp(dot(normalize(vec3($0.x, 0.35, $0.z)), $1) * 0.5 + 0.55, 0.0, 1.0);\n" +
-		     "float sk_day = clamp($1.y * 3.0 + 0.35, 0.05, 1.0);\n" +
+		     "float sk_day = clamp($5 * 3.0 + 0.35, 0.05, 1.0);\n" +
 		     "vec3 sk_cc = mix(vec3(0.30, 0.32, 0.40), vec3(2.20, 2.13, 2.02), sk_lit) * sk_day;\n" +
-		     "sk_cc = mix(sk_cc, sk_cc * vec3(1.25, 0.85, 0.62), exp(-abs($1.y) * 6.0) * 0.85);\n" +
+		     /* Wider than the sky's own band -- cloud tops keep the sun
+		      * after the ground has lost it -- but on the real elevation,
+		      * not the compressed sine. On the sine this term was the one
+		      * painting the clouds sunset-orange at 03:37 game time. */
+		     "sk_cc = mix(sk_cc, sk_cc * vec3(1.25, 0.85, 0.62),\n" +
+		     "            exp(-abs($5) * " + TWI_CLOUD + ") * 0.85);\n" +
 		     "return mix($3, sk_cc, sk_c * sk_fade * 0.88);\n",
-		     d, s, t, sky, oct));
+		     d, s, t, sky, oct, sh));
     }};
 
     /* --- public entry points (Z-up in, tonemapped out) --------------- */
@@ -414,26 +498,31 @@ public abstract class SkyLib {
 	/* cos of the ray's true world elevation -- declared by the rebuild
 	 * below, and read before the rebuild overwrites sk_d. */
 	Expression ch = id("sk_hl");
+	/* The sun's real elevation, computed once here and handed to everything
+	 * below that models an atmosphere. See sky_sunh. */
+	Expression sh = id("sk_sh");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
+		     "float sk_sh = $2;\n" +
 		     /* Rebuild the ray: elevation from sky_elev, azimuth kept
 		      * from the world. An earlier revision used the elevation's
 		      * SINE here rather than its angle, which put the top of
 		      * the screen near the zenith and squeezed the whole
 		      * azimuth circle -- clouds and stars then covered a
 		      * fraction of one noise cell and rendered as flat wash. */
-		     "float sk_e = clamp($8, -1.5533, 1.5533);\n" +
+		     "float sk_e = clamp($9, -1.5533, 1.5533);\n" +
 		     "vec2 sk_hz = vec2(sk_d.x, sk_d.z);\n" +
 		     "float sk_hl = length(sk_hz);\n" +
 		     "sk_hz = (sk_hl < 1.0e-5) ? vec2(1.0, 0.0) : (sk_hz / sk_hl);\n" +
 		     "sk_hz *= cos(sk_e);\n" +
 		     "sk_d = vec3(sk_hz.x, sin(sk_e), sk_hz.y);\n" +
-		     "vec3 sk_col = $2 + $3 + $4;\n" +
-		     "sk_col = $5;\n" +
-		     "return mix($6, vec3(1.0), $7);\n",
-		     yup.call(wd), yup.call(ws),
-		     baseA.call(d, s), disc.call(d, s, g, ch), stars.call(d, s, t, g),
-		     clouds.call(d, s, t, col, Cons.l(4)),
+		     "vec3 sk_col = $3 + $4 + $5;\n" +
+		     "sk_col = $6;\n" +
+		     "return mix($7, vec3(1.0), $8);\n",
+		     yup.call(wd), yup.call(ws), sunh.call(s),
+		     baseA.call(d, s, sh), disc.call(d, s, g, ch, sh),
+		     stars.call(d, s, t, g, sh),
+		     clouds.call(d, s, t, col, Cons.l(4), sh),
 		     tone.call(col), night, e));
     }};
 
@@ -448,21 +537,27 @@ public abstract class SkyLib {
 	/* cos of the ray's true world elevation -- declared by the rebuild
 	 * below, and read before the rebuild overwrites sk_d. */
 	Expression ch = id("sk_hl");
+	Expression sh = id("sk_sh");
 	code.add(raw("vec3 sk_d = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
+		     "float sk_sh = $2;\n" +
 		     /* Same rebuild as colA -- see the note there. */
-		     "float sk_e = clamp($8, -1.5533, 1.5533);\n" +
+		     "float sk_e = clamp($9, -1.5533, 1.5533);\n" +
 		     "vec2 sk_hz = vec2(sk_d.x, sk_d.z);\n" +
 		     "float sk_hl = length(sk_hz);\n" +
 		     "sk_hz = (sk_hl < 1.0e-5) ? vec2(1.0, 0.0) : (sk_hz / sk_hl);\n" +
 		     "sk_hz *= cos(sk_e);\n" +
 		     "sk_d = vec3(sk_hz.x, sin(sk_e), sk_hz.y);\n" +
-		     "vec3 sk_col = $2 + $3 + $4;\n" +
-		     "sk_col = $5;\n" +
-		     "return mix($6, vec3(1.0), $7);\n",
-		     yup.call(wd), yup.call(ws),
-		     baseB.call(d, s), disc.call(d, s, g, ch), stars.call(d, s, t, g),
-		     clouds.call(d, s, t, col, Cons.l(5)),
+		     "vec3 sk_col = $3 + $4 + $5;\n" +
+		     "sk_col = $6;\n" +
+		     "return mix($7, vec3(1.0), $8);\n",
+		     yup.call(wd), yup.call(ws), sunh.call(s),
+		     /* baseB is untouched by this change -- its own reads of
+		      * sun.y are inside a scattering model that would have to be
+		      * retuned as a whole. Recorded as open in ADR-0010. */
+		     baseB.call(d, s), disc.call(d, s, g, ch, sh),
+		     stars.call(d, s, t, g, sh),
+		     clouds.call(d, s, t, col, Cons.l(5), sh),
 		     tone.call(col), night, e));
     }};
 
@@ -485,7 +580,7 @@ public abstract class SkyLib {
 		     "vec3 sk_acc = $2;\n" +
 		     "return mix($3, vec3(1.0), $4);\n",
 		     yup.call(wd), yup.call(ws),
-		     baseA.call(h, s),
+		     baseA.call(h, s, sunh.call(s)),
 		     tone.call(desat.call(acc, Cons.l(DESAT))),
 		     night));
     }};
