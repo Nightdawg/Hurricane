@@ -360,7 +360,16 @@ public abstract class SkyLib {
     public static final Function baseB = new Function.Def(VEC3, "sky_baseB") {{
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
-	code.add(raw("const float sk_Br = 0.0025, sk_Bm = 0.0003, sk_g = 0.98;\n" +
+	/* The sun's real elevation, from sky_sunh -- same reason baseA takes
+	 * it, and the defect ADR-0010 left open here. */
+	Expression sh = param(IN, FLOAT).ref();
+	/* 0.98 was a cloud's asymmetry, not an atmosphere's. Measured on the
+	 * phase function it took half the sun's brightness away within ONE
+	 * degree and 97% within five, so the sun had no halo at all -- just a
+	 * needle, which rendered as a red streak at sunset rather than a glow.
+	 * 0.76 is the usual figure for atmospheric aerosol and widens the
+	 * half-brightness point from about 1 degree to about 12. */
+	code.add(raw("const float sk_Br = 0.0025, sk_Bm = 0.0003, sk_g = 0.76;\n" +
 		     "vec3 sk_nitro = vec3(0.650, 0.570, 0.475);\n" +
 		     "vec3 sk_Kr = sk_Br / pow(sk_nitro, vec3(4.0));\n" +
 		     "vec3 sk_Km = sk_Bm / pow(sk_nitro, vec3(0.84));\n" +
@@ -378,13 +387,79 @@ public abstract class SkyLib {
 		     "vec3 sk_day = exp(-exp(-((sk_pos.y + $1.y * 4.0) * (exp(-sk_pos.y * 16.0) + 0.1) / 80.0) / sk_Br)\n" +
 		     "              * (exp(-sk_pos.y * 16.0) + 0.1) * sk_Kr / sk_Br)\n" +
 		     "              * exp(-sk_pos.y * exp(-sk_pos.y * 8.0) * 4.0) * exp(-sk_pos.y * 2.0) * 4.0;\n" +
-		     "vec3 sk_nit = vec3(1.0 - exp($1.y)) * 0.2;\n" +
-		     "vec3 sk_out = sk_ray * sk_mie * mix(sk_day, sk_nit, -$1.y * 0.2 + 0.5);\n" +
+		     /* Night is a colour, not a grey. The neutral term this
+		      * replaced left the night sky reading as haze; a cool navy
+		      * is what the approved prototype showed and what the stars
+		      * need behind them to be legible.
+		      *
+		      * On sk_sh, not on sun.y: 1 - exp() of the compressed sine
+		      * only ever reached 0.31, so the term barely grew as the
+		      * sun sank. 0.038 is set so deep night lands where the
+		      * variant chosen from the renders put it -- within 2 levels
+		      * at 22:00, 00:00 and 02:00. */
+		     /* sk_day is a function of elevation alone -- there is no
+		      * azimuth anywhere inside it -- so the warm band it draws
+		      * at sunrise closes a full ring around the sky. Neither
+		      * term that does have direction breaks that: Rayleigh's
+		      * 1 + mu*mu is symmetric, as bright behind you as ahead,
+		      * and Mie is the needle above. Measured across four camera
+		      * yaws the band came out the same to within 1%.
+		      *
+		      * So weight it toward the sun, and only while the sun is
+		      * low -- at noon a ring IS the right answer, and the gate
+		      * keeps it: 12:00 moves 0.11 of a level, 09:00 and 15:00
+		      * move 0.45, while sunrise moves 18.
+		      *
+		      * The floor is 0.60 rather than something smaller because
+		      * horB builds the fog from this same function; taking the
+		      * away side much darker turns the map edge behind the
+		      * player into a wall. */
+		     "float sk_low = exp(-abs($2) * 4.0);\n" +
+		     "float sk_side = 0.60 + 0.40 * pow(clamp(sk_mu, 0.0, 1.0), 1.5);\n" +
+		     "sk_day *= mix(1.0, sk_side, sk_low);\n" +
+		     /* max() because 1 - exp() goes negative once the sun is up,
+		      * and the blend still gives it weight between the horizon
+		      * and ASTRO -- the old line had the same wart and was
+		      * subtracting radiance through the whole morning. */
+		     "vec3 sk_nit = vec3(0.45, 0.62, 1.05) * max(1.0 - exp($2), 0.0) * 0.038;\n" +
+		     /* The blend that made this mode have no night at all.
+		      *
+		      * -sun.y * 0.2 + 0.5 was written for a sun whose y spans
+		      * -1 to +1. ADR-0006 compressed it to PEAK = 0.48, so
+		      * abs(sun.y) could not exceed 0.46 and the factor was stuck
+		      * between 0.408 and 0.592: 41% of the DAYLIGHT scattering
+		      * survived at midnight, and 41% of the night term at noon.
+		      * Measured at 02:27 the sky came out (144,139,122), a beige
+		      * band brighter than this same model's own noon zenith.
+		      *
+		      * Now it spans its full range against real elevation, and
+		      * the scale is astronomy's: full night at ASTRO, full day
+		      * at the same angle above. 0.5 at the horizon is kept
+		      * deliberately -- it is what sunset and sunrise were judged
+		      * on, and both come out bit-identical to before. */
+		     "vec3 sk_out = sk_ray * sk_mie * mix(sk_day, sk_nit,\n" +
+		     "              clamp(0.5 - $2 / " + (2.0 * ASTRO) + ", 0.0, 1.0));\n" +
+		     /* The one thing mode A had that this model has no
+		      * equivalent of: a broad warm wash on the sun's side. Same
+		      * shape as baseA's pow(dot, 5) dusk term and gated by the
+		      * same TWI on the real elevation.
+		      *
+		      * Without it the sky cannot say where the sun is. Measured
+		      * at sunrise, mean frame value facing the sun against
+		      * facing away: mode A 1.21x, this model 1.02x. With this
+		      * and the band weighting above it reaches 1.73x -- more
+		      * one-sided than mode A, deliberately, because this sky is
+		      * darker overall and a real sunrise is strongly one-sided.
+		      *
+		      * 0.10 rather than more: at 0.18 the near side filled with
+		      * a heavy brown rather than a wash. */
+		     "sk_out += vec3(1.0, 0.42, 0.13) * pow(clamp(sk_mu, 0.0, 1.0), 5.0)\n" +
+		     "          * (1.0 - clamp($0.y, 0.0, 1.0)) * exp(-abs($2) * " + TWI + ") * 0.10;\n" +
 		     /* Same below-horizon continuation as baseA -- see the
 		      * note there. sk_pos.y was already clamped positive, so
 		      * sk_out holds the horizon value for downward rays. */
 		     "return mix(sk_out, sk_out * vec3(0.55, 0.54, 0.52),\n" +
-		     "           pow(clamp(-$0.y, 0.0, 1.0), 0.7));\n", d, s));
+		     "           pow(clamp(-$0.y, 0.0, 1.0), 0.7));\n", d, s, sh));
     }};
 
     /* --- clouds (Y-up) ----------------------------------------------- */
@@ -552,10 +627,7 @@ public abstract class SkyLib {
 		     "sk_col = $6;\n" +
 		     "return mix($7, vec3(1.0), $8);\n",
 		     yup.call(wd), yup.call(ws), sunh.call(s),
-		     /* baseB is untouched by this change -- its own reads of
-		      * sun.y are inside a scattering model that would have to be
-		      * retuned as a whole. Recorded as open in ADR-0010. */
-		     baseB.call(d, s), disc.call(d, s, g, ch, sh),
+		     baseB.call(d, s, sh), disc.call(d, s, g, ch, sh),
 		     stars.call(d, s, t, g, sh),
 		     clouds.call(d, s, t, col, Cons.l(5), sh),
 		     tone.call(col), night, e));
@@ -591,8 +663,11 @@ public abstract class SkyLib {
 	Expression night = param(IN, FLOAT).ref();
 	Expression s = id("sk_s"), acc = id("sk_acc");
 	Expression t0 = id("sk_t0"), t1 = id("sk_t1"), t2 = id("sk_t2"), t3 = id("sk_t3"), t4 = id("sk_t4");
+	/* One asin for all five samples, as colB does for its own. */
+	Expression sh = id("sk_sh");
 	code.add(raw("vec3 sk_w = $0;\n" +
 		     "vec3 sk_s = $1;\n" +
+		     "float sk_sh = $2;\n" +
 		     /* Guard: looking straight down makes sk_w.xz zero, and
 		      * normalize(vec3(0)) is NaN -- which then poisons the
 		      * mix() in SkyFog even at a fog factor of 0. Reachable
@@ -605,11 +680,11 @@ public abstract class SkyLib {
 		     "vec3 sk_t2 = normalize(sk_f + vec3(0.0, 0.20, 0.0));\n" +
 		     "vec3 sk_t3 = normalize(sk_f + vec3(0.0, 0.36, 0.0));\n" +
 		     "vec3 sk_t4 = normalize(sk_f + vec3(0.0, 0.58, 0.0));\n" +
-		     "vec3 sk_acc = $2 * 0.16 + $3 * 0.22 + $4 * 0.26 + $5 * 0.22 + $6 * 0.14;\n" +
-		     "return mix($7, vec3(1.0), $8);\n",
-		     yup.call(wd), yup.call(ws),
-		     baseB.call(t0, s), baseB.call(t1, s), baseB.call(t2, s),
-		     baseB.call(t3, s), baseB.call(t4, s),
+		     "vec3 sk_acc = $3 * 0.16 + $4 * 0.22 + $5 * 0.26 + $6 * 0.22 + $7 * 0.14;\n" +
+		     "return mix($8, vec3(1.0), $9);\n",
+		     yup.call(wd), yup.call(ws), sunh.call(s),
+		     baseB.call(t0, s, sh), baseB.call(t1, s, sh), baseB.call(t2, s, sh),
+		     baseB.call(t3, s, sh), baseB.call(t4, s, sh),
 		     tone.call(desat.call(acc, Cons.l(DESAT))),
 		     night));
     }};
