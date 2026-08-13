@@ -138,16 +138,61 @@ public abstract class SkyLib {
 	code.add(raw("return vec3(1.0, 0.96, 0.86) * pow(max(dot($0, $1), 0.0), 3000.0) * 6.0;\n", d, s));
     }};
 
+    /* Stars.
+     *
+     * The first version quantised a planar projection of the ray and lit one
+     * whole cell per star. Measured on a night capture, that put each star on
+     * screen as a 2-3 px wide, 1 px TALL dash -- the cell there was 5.3 px by
+     * 0.86 px, because elevation reaches the screen divided by GAIN while
+     * azimuth does not. It also laid them on a lattice at 1.7 stars per square
+     * degree, eight times the naked-eye sky, all at one apparent brightness;
+     * and it drew the twinkle phase from the same hash that decided whether a
+     * cell held a star at all. Since only hashes above 0.9965 became stars, the
+     * whole field shared 18 degrees of phase and pulsed in unison -- a 0.9 Hz
+     * beat, plainly visible in the capture's spectrum.
+     *
+     * So: cells square on SCREEN (elevation divided by GAIN before gridding),
+     * one jittered round point inside each, and a magnitude drawn from the real
+     * count law. N(<m) goes as 10^(0.55 m) and brightness as 10^(-0.4 m), so
+     * inverting the CDF gives L = r^-0.727: a handful of bright stars and a
+     * great many faint ones, spanning 250 to 1 before the tonemap. Twinkle
+     * phase comes from an independent hash channel, and its depth rises toward
+     * the horizon, where the air is thickest. */
+    public static final double STAR_NCOL = 1420.0;  /* cells around the horizon */
+    public static final double STAR_CELL = 226.0;   /* cells per radian of azimuth */
+    public static final double STAR_OCC = 0.10;     /* fraction of cells holding a star */
+    public static final double STAR_FAINT = 0.020;  /* radiance of the dimmest star */
+
     public static final Function stars = new Function.Def(VEC3, "sky_stars") {{
 	Expression d = param(IN, VEC3).ref();
 	Expression s = param(IN, VEC3).ref();
 	Expression t = param(IN, FLOAT).ref();
+	/* 2*pi*226 is 1419.9999, an integer to one part in ten million, so
+	 * wrapping the column index closes the ring at azimuth +-pi with no
+	 * seam and no runt cell. */
 	code.add(raw("float sk_night = clamp(-$1.y * 3.0, 0.0, 1.0);\n" +
-		     "if(sk_night <= 0.001) return vec3(0.0);\n" +
-		     "vec2 sk_uv = floor($0.xz / (abs($0.y) + 0.25) * 240.0);\n" +
-		     "float sk_n = fract(sin(dot(sk_uv, vec2(127.1, 311.7))) * 43758.5453123);\n" +
-		     "float sk_st = smoothstep(0.9965, 1.0, sk_n) * (0.6 + 0.4 * sin($2 * 2.0 + sk_n * 90.0));\n" +
-		     "return vec3(sk_st) * sk_night * clamp($0.y * 3.0, 0.0, 1.0);\n", d, s, t));
+		     "float sk_hz = clamp($0.y * 3.0, 0.0, 1.0);\n" +
+		     "if(sk_night <= 0.001 || sk_hz <= 0.0) return vec3(0.0);\n" +
+		     "vec2 sk_g = vec2((atan($0.z, $0.x) + 3.14159265) * " + STAR_CELL + ",\n" +
+		     "                 asin(clamp($0.y, -1.0, 1.0)) * (" + STAR_CELL + " / " + GAIN + "));\n" +
+		     "vec2 sk_c = floor(sk_g), sk_f = sk_g - sk_c;\n" +
+		     "sk_c.x = mod(sk_c.x, " + STAR_NCOL + ");\n" +
+		     /* Hoskins hash42: four decorrelated values without sin(),
+		      * whose precision would fray at these cell indices. */
+		     "vec4 sk_p4 = fract(sk_c.xyxy * vec4(0.1031, 0.1030, 0.0973, 0.1099));\n" +
+		     "sk_p4 += dot(sk_p4, sk_p4.wzxy + 33.33);\n" +
+		     "vec4 sk_h = fract((sk_p4.xxyz + sk_p4.yzzw) * sk_p4.zywx);\n" +
+		     "float sk_r = (sk_h.x - (1.0 - " + STAR_OCC + ")) / " + STAR_OCC + ";\n" +
+		     "if(sk_r <= 0.0) return vec3(0.0);\n" +
+		     "float sk_l = " + STAR_FAINT + " * pow(max(sk_r, 5.0e-4), -0.727);\n" +
+		     "vec2 sk_o = sk_f - (0.2 + 0.6 * sk_h.yz);\n" +
+		     "float sk_d2 = dot(sk_o, sk_o);\n" +
+		     "float sk_v = sk_l * (exp(-sk_d2 * 60.0) + 0.22 * exp(-sk_d2 * 14.0));\n" +
+		     "sk_v *= 1.0 + 0.22 * (1.0 - clamp($0.y, 0.0, 1.0))\n" +
+		     "             * sin($2 * 1.2 + sk_h.w * 6.2831853);\n" +
+		     "vec3 sk_tint = mix(vec3(0.80, 0.87, 1.00), vec3(1.00, 0.89, 0.78),\n" +
+		     "                   fract(sk_h.w * 13.0));\n" +
+		     "return sk_tint * (sk_v * sk_night * sk_hz);\n", d, s, t));
     }};
 
     /* --- Mode A: analytic gradient (Y-up, no sun disc) ---------------- */
