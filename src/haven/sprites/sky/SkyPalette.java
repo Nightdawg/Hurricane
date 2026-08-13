@@ -90,16 +90,64 @@ public class SkyPalette extends State {
     public static SkyPalette from(Glob glob, float[] rect, boolean fog) {
 	double elev, ang;
 	boolean lit;
+	Astronomy ast;
 	synchronized(glob) {
 	    lit = (glob.lightamb != null);
 	    elev = glob.lightelev;
 	    ang = glob.lightang;
+	    ast = glob.ast;
 	}
 	if(!lit)
 	    return(new SkyPalette(new Coord3f(0f, 0f, 1f), rect, 0.0, false));
 	probe(glob, elev, ang);
-	return(new SkyPalette(Coord3f.o.sadd((float)elev, (float)ang, 1f), rect,
+	/* The azimuth still comes from the server's light, so the drawn sun and
+	 * the shadows keep agreeing. That half of the vector was never wrong:
+	 * aiming the camera down the shadows in game put the disc dead on that
+	 * bearing, half a degree above the top edge of the screen. Only the
+	 * elevation is replaced.
+	 *
+	 * Falling back to lightelev when ast is null is deliberate. The astro
+	 * blob and the light blob arrive independently (Glob.java:267-300), so
+	 * there is a window with light but no clock, and the old behaviour is a
+	 * better thing to show there than a sun pinned at dawn. */
+	double selev = (ast == null) ? elev : sunelev(ast.dt);
+	return(new SkyPalette(Coord3f.o.sadd((float)selev, (float)ang, 1f), rect,
 			      Glob.nightVisionBrightness * NIGHT_SHARE, fog));
+    }
+
+    /* Day fraction -> the sun's elevation for DRAWING, in radians.
+     *
+     * The server's lightelev cannot serve here. Measured over 4750 samples it
+     * sweeps 23 to 67.5 degrees and never goes negative; through the night it
+     * RISES, 0.5625 to 0.5882 rad across dt 0.808 to 0.821 with ast.night set.
+     * It is the lighting rig the shadows are built from, not an astronomical
+     * sun, and the client is right to keep it that way -- shadows that swing
+     * to infinity at dusk would look far worse than a sun that does not set.
+     *
+     * Two defects followed from reading it as a sun. The disc was drawable
+     * only where that sweep happened to land inside the band this projection
+     * can show, which tops out at 31.75 degrees: about a third of its range,
+     * and then only with the azimuth inside the 53-degree horizontal field,
+     * so on the order of 5% of the time. And every night branch in SkyLib
+     * keys on the elevation going negative, so the night sky, the dusk band
+     * and the stars were all unreachable -- at 19:16 game time with ast.night
+     * set, sky_baseA still computed a day factor of 1.583, saturated to full
+     * daylight over night-lit terrain.
+     *
+     * PEAK compresses the arc into the drawable band with room left so the
+     * disc is never clipped by the top edge. It is a compression, not a
+     * physical elevation: the sky this shader draws is a fiction to begin
+     * with, since a camera pitched 45 degrees down with a 15-degree half
+     * field never sees real sky at all.
+     *
+     * Day runs dt 0.25 to 0.75. The evening edge is measured -- ast.night
+     * first went true at dt = 0.75060. The morning edge is inferred from a
+     * day symmetric about noon and is still unobserved; the probe samples on
+     * a clock now, so the first session before 06:00 game time settles it. */
+    public static final double PEAK = 0.48;
+
+    public static double sunelev(double dt) {
+	return(PEAK * Math.sin(Math.PI * (dt - 0.25) / 0.5));
     }
 
     /* TEMPORARY -- sky measurement, delete once the sun's source is decided.
