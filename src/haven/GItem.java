@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.function.*;
 
 import haven.automated.cookbook.FoodService;
+import haven.automated.cookbook.KittenCookbook;
 import haven.render.*;
 import haven.res.ui.tt.q.qbuff.QBuff;
 import haven.res.ui.tt.q.quality.Quality;
@@ -242,8 +243,13 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 			info.add(new ItemInfo.ResourceName(this, res.get().name));
 			this.info = info;
 			try {
-				if (FoodService.isValidEndpoint() && !checkForHempBuff()) {
-					FoodService.checkFood(info, getres(), ui.gui.genus);
+				if (!checkForHempBuff()) {
+					if (FoodService.isValidEndpoint()) {
+						FoodService.checkFood(info, getres(), ui.gui.genus);
+					}
+					if (KittenCookbook.enabled()) {
+						KittenCookbook.checkFood(info, getres(), ui.gui.genus);
+					}
 				}
 			} catch (Exception ignored) {}
 		}
