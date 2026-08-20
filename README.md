@@ -53,3 +53,10 @@ https://www.havenandhearth.com/forum/viewtopic.php?f=49&t=79701
 
 ## Additionally, the client also supports the cookbook integration (disabled by default).
 You can either use a token from a public cookbook, or host your own (for example, https://github.com/Cediner/hnh-food-book)
+
+## The client also contributes to the Kitten Rider cookbook, which is ON by default.
+When you look at a dish, its values are sent to a public, open dataset at https://api.kittenrider.com/cookbook — no account and no signup, and it works alongside the integration above rather than replacing it.
+
+Only the item's own values are sent: the dish, its quality, its FEPs, its ingredients and its tooltip lines. No character name, no position, nothing about your account or your world beyond which world it is. The resulting data is public and free for anyone to use.
+
+To turn it off: `Options -> Advanced Settings -> Server Integration Settings -> Contribute to the Kitten Rider Cookbook`. Untick it and nothing is ever sent.

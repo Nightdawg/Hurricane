@@ -4769,6 +4769,9 @@ public class OptWnd extends Window {
 	public static TextEntry cookBookEndpointTextEntry;
 	public static TextEntry cookBookTokenTextEntry;
 
+	public static CheckBox kittenCookbookCheckBox;
+	public static TextEntry kittenCookbookTokenTextEntry;
+
 
 
 	public class ServerIntegrationSettingsPanel extends Panel {
@@ -4825,6 +4828,24 @@ public class OptWnd extends Window {
 					super.changed();
 				}
 			}, prev.pos("ur").adds(20, 0));
+
+			prev = add(kittenCookbookCheckBox = new CheckBox("Contribute to the Kitten Rider Cookbook"){
+				{a = Utils.getprefb("kittenCookbook", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("kittenCookbook", val);
+				}
+			}, prev.pos("bl").adds(0, 16).x(12));
+			kittenCookbookCheckBox.tooltip = kittenCookbookTooltip;
+
+			prev = add(new Label("Kitten Rider Token (optional):"), prev.pos("bl").adds(20, 4));
+			prev.tooltip = kittenCookbookTokenTooltip;
+			prev = add(kittenCookbookTokenTextEntry = new TextEntry(UI.scale(220), Utils.getpref("kittenCookbookToken", "")){
+				protected void changed() {
+					Utils.setpref("kittenCookbookToken", this.buf.line());
+					super.changed();
+				}
+			}, prev.pos("bl").adds(0, 8).x(12));
+			kittenCookbookTokenTextEntry.tooltip = kittenCookbookTokenTooltip;
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 26).x(0));
@@ -5616,6 +5637,14 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[218,163,0]{For example:} Nightdawg (VillageCrafter)$col[185,185,185]{, where }\"Nightdawg\" $col[185,185,185]{is the name I set in this text entry, and} \"VillageCrafter\" $col[185,185,185]{is the character's original name." +
 			"\nThe character's original name is the one you see in the character selection screen, NOT the presentation name.}", UI.scale(320));
+	private static final Object kittenCookbookTooltip = RichText.render("Send the food values you see to the Kitten Rider cookbook, instead of or as well as the endpoint above. $col[218,163,0]{This one is on by default} $col[185,185,185]{-- untick it and nothing is ever sent.}" +
+			"\n" +
+			"\nIt is a separate destination that wants the raw numbers, so it also picks up the dishes the endpoint above skips (peppered and truffled ones), and it needs no account: a contribution token is created for you the first time." +
+			"\n" +
+			"\n$col[218,163,0]{Only item values are sent} $col[185,185,185]{-- the dish, its quality, its FEPs and its ingredients. No character name, no position, nothing about your account. The resulting data is public and free for anyone to use.}", UI.scale(340));
+	private static final Object kittenCookbookTokenTooltip = RichText.render("Leave this blank and one will be created automatically the first time food is sent; it is then saved here and reused." +
+			"\n" +
+			"\nSet it by hand only if you already have a token, or want to carry the same one across machines.", UI.scale(320));
 
 	// Misc/Other
 	private static final Object resetButtonTooltip = RichText.render("Reset to default value.", UI.scale(300));
