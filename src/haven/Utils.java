@@ -1102,7 +1102,7 @@ public class Utils {
 	return(ret.toArray(new String[0]));
     }
 
-    static int atoi(String a) {
+    public static int atoi(String a) {
 	try {
 	    return(Integer.parseInt(a));
 	} catch(NumberFormatException e) {
@@ -2750,75 +2750,6 @@ public class Utils {
 	    }
 	}
     };
-
-    static {
-	Console.setscmd("die", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    throw(new Error("Triggered death"));
-		}
-	    });
-	Console.setscmd("sleep", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    long ms = (long)(Double.parseDouble(args[1]) * 1000);
-		    try {
-			Thread.sleep(ms);
-		    } catch(InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw(new RuntimeException(e));
-		    }
-		}
-	    });
-	Console.setscmd("lockdie", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    Object m1 = new Object(), m2 = new Object();
-		    int[] sync = {0};
-		    new HackThread(() -> {
-			    try {
-				synchronized(m2) {
-				    synchronized(sync) {
-					while(sync[0] != 1)
-					    sync.wait();
-					sync[0] = 2;
-					sync.notifyAll();
-				    }
-				    synchronized(m1) {
-					synchronized(sync) {
-					    sync[0] = 3;
-					    sync.notifyAll();
-					}
-				    }
-				}
-			    } catch(InterruptedException e) {}
-		    }, "Deadlocker").start();
-		    try {
-			synchronized(m1) {
-			    synchronized(sync) {
-				sync[0] = 1;
-				sync.notifyAll();
-				while(sync[0] != 2)
-				    sync.wait();
-			    }
-			    synchronized(m2) {
-				synchronized(sync) {
-				    sync[0] = 3;
-				    sync.notifyAll();
-				}
-			    }
-			}
-		    } catch(InterruptedException e) {}
-		}
-	    });
-	Console.setscmd("threads", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    Utils.dumptg(null, cons.out);
-		}
-	    });
-	Console.setscmd("gc", new Console.Command() {
-		public void run(Console cons, String[] args) {
-		    System.gc();
-		}
-	    });
-    }
 
 	private static final Pattern RESID = Pattern.compile(".*\\[([^,]*),?.*]");
 	public static String prettyResName(String resname) {

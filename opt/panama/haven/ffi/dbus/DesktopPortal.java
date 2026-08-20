@@ -160,7 +160,7 @@ public class DesktopPortal {
 		public void filter(String desc, String... exts) {
 		    List<Object> edesc = new ArrayList<>();
 		    for(String ext : exts)
-			edesc.add(Arrays.asList(0, ext));
+			edesc.add(Arrays.asList(0, "*." + ext));
 		    filters.add(Arrays.asList(desc, edesc));
 		}
 
@@ -175,7 +175,6 @@ public class DesktopPortal {
 			req.checkret(p.call(sig_openfile, "OpenFile", (window == null) ? "" : window, "Open file", options).waitfor());
 		    else
 			req.checkret(p.call(sig_savefile, "SaveFile", (window == null) ? "" : window, "Open file", options).waitfor());
-		    Debug.dump(options);
 		    return(req.response.map(resp -> {
 			if(INT.of(resp.get(0)) != 0)
 			    return(null);
