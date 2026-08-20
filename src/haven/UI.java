@@ -999,7 +999,7 @@ public class UI {
 	return(Resource.remote());
     }
 
-    private static double scalef = 0;
+    public static double scalef = 0;
     private static double scalef() {
 	if(scalef == 0) {
 	    synchronized(UI.class) {

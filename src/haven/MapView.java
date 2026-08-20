@@ -2954,24 +2954,22 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	});
         // ND: Change the "cam" console command and prevent its use. Direct users to the options menu instead. Not everyone knows of console commands anyway.
         cmdmap.put("cam", (cons, args) -> {
-            public void run(Console cons, String[] args) throws Exception {
-                if (cameraConsoleCommandReplyMessage == 1) {
-                    cameraConsoleCommandReplyMessage = 2;
-                    throw (new Exception("Please use the Options menu to change the camera instead."));
-                }
-                else if (cameraConsoleCommandReplyMessage == 2) {
-                    cameraConsoleCommandReplyMessage = 3;
-                    throw (new Exception("No. I said use the Options menu to change the camera!"));
-                }
-                else if (cameraConsoleCommandReplyMessage == 3) {
-                    cameraConsoleCommandReplyMessage = 4;
-                    throw (new Exception("USE THE OPTIONS MENU TO CHANGE THE CAMERA!!!"));
-                }
-                else if (cameraConsoleCommandReplyMessage == 4) {
-                    cameraConsoleCommandReplyMessage = 1;
-                    throw (new Exception("I literally disabled this command in case you couldn't tell. Use the Options menu."));
-                }
-            }
+			if (cameraConsoleCommandReplyMessage == 1) {
+				cameraConsoleCommandReplyMessage = 2;
+				throw (new Exception("Please use the Options menu to change the camera instead."));
+			}
+			else if (cameraConsoleCommandReplyMessage == 2) {
+				cameraConsoleCommandReplyMessage = 3;
+				throw (new Exception("No. I said use the Options menu to change the camera!"));
+			}
+			else if (cameraConsoleCommandReplyMessage == 3) {
+				cameraConsoleCommandReplyMessage = 4;
+				throw (new Exception("USE THE OPTIONS MENU TO CHANGE THE CAMERA!!!"));
+			}
+			else if (cameraConsoleCommandReplyMessage == 4) {
+				cameraConsoleCommandReplyMessage = 1;
+				throw (new Exception("I literally disabled this command in case you couldn't tell. Use the Options menu."));
+			}
         });
 	cmdmap.put("whyload", (cons, args) -> {
 	    Loading l = lastload;
