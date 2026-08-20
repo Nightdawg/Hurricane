@@ -3205,20 +3205,24 @@ public class OptWnd extends Window {
 		y = addbtnImproved(cont, "Click Nearest Object (You)","When this button is pressed, you will instantly click the nearest object to you, selected from below." +
 				"\n$col[218,163,0]{Range:} $col[185,185,185]{12 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestObject, y);
 		Widget objectsLeft, objectsRight;
-		y = cont.adda(objectsLeft = new Label("Objects to Click:"), UI.scale(20), y + UI.scale(2), 0, 0.0).pos("bl").adds(0, 5).y;
-		objectsLeft = cont.add(new CheckBox("Forageables"){{a = Utils.getprefb("clickNearestObject_Forageables", true);}
-			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Forageables", val);}}, objectsLeft.pos("ur").adds(4, 0)).settip("Pick the nearest Forageable.");
+		y = cont.adda(objectsLeft = new Label("Objects to Click:"), UI.scale(10), y + UI.scale(2), 0, 0.0).pos("bl").adds(0, 5).y;
+		objectsLeft = cont.add(new CheckBox("Fence Gates"){{a = Utils.getprefb("clickNearestObject_FenceGates", true);}
+			public void changed(boolean val) {Utils.setprefb("clickNearestObject_FenceGates", val);}}, objectsLeft.pos("ur").adds(4, 0)).settip("Open/Close the nearest Fence Gate.");
+		objectsRight = cont.add(new CheckBox("Forageables"){{a = Utils.getprefb("clickNearestObject_Forageables", true);}
+			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Forageables", val);}}, objectsLeft.pos("ur").adds(38, 0)).settip("Pick the nearest Forageable.");
+		objectsLeft = cont.add(new CheckBox("Wall Gates"){{a = Utils.getprefb("clickNearestObject_WallGates", true);}
+			public void changed(boolean val) {Utils.setprefb("clickNearestObject_WallGates", val);}}, objectsLeft.pos("bl").adds(0, 4)).settip("Open/Close the nearest Wall Gate (Palisade/Brick Wall).");
 		objectsRight = cont.add(new CheckBox("Critters"){{a = Utils.getprefb("clickNearestObject_Critters", true);}
-			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Critters", val);}}, objectsLeft.pos("ur").adds(50, 0)).settip("Chase the nearest Critter.");
-		objectsLeft = cont.add(new CheckBox("Non-Visitor Gates"){{a = Utils.getprefb("clickNearestObject_NonVisitorGates", true);}
-			public void changed(boolean val) {Utils.setprefb("clickNearestObject_NonVisitorGates", val);}}, objectsLeft.pos("bl").adds(0, 4)).settip("Open/Close the nearest Non-Visitor Gate.");
+			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Critters", val);}}, objectsRight.pos("bl").adds(0, 4)).settip("Chase the nearest Critter.");
+		objectsLeft = cont.add(new CheckBox("Visitor Gates"){{a = Utils.getprefb("clickNearestObject_VisitorGates", false);}
+			public void changed(boolean val) {Utils.setprefb("clickNearestObject_VisitorGates", val);}}, objectsLeft.pos("bl").adds(0, 4)).settip("Open/Close the nearest Visitor Gate (Palisade/Brick Wall).");
 		objectsRight = cont.add(new CheckBox("Caves"){{a = Utils.getprefb("clickNearestObject_Caves", false);}
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Caves", val);}}, objectsRight.pos("bl").adds(0, 4)).settip("Go through the nearest Cave Entrance/Exit.");
-		objectsLeft = cont.add(new CheckBox("Mineholes & Ladders"){{a = Utils.getprefb("clickNearestObject_MineholesAndLadders", false);}
+		objectsLeft = cont.add(new CheckBox("Mineholes/Ladders"){{a = Utils.getprefb("clickNearestObject_MineholesAndLadders", false);}
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_MineholesAndLadders", val);}}, objectsLeft.pos("bl").adds(0, 4)).settip("Hop down the nearest Minehole, or Climb up the nearest Ladder.");
 		objectsRight = cont.add(new CheckBox("Doors"){{a = Utils.getprefb("clickNearestObject_Doors", false);}
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Doors", val);}}, objectsRight.pos("bl").adds(0, 4)).settip("Go through the nearest Door.");
-		y+=UI.scale(60);
+		y+=UI.scale(80);
 		y = addbtnImproved(cont, "Hop on Nearest Vehicle", "When this button is pressed, your character will run towards the nearest mountable Vehicle/Animal, and try to mount it." +
 				"\n\n$col[185,185,185]{If the closest vehicle to you is full, or unmountable (like a rowboat on land), it will keep looking for the next closest mountable vehicle.}" +
 				"\n\n$col[218,163,0]{Works with:} Knarr, Snekkja, Rowboat, Dugout, Kicksled, Coracle, Wagon, Wilderness Skis, Tamed Horse" +

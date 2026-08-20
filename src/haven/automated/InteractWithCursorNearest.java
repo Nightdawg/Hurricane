@@ -33,24 +33,24 @@ public class InteractWithCursorNearest implements Runnable {
                         } catch (Loading l) {
                         }
                         if (res != null) {
-                            // Open nearby gates, but not visitor gates
-                            boolean isSmallGate = InteractWithNearestObject.smallGates.contains(res.basename());
-                            boolean isReinforcedGate = InteractWithNearestObject.reinforcedGates.contains(res.basename());
+                            boolean isFenceGate = InteractWithNearestObject.fenceGates.contains(res.basename());
+                            boolean isWallGate = InteractWithNearestObject.wallGates.contains(res.basename());
+                            boolean isVisitorGate = false;
                             try {
-                                if (isReinforcedGate) {
-                                    if (gui.genus.equals("b7c199a4557503a8")) {
-                                        isReinforcedGate = false;
-                                    } else {
-                                        for (Gob.Overlay ol : clickedGob.ols) {
-                                            String oname = ol.spr.res.name;
-                                            if (oname.equals("gfx/fx/eq"))
-                                                isReinforcedGate = false;
+                                if (isWallGate) {
+                                    for (Gob.Overlay ol : clickedGob.ols) {
+                                        String oname = ol.spr.res.name;
+                                        if (oname.equals("gfx/fx/eq")) {
+                                            isWallGate = false;
+                                            isVisitorGate = true;
+                                            break;
                                         }
                                     }
                                 }
                             } catch (NullPointerException ignored) {}
-                            boolean isNonVisitorGate = isSmallGate || isReinforcedGate;
-                            if ((isNonVisitorGate && Utils.getprefb("clickNearestObject_NonVisitorGates", true))
+                            if ((isFenceGate && Utils.getprefb("clickNearestObject_FenceGates", true))
+                            || (isWallGate && Utils.getprefb("clickNearestObject_WallGates", true))
+                            || (isVisitorGate && Utils.getprefb("clickNearestObject_VisitorGates", false))
                             || ((res.name.startsWith("gfx/terobjs/herbs") || InteractWithNearestObject.otherPickableObjects.contains(res.basename())) && Utils.getprefb("clickNearestObject_Forageables", true))
                             || (Arrays.stream(Config.critterResPaths).anyMatch(res.name::matches) || res.name.matches(".*(rabbit|bunny)$")) && Utils.getprefb("clickNearestObject_Critters", true)
                             || (InteractWithNearestObject.caves.contains(res.name) && Utils.getprefb("clickNearestObject_Caves", false))
@@ -80,18 +80,24 @@ public class InteractWithCursorNearest implements Runnable {
                     } catch (Loading l) {
                     }
                     if (res != null) {
-                        // Open nearby gates, but not visitor gates
-                        boolean isGate = InteractWithNearestObject.smallGates.contains(res.basename());
+                        boolean isFenceGate = InteractWithNearestObject.fenceGates.contains(res.basename());
+                        boolean isWallGate = InteractWithNearestObject.wallGates.contains(res.basename());
+                        boolean isVisitorGate = false;
                         try {
-                            if (isGate) {
+                            if (isWallGate) {
                                 for (Gob.Overlay ol : gob.ols) {
                                     String oname = ol.spr.res.name;
-                                    if (oname.equals("gfx/fx/eq"))
-                                        isGate = false;
+                                    if (oname.equals("gfx/fx/eq")) {
+                                        isWallGate = false;
+                                        isVisitorGate = true;
+                                        break;
+                                    }
                                 }
                             }
                         } catch (NullPointerException ignored) {}
-                        if ((isGate && Utils.getprefb("clickNearestObject_NonVisitorGates", true))
+                        if ((isFenceGate && Utils.getprefb("clickNearestObject_FenceGates", true))
+                                || (isWallGate && Utils.getprefb("clickNearestObject_WallGates", true))
+                                || (isVisitorGate && Utils.getprefb("clickNearestObject_VisitorGates", false))
                                 || ((res.name.startsWith("gfx/terobjs/herbs") || InteractWithNearestObject.otherPickableObjects.contains(res.basename())) && Utils.getprefb("clickNearestObject_Forageables", true))
                                 || (Arrays.stream(Config.critterResPaths).anyMatch(res.name::matches) || res.name.matches(".*(rabbit|bunny)$")) && Utils.getprefb("clickNearestObject_Critters", true)
                                 || (InteractWithNearestObject.caves.contains(res.name) && Utils.getprefb("clickNearestObject_Caves", false))
