@@ -46,6 +46,7 @@ and I seem to get like 15-20 extra FPS out of the client.
 
 ## This client also supports Cediner's Web Map server (you set up your own private map server, it's not a public map):
 https://github.com/Cediner/hnh-map-vuetify
+Ganhart/Aritain's updated version: https://github.com/Aritain/hnh-map-updated
 
 ## OR you can use dafels' Mapping service (or set up your own private map server):
 https://www.havenandhearth.com/forum/viewtopic.php?f=49&t=79701
