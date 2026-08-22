@@ -1884,6 +1884,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public static KeyBinding kb_nearestTarget =  KeyBinding.get("nearestTarget", KeyMatch.forcode(KeyEvent.VK_SPACE, 0));
     public static KeyBinding kb_leaderTarget = KeyBinding.get("leaderTarget", KeyMatch.nil);
     public static KeyBinding kb_blt = KeyBinding.get("blt", KeyMatch.forchar('R', KeyMatch.M));
+	public static KeyBinding kb_craft = KeyBinding.get("craft", KeyMatch.forchar('C', KeyMatch.M));
 
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
@@ -2137,6 +2138,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
             }
         }
         return(true);
+	} else if(kb_craft.key().match(ev)) {
+		makewnd.toggleVisibility();
+		return(true);
     } else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);
