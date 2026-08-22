@@ -3927,6 +3927,9 @@ public class OptWnd extends Window {
 	private Label nightVisionLabel;
 	public static HSlider nightVisionSlider;
 	private Button nightVisionResetButton;
+	public static Label groundRenderDistanceLabel;
+	public static HSlider groundRenderDistanceSlider;
+	private Button groundRenderDistanceResetButton;
 	public static CheckBox simplifiedCropsCheckBox;
 	public static CheckBox simplifiedForageablesCheckBox;
 	public static CheckBox hideFlavorObjectsCheckBox;
@@ -3998,6 +4001,24 @@ public class OptWnd extends Window {
 				}
 			}), leftColumn.pos("bl").adds(210, -20));
 			nightVisionResetButton.tooltip = resetButtonTooltip;
+			int groundRenderDistance = Utils.clip(Utils.getprefi("groundRenderDistance", 2), 1, 4);
+			leftColumn = add(groundRenderDistanceLabel = new Label("Ground Render Distance: " + groundRenderDistance), leftColumn.pos("bl").adds(0, 14));
+			leftColumn = add(groundRenderDistanceSlider = new HSlider(UI.scale(200), 2, 4, groundRenderDistance) {
+				public void changed() {
+					Utils.setprefi("groundRenderDistance", val);
+					groundRenderDistanceLabel.settext("Ground Render Distance: " + val);
+					if (ui != null && ui.gui != null && ui.gui.map != null)
+						ui.gui.map.setGroundRenderDistance(val);
+				}
+			}, leftColumn.pos("bl").adds(0, 6));
+			add(groundRenderDistanceResetButton = new Button(UI.scale(70), "Reset", false).action(() -> {
+				groundRenderDistanceSlider.val = 2;
+				groundRenderDistanceLabel.settext("Ground Render Distance: 2");
+				Utils.setprefi("groundRenderDistance", 2);
+				if (ui != null && ui.gui != null && ui.gui.map != null)
+					ui.gui.map.setGroundRenderDistance(2);
+			}), leftColumn.pos("bl").adds(210, -20));
+			groundRenderDistanceResetButton.tooltip = resetButtonTooltip;
 			leftColumn = add(flatWorldCheckBox = new CheckBox("Flat World"){
 				{a = Utils.getprefb("flatWorld", false);}
 				public void changed(boolean val) {
@@ -4008,7 +4029,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Flat World is now " + (val ? "ENABLED" : "DISABLED") + "!", (val ? msgGreen : msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, leftColumn.pos("bl").adds(12, 8));
+			}, leftColumn.pos("bl").adds(12, 14));
 			flatWorldCheckBox.tooltip = flatWorldTooltip;
 			leftColumn = add(disableTileSmoothingCheckBox = new CheckBox("Disable Tile Smoothing"){
 				{a = Utils.getprefb("disableTileSmoothing", false);}

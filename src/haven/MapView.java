@@ -53,7 +53,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     public long plgob = -1;
     public Coord2d cc;
     public final Glob glob;
-    private int view = 2;
+    private int view = Utils.clip(Utils.getprefi("groundRenderDistance", 2), 1, 4);
     private Collection<Delayed> delayed = new LinkedList<Delayed>();
     private Collection<Delayed> delayed2 = new LinkedList<Delayed>();
     public Camera camera = restorecam();
@@ -614,6 +614,10 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	updatePlobCustomSizeAndRotation();
 	if (OptWnd.showWorkstationProgressCheckBox.a) updatePlobWorkstationProgressHighlight();
 	this.gobPathLastClick = null;
+    }
+
+    public void setGroundRenderDistance(int view) {
+	this.view = Utils.clip(view, 1, 5);
     }
     
     protected void envdispose() {
