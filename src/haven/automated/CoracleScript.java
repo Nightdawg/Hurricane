@@ -15,7 +15,7 @@ public class CoracleScript implements Runnable {
     private static final int TIMEOUT = 4000;
 
     private static final int HAND_DELAY = 8;
-    public List<String> bogtype = new ArrayList<>(Arrays.asList("gfx/tiles/bog", "gfx/tiles/bogwater", "gfx/tiles/fen", "gfx/tiles/fenwater", "gfx/tiles/swamp", "gfx/tiles/swampwater", "", ""));
+    public List<String> bogtype = new ArrayList<>(Arrays.asList("gfx/tiles/bog", "gfx/tiles/bogwater", "gfx/tiles/fen", "gfx/tiles/fenwater", "gfx/tiles/swamp", "gfx/tiles/swampwater", "gfx/tiles/marsh", "gfx/tiles/marshwater"));
     private static final double[][] surroundingTilesPositions = {{-11,-11},{-11,0},{-11,11},{11,-11},{11,0},{11,11},{0,-11},{0,11}}; // {0,0} would be my own tile
 
     public CoracleScript(GameUI gui) {

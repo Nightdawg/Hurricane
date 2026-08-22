@@ -64,6 +64,8 @@ public class TileHighlight {
 			add("gfx/tiles/lichenwold");
 			add("gfx/tiles/lushcave");
 			add("gfx/tiles/lushfield");
+			add("gfx/tiles/marsh");
+			add("gfx/tiles/marshwater");
 			add("gfx/tiles/mine");
 			add("gfx/tiles/moor");
 			add("gfx/tiles/mossbrush");

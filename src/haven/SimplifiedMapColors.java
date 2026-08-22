@@ -108,6 +108,8 @@ public class SimplifiedMapColors {
         tileColors.put("gfx/tiles/swamp", Swamps);
         tileColors.put("gfx/tiles/swampwater", Swamps);
         tileColors.put("gfx/tiles/shallowwater", Swamps);
+        tileColors.put("gfx/tiles/marsh", Swamps);
+        tileColors.put("gfx/tiles/marshwater", Swamps);
     }
 
     public static void updateThicketMapping() {
