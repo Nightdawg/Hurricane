@@ -13,5 +13,6 @@
     <orderEntry type="library" name="rxjava-1.1.5" level="project" />
     <orderEntry type="library" name="sqlite-jdbc-3.42.0.0" level="project" />
     <orderEntry type="library" name="lwjgl" level="project" />
+    <orderEntry type="library" name="lib" level="project" />
   </component>
 </module>
