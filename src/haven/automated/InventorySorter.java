@@ -3,8 +3,8 @@ package haven.automated;
 import haven.*;
 import haven.res.ui.tt.q.quality.Quality;
 
+import java.awt.Color;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static haven.Inventory.sqsz;
 
@@ -33,18 +33,26 @@ public class InventorySorter implements Defer.Callable<Void> {
     private Defer.Future<Void> task;
     private final List<Inventory> inventories;
     private final GameUI gui;
+    private final boolean vertical;
 
-    private InventorySorter(List<Inventory> inventories, GameUI gui) {
+    private InventorySorter(List<Inventory> inventories, GameUI gui, boolean vertical) {
 	this.inventories = inventories;
 	this.gui = gui;
+	this.vertical = vertical;
     }
 
     public static void sort(Inventory inv) {
+	sort(inv, false);
+    }
+
+    public static void sort(Inventory inv, boolean vertical) {
 	if (inv.ui.gui.vhand != null) {
 	    inv.ui.gui.error("Need empty cursor to sort inventory!");
 	    return;
 	}
-	start(new InventorySorter(Collections.singletonList(inv), inv.ui.gui));
+	if (vertical)
+	    inv.ui.gui.msg("Sorting into columns", Color.WHITE);
+	start(new InventorySorter(Collections.singletonList(inv), inv.ui.gui, vertical));
     }
 
     public static void sortAll(GameUI gui) {
@@ -59,7 +67,7 @@ public class InventorySorter implements Defer.Callable<Void> {
 	    targets.add(inv);
 	}
 	if (!targets.isEmpty()) {
-	    start(new InventorySorter(targets, gui));
+	    start(new InventorySorter(targets, gui, false));
 	}
     }
 
@@ -73,163 +81,146 @@ public class InventorySorter implements Defer.Callable<Void> {
 
     @Override
     public Void call() throws InterruptedException {
+	Inventory last = null;
 	for (Inventory inv : inventories) {
 	    if (inv.parent == null) return null;
+	    // No cursor check here between inventories: widget messages are
+	    // reliable and ordered, so the server applies this inventory's first
+	    // take strictly after the previous inventory's last drop regardless
+	    // of what gui.vhand reads locally right now. What matters is the
+	    // cursor being empty server-side when each message is processed, and
+	    // ordering already guarantees that - a local read could only tell us
+	    // about echoes that have made it back, which is a different question.
+	    // A stray item left on the cursor at the very end is still caught by
+	    // settle below.
 	    doSort(inv);
+	    last = inv;
 	}
 	synchronized (lock) {
 	    if (current == this) current = null;
 	}
 	gui.ui.sfxrl(sfx_done);
+	if (last != null) settle(last);
 	return null;
+    }
+
+    /** How long to let the server catch up before reading the cursor. */
+    private static final int SETTLE_MS = 500;
+
+    /**
+     * Runs after the completion sound, so the wait costs no time the player
+     * sees - the items have already moved on screen by then. The plan is built
+     * so the server accepts every move, so this only ever fires when something
+     * outside the sort touched the inventory mid-run.
+     */
+    private void settle(Inventory inv) throws InterruptedException {
+	Thread.sleep(SETTLE_MS);
+	WItem held = gui.vhand;
+	if (held == null) return;
+	// inv passed the same parent == null check in call()'s loop before it was
+	// sorted, but the wait above gives the window time to close too. A closed
+	// inv still has a populated child tree (Widget.remove() unlinks it from
+	// its parent but never clears its own children), so freeRect would
+	// happily compute a plausible-looking cell and the drop message would
+	// silently vanish - reporting "returned to inventory" would then be a
+	// lie, worse than the truth that it is still on the cursor.
+	if (inv.parent == null) {
+	    gui.error("Sort stopped early — item left on cursor");
+	    return;
+	}
+	Coord free = freeRect(inv, held.sz.div(sqsz), vertical);
+	if (free != null) {
+	    inv.wdgmsg("drop", free);
+	    gui.error("Sort stopped early — item returned to inventory");
+	} else {
+	    gui.error("Sort stopped early — item left on cursor");
+	}
+    }
+
+    /**
+     * First rect of `slots` free in the inventory as it stands right now.
+     * `vertical` only matters for which free rect is found first, not whether
+     * one is found - but it might as well agree with the sort that just ran
+     * rather than always scanning rows first.
+     */
+    private static Coord freeRect(Inventory inv, Coord slots, boolean vertical) {
+	boolean[][] grid = maskGrid(inv);
+	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
+	    if (!wdg.visible || !(wdg instanceof WItem)) continue;
+	    WItem w = (WItem) wdg;
+	    InventoryLayout.markOccupied(grid, inv.isz, w.c.sub(1, 1).div(sqsz),
+					 w.sz.div(sqsz), true);
+	}
+	return InventoryLayout.findFit(grid, inv.isz, slots, vertical);
     }
 
     private static class Entry {
 	final WItem w;
 	final Coord slots;
-	Coord current;
-	Coord target;
+	final Coord current;
 
 	Entry(WItem w, Coord slots, Coord current) {
 	    this.w = w;
 	    this.slots = slots;
 	    this.current = current;
-	    this.target = current;
 	}
     }
 
-    private void doSort(Inventory inv) throws InterruptedException {
-	// Build mask grid (permanently blocked cells)
-	boolean[][] maskGrid = new boolean[inv.isz.x][inv.isz.y];
+    /** The permanently blocked cells, as the server last described them. */
+    private static boolean[][] maskGrid(Inventory inv) {
+	boolean[][] mask = new boolean[inv.isz.x][inv.isz.y];
 	if (inv.sqmask != null) {
 	    int mo = 0;
 	    for (int y = 0; y < inv.isz.y; y++)
 		for (int x = 0; x < inv.isz.x; x++)
-		    maskGrid[x][y] = inv.sqmask[mo++];
+		    mask[x][y] = inv.sqmask[mo++];
 	}
+	return mask;
+    }
 
+    private void doSort(Inventory inv) throws InterruptedException {
 	// Collect all items, skip those with unloaded sprites
 	List<Entry> entries = new ArrayList<>();
 	for (Widget wdg = inv.lchild; wdg != null; wdg = wdg.prev) {
 	    if (!wdg.visible || !(wdg instanceof WItem)) continue;
 	    WItem w = (WItem) wdg;
 	    if (w.item.spr() == null) continue;
-	    Coord slots = w.sz.div(sqsz);
-	    Coord current = w.c.sub(1, 1).div(sqsz);
-	    entries.add(new Entry(w, slots, current));
+	    entries.add(new Entry(w, w.sz.div(sqsz), w.c.sub(1, 1).div(sqsz)));
 	}
-
-	// Sort all items together
 	entries.sort(Comparator.comparing(e -> e.w, ITEM_COMPARATOR));
 
-	// Assign target positions in scan order, respecting each item's size
-	boolean[][] assignGrid = copyGrid(maskGrid, inv.isz);
-	for (Entry e : entries) {
-	    Coord pos = findFit(assignGrid, inv.isz, e.slots);
-	    if (pos == null) break;
-	    e.target = pos;
-	    markGrid(assignGrid, pos, e.slots, true);
+	Coord[] slots = new Coord[entries.size()];
+	Coord[] current = new Coord[entries.size()];
+	for (int i = 0; i < slots.length; i++) {
+	    slots[i] = entries.get(i).slots;
+	    current[i] = entries.get(i).current;
 	}
 
-	List<Entry> singles = entries.stream().filter(e -> e.slots.x * e.slots.y == 1).collect(Collectors.toList());
-	List<Entry> multis  = entries.stream().filter(e -> e.slots.x * e.slots.y > 1).collect(Collectors.toList());
+	// The plan is validated against the server's own rules before a single
+	// message goes out, so nothing below can be refused. Messages are
+	// delivered in order, so no step waits for the one before it.
+	InventoryMoves.Plan plan =
+	    InventoryMoves.plan(maskGrid(inv), inv.isz, slots, current, vertical);
 
-	// Phase 1: place multi-tile items
-	// For each, first evict any 1x1 items from its target cells, then take+drop it
-	boolean anyMultiSkipped = false;
-	for (Entry me : multis) {
-	    if (me.current.equals(me.target)) continue;
-	    boolean blocked = false;
-	    for (int tx = me.target.x; tx < me.target.x + me.slots.x && !blocked; tx++) {
-		for (int ty = me.target.y; ty < me.target.y + me.slots.y && !blocked; ty++) {
-		    Coord cell = new Coord(tx, ty);
-		    for (Entry se : singles) {
-			if (se.current.equals(cell)) {
-			    Coord free = findFreeCell(inv.isz, maskGrid, entries);
-			    if (free == null) { blocked = true; break; }
-			    se.w.item.wdgmsg("take", Coord.z);
-			    Thread.sleep(10);
-			    inv.wdgmsg("drop", free);
-			    Thread.sleep(10);
-			    se.current = free;
-			    break;
-			}
-		    }
-		}
-	    }
-	    if (blocked) { anyMultiSkipped = true; continue; }
-	    me.w.item.wdgmsg("take", Coord.z);
-	    Thread.sleep(10);
-	    inv.wdgmsg("drop", me.target);
-	    Thread.sleep(10);
-	    me.current = me.target;
-	}
-	if (anyMultiSkipped)
-	    gui.error("Could not move all large items — inventory too full");
-
-	// Phase 2: sort 1x1 items using chain/swap algorithm
-	for (Entry se : singles) {
-	    if (se.current.equals(se.target)) continue;
-	    se.w.item.wdgmsg("take", Coord.z);
-	    Entry handu = se;
-	    while (handu != null) {
-		inv.wdgmsg("drop", handu.target);
-		Entry next = null;
-		for (Entry x : singles) {
-		    if (x != handu && x.current.equals(handu.target)) { next = x; break; }
-		}
-		handu.current = handu.target;
-		handu = next;
-	    }
-	    Thread.sleep(10);
-	}
-    }
-
-    // Find the first position where an item of given slots fits (left-to-right, top-to-bottom)
-    private static Coord findFit(boolean[][] grid, Coord isz, Coord slots) {
-	for (int y = 0; y <= isz.y - slots.y; y++) {
-	    for (int x = 0; x <= isz.x - slots.x; x++) {
-		if (fits(grid, x, y, slots)) return new Coord(x, y);
+	for (InventoryMoves.Op op : plan.ops) {
+	    if (op.kind == InventoryMoves.TAKE) {
+		entries.get(op.item).w.item.wdgmsg("take", Coord.z);
+		// throttle only, not synchronisation: one pause per take is
+		// what the chain already cost, and half what a large item cost
+		Thread.sleep(10);
+	    } else {
+		inv.wdgmsg("drop", op.cell);
 	    }
 	}
-	return null;
-    }
 
-    private static boolean fits(boolean[][] grid, int ox, int oy, Coord slots) {
-	for (int x = 0; x < slots.x; x++)
-	    for (int y = 0; y < slots.y; y++)
-		if (grid[ox + x][oy + y]) return false;
-	return true;
-    }
-
-    // Find a free 1x1 cell not currently occupied by any item
-    private static Coord findFreeCell(Coord isz, boolean[][] maskGrid, List<Entry> entries) {
-	outer:
-	for (int y = 0; y < isz.y; y++) {
-	    for (int x = 0; x < isz.x; x++) {
-		if (maskGrid[x][y]) continue;
-		for (Entry e : entries) {
-		    for (int ex = e.current.x; ex < e.current.x + e.slots.x; ex++)
-			for (int ey = e.current.y; ey < e.current.y + e.slots.y; ey++)
-			    if (ex == x && ey == y) continue outer;
-		}
-		return new Coord(x, y);
-	    }
-	}
-	return null;
-    }
-
-    private static boolean[][] copyGrid(boolean[][] src, Coord sz) {
-	boolean[][] copy = new boolean[sz.x][sz.y];
-	for (int x = 0; x < sz.x; x++)
-	    copy[x] = Arrays.copyOf(src[x], sz.y);
-	return copy;
-    }
-
-    private static void markGrid(boolean[][] grid, Coord pos, Coord slots, boolean val) {
-	for (int x = 0; x < slots.x; x++)
-	    for (int y = 0; y < slots.y; y++)
-		grid[pos.x + x][pos.y + y] = val;
+	// A pinned large item is normal, not newsworthy: under the conservative
+	// swap policy a multi-tile item can only move into wholly empty space,
+	// so in a packed cupboard it stays put on nearly every sort, and there
+	// is nothing the player could do about it anyway. What is worth a toast
+	// is the sort achieving nothing at all - the one outcome that would
+	// otherwise look like silent failure.
+	if (plan.ops.isEmpty() && plan.pinnedMulti)
+	    gui.error("No room to move anything — inventory too tightly packed");
     }
 
     public static void cancel() {
