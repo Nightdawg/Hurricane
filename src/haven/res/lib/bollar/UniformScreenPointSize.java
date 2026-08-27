@@ -9,9 +9,9 @@ import java.nio.*;
 import static haven.render.sl.Type.*;
 import static haven.render.sl.Cons.*;
 
-@haven.FromResource(name = "lib/bollar", version = 3)
-public abstract class ScreenPointSize extends State {
-    private static final Uniform size = new Uniform(FLOAT, p -> ((ScreenPointSize)p.get(PointSize.slot)).sz(), PointSize.slot);
+@haven.FromResource(name = "lib/bollar", version = 4)
+public abstract class UniformScreenPointSize extends State {
+    private static final Uniform size = new Uniform(FLOAT, p -> ((UniformScreenPointSize)p.get(PointSize.slot)).sz(), PointSize.slot);
     private static final ShaderMacro prog = new ShaderMacro() {
 	    final Function pdiv = new Function.Def(FLOAT) {{
 		Expression vec = param(PDir.IN, VEC4).ref();
@@ -39,8 +39,8 @@ public abstract class ScreenPointSize extends State {
 	buf.put(PointSize.slot, this);
     }
 
-    public static ScreenPointSize fixed(float sz) {
-	return(new ScreenPointSize() {
+    public static UniformScreenPointSize fixed(float sz) {
+	return(new UniformScreenPointSize() {
 		public float sz() {return(sz);}
 	    });
     }

@@ -12,13 +12,13 @@ import java.util.function.*;
 import java.nio.*;
 import static haven.MCache.tilesz;
 
-@haven.FromResource(name = "gfx/tiles/flavor/wspray", version = 2)
+@haven.FromResource(name = "gfx/tiles/flavor/wspray", version = 3)
 public class Effect extends Sprite {
     public static final VertexArray.Layout fmt =
 	new VertexArray.Layout(new VertexArray.Layout.Input(Homo3D.vertex,     new VectorFormat(3, NumberFormat.FLOAT32), 0,  0, 20),
 			       new VertexArray.Layout.Input(Homo3D.normal,     new VectorFormat(3, NumberFormat.SNORM8),  0, 12, 20),
 			       new VertexArray.Layout.Input(VertexColor.color, new VectorFormat(4, NumberFormat.UNORM8),  0, 16, 20));
-    public static final Pipe.Op draw = Pipe.Op.compose(ScreenPointSize.fixed(2),
+    public static final Pipe.Op draw = Pipe.Op.compose(UniformScreenPointSize.fixed(2),
 						       States.maskdepth, new Rendered.Order.Default(15000),
 						       // States.Depthtest.none,
 						       VertexColor.instance, ShadowMap.maskshadow);

@@ -9,7 +9,7 @@ import java.nio.*;
 import static haven.render.sl.Type.*;
 import static haven.render.sl.Cons.*;
 
-@haven.FromResource(name = "lib/bollar", version = 3)
+@haven.FromResource(name = "lib/bollar", version = 4)
 public class BollData implements Rendered, RenderTree.Node, Disposable {
     public final VertexArray.Layout fmt;
     public Model model = null;

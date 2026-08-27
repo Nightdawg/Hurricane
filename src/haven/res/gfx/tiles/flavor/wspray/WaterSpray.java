@@ -12,7 +12,7 @@ import java.util.function.*;
 import java.nio.*;
 import static haven.MCache.tilesz;
 
-@haven.FromResource(name = "gfx/tiles/flavor/wspray", version = 2)
+@haven.FromResource(name = "gfx/tiles/flavor/wspray", version = 3)
 public class WaterSpray implements Tileset.Flavor {
     public static final double THRES = 10;
 

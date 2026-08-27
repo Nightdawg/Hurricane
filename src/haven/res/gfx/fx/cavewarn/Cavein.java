@@ -11,7 +11,7 @@ import java.nio.*;
 import java.awt.Color;
 
 /* >spr: Cavein */
-@haven.FromResource(name = "gfx/fx/cavewarn", version = 8)
+@haven.FromResource(name = "gfx/fx/cavewarn", version = 9)
 public class Cavein extends Sprite implements Sprite.CDel, PView.Render2D {
     static final Pipe.Op mat = new Light.PhongLight(false,
 						    new Color(255, 255, 255), new Color(255, 255, 255),
@@ -49,6 +49,7 @@ public class Cavein extends Sprite implements Sprite.CDel, PView.Render2D {
 //	System.out.println(str);
 	sz = new Coord3f(sdt.float8() * 11f, sdt.float8() * 11f, 0f);
 	off = new Coord3f(-sz.x / 2f, -sz.y / 2f, sdt.float8() * 11f);
+        sdt.uint8();
 	life = 60 * OptWnd.sweeperDurations.get(OptWnd.sweeperSetDuration);
 		number = (int) Math.round(str / 30.0);
 		numberColor = (Color) colorMap.get(number);
