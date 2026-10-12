@@ -28,9 +28,13 @@ package haven.iosys.tk.ffi;
 
 import java.util.*;
 import java.util.function.*;
+import java.lang.foreign.*;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.*;
 import java.nio.*;
+import java.nio.charset.*;
+import java.nio.file.*;
 import haven.*;
 import haven.iosys.*;
 import haven.render.*;
@@ -47,11 +51,13 @@ public class WGLContext implements Providers.Factory<Toolkit> {
     private final Win32 win;
     private final WGL wgl;
     private final SHCore shcore;
+    private final COM com;
 
     private WGLContext() {
 	try {
 	    win = Win32.get();
 	    wgl = WGL.get();
+	    com = COM.get();
 	} catch(RuntimeException e) {
 	    throw(new Unavailable("Win32 environment not available", e));
 	}
@@ -80,9 +86,14 @@ public class WGLContext implements Providers.Factory<Toolkit> {
     public int priority() {
 	return(System.getProperty("os.name", "").startsWith("Windows ") ? 100 : 0);
     }
-    public boolean experimental() {return(true);}
+    public boolean experimental() {return(false);}
 
     public class WGLToolkit implements Toolkit {
+	private static final int[][] glversions = {
+	    {4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0},
+				    {3, 3}, {3, 2}, {3, 1}, {3, 0},
+						    {2, 1}, {2, 0},
+	};
 	private static int serial = 0;
 	private final String wclassname = "haven-window-" + serial;
 	private final Handle hInstance;
@@ -107,6 +118,8 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 
 	private void createctx() {
 	    Handle hwnd = null, hdc = null, temp = null;
+	    ctx = null;
+	    StdError lasterr = null;
 	    try {
 		hwnd = win.CreateWindowEx(0, wclassname, null, 0, null, null, null, null, hInstance);
 		hdc = win.GetDC(hwnd);
@@ -132,11 +145,21 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    throw(new Unavailable("WGL_ARB_create_context_profile not available"));
 		if(!exts.contains("WGL_EXT_swap_control"))
 		    throw(new Unavailable("WGL_EXT_swap_control not available"));
-		ctx = text.wglCreateContextAttribsARB(hdc, null, new int[] {
-			WGL.WGL_CONTEXT_PROFILE_MASK_ARB, WGL.WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-			WGL.WGL_CONTEXT_MAJOR_VERSION_ARB, 4, WGL.WGL_CONTEXT_MINOR_VERSION_ARB, 6,
-			0, 0,
-		    });
+		
+		for(int[] ver : glversions) {
+		    try {
+			ctx = text.wglCreateContextAttribsARB(hdc, null, new int[] {
+				WGL.WGL_CONTEXT_PROFILE_MASK_ARB, WGL.WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+				WGL.WGL_CONTEXT_MAJOR_VERSION_ARB, ver[0], WGL.WGL_CONTEXT_MINOR_VERSION_ARB, ver[1],
+				0, 0,
+			    });
+			break;
+		    } catch(StdError e) {
+			lasterr = e;
+		    }
+		}
+		if(ctx == null) 
+		    throw(new Unavailable("could not create OpenGL context", lasterr));
 		wgl.wglMakeCurrent(hdc, ctx);
 		gl = wgl.gl();
 		wgl.wglMakeCurrent(hdc, null);
@@ -276,6 +299,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	private final Queue<Runnable> mtasks = new LinkedList<>();
 	private void handlemsgs() {
 	    try {
+		com.OleInitialize();
 		MSG msg = win.MSG();
 		win.PeekMessage(msg, null, 0, 0, Win32.PM_NOREMOVE);
 		synchronized(mtmon) {
@@ -305,6 +329,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    if(msgthread == Thread.currentThread())
 			msgthread = null;
 		}
+		com.OleUninitialize();
 	    }
 	}
 
@@ -585,8 +610,15 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	}
 
 	public class WGLWindow implements Windeye {
+	    private static final Coord2d[] visgrid = {
+		Coord2d.of(0.1, 0.1), Coord2d.of(0.5, 0.1), Coord2d.of(0.9, 0.1),
+		Coord2d.of(0.1, 0.5), Coord2d.of(0.5, 0.5), Coord2d.of(0.9, 0.5),
+		Coord2d.of(0.1, 0.9), Coord2d.of(0.5, 0.9), Coord2d.of(0.9, 0.9),
+	    };
 	    public final Handle hwnd;
 	    private final Collection<EventListener> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
+	    private final W32Clipboard clipboard = new W32Clipboard();
+	    private final boolean[] visible = new boolean[visgrid.length];
 	    private Coord size = Coord.z;
 	    private boolean showing = false;
 	    private State curstate = State.NORMAL;
@@ -600,6 +632,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    private boolean focused;
 
 	    private WGLWindow() {
+		Arrays.fill(visible, true);
 		hwnd = msgrun(() -> win.CreateWindowEx(0, wclassname, null, STYLE_NORMAL,
 						       null, null, null, null, hInstance));
 		register(this);
@@ -679,6 +712,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    showing = wparam != 0;
 		    return(0);
 		case Win32.WM_SETFOCUS:
+		    Arrays.fill(visible, true);
 		    focused = true;
 		    return(0);
 		case Win32.WM_KILLFOCUS:
@@ -772,6 +806,10 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    int amount = hwheelacc / 120;
 		    hwheelacc -= amount * 120;
 		    callback(new W32MouseWheelEvent(MouseWheelEvent.Axis.HORIZ, amount, raw / 120.0, wparam, lparam));
+		    return(0);
+		}
+		case Win32.WM_DESTROYCLIPBOARD: {
+		    clipboard.lost();
 		    return(0);
 		}
 		default:
@@ -908,6 +946,23 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		return(renv);
 	    }
 
+	    public Visibility visible() {
+		boolean any = false, all = true;
+		for(boolean v : visible) {
+		    any |= v;
+		    all &= v;
+		}
+		return(all ? Visibility.FULL : any ? Visibility.PARTIAL : Visibility.NONE);
+	    }
+
+	    private int vispoint = 0;
+	    private void checkvisibility() {
+		int i = vispoint;
+		vispoint = (vispoint + 1) % visgrid.length;
+		Coord c = win.ClientToScreen(hwnd, visgrid[i].mul(size.x, size.y).round());
+		visible[i] = win.WindowFromPoint(c).equals(hwnd);
+	    }
+
 	    private static final Pipe.Op glfb = Pipe.Op.compose(new FragColor<>(FragColor.defcolor),
 								new DepthBuffer<>(DepthBuffer.defdepth));
 	    public Pipe.Op fbstate() {
@@ -923,15 +978,489 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    }
 
 	    public void swapbuffers(Render g, Object mode) {
+		checkvisibility();
 		GLRender gbuf = (GLRender)g;
 		if(((WGLEnvironment)gbuf.env).wnd() != this)
 		    throw(new IllegalArgumentException());
 		gbuf.submit(gl -> this.glswap(gl, ((Boolean)mode) ? 1 : 0));
 	    }
 
+	    public Clipboard clipboard(Object id) {
+		if(id == Clipboard.Std.CLIPBOARD)
+		    return(clipboard);
+		return(Clipboard.nil);
+	    }
+
 	    public void dispose() {
 		unregister(this);
 		msgrun(() -> win.DestroyWindow(hwnd));
+	    }
+
+	    public class W32Clipboard implements Clipboard {
+		public static final Supplier<Integer> CF_PNG = Utils.cache(() -> Win32.get().RegisterClipboardFormat("PNG"));
+		private Runnable expire = null;
+
+		private static final double[] retries = {0.0, 0.01, 0.02, 0.05, 0.10, 0.25};
+		private void tryopen(Promise<Object> res, int count) {
+		    try {
+			win.OpenClipboard(hwnd);
+		    } catch(StdError err) {
+			if(err.code != Win32.ERROR_ACCESS_DENIED) {
+			    res.reject(err);
+			    return;
+			}
+			if(count < retries.length) {
+			    Timeout.later(Utils.rtime() + retries[0], () -> msgrun(() -> tryopen(res, count + 1)), null);
+			} else {
+			    res.reject(err);
+			}
+			return;
+		    }
+		    res.resolve(null);
+		}
+
+		public Promise<Object> openclipboard() {
+		    Promise<Object> ret = new Promise<>();
+		    msgrun(() -> tryopen(ret, 0));
+		    return(ret);
+		}
+
+		public static class ClipboardData extends HGlobal {
+		    public final int format;
+
+		    public ClipboardData(int format, int bytes) {
+			super(bytes);
+			this.format = format;
+		    }
+		}
+
+		private ClipboardData cvt_text(CharSequence t) {
+		    ByteBuffer enc = win.C_WCHARSET().encode(CharBuffer.wrap(t));
+		    ClipboardData ret = new ClipboardData(Win32.CF_UNICODETEXT, enc.remaining() + 2);
+		    MemorySegment mem = win.GlobalLock(ret.hmem());
+		    try {
+			FUtils.memcpy(mem, enc, 0, enc.position(), enc.remaining());
+		    } finally {
+			win.GlobalUnlock(ret.hmem());
+		    }
+		    return(ret);
+		}
+
+		private ClipboardData cvt_dib(BufferedImage img) {
+		    img = PUtils.coercergba(img, false);
+		    Coord sz = PUtils.imgsz(img);
+		    ClipboardData ret = new ClipboardData(Win32.CF_DIBV5, win.sizeof_BITMAPV5HEADER() + (4 * sz.x * sz.y));
+		    MemorySegment mem = win.GlobalLock(ret.hmem());
+		    try {
+			BITMAPV5HEADER head = win.BITMAPV5HEADER(mem);
+			head.bV5Size((int)head.sizeof());
+			head.bV5Width(sz.x).bV5Height(sz.y);
+			head.bV5Planes(1).bV5BitCount(32);
+			head.bV5Compression(Win32.BI_BITFIELDS).bV5SizeImage(4 * sz.x * sz.y);
+			head.bV5RedMask (0x00ff0000).bV5GreenMask(0x0000ff00);
+			head.bV5BlueMask(0x000000ff).bV5AlphaMask(0xff000000);
+			int off = (int)head.sizeof();
+			Raster r = img.getRaster();
+			for(int y = sz.y - 1; y >= 0; y--) {
+			    for(int x = 0; x < sz.x; x++) {
+				mem.set(ValueLayout.JAVA_BYTE, off++, (byte)r.getSample(x, y, 2));
+				mem.set(ValueLayout.JAVA_BYTE, off++, (byte)r.getSample(x, y, 1));
+				mem.set(ValueLayout.JAVA_BYTE, off++, (byte)r.getSample(x, y, 0));
+				mem.set(ValueLayout.JAVA_BYTE, off++, (byte)r.getSample(x, y, 3));
+			    }
+			}
+		    } finally {
+			win.GlobalUnlock(ret.hmem());
+		    }
+		    return(ret);
+		}
+
+		private ClipboardData cvt_png(BufferedImage img) {
+		    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		    try {
+			javax.imageio.ImageIO.write(img, "PNG", buf);
+		    } catch(IOException e) {
+			throw(new RuntimeException(e));
+		    }
+		    byte[] data = buf.toByteArray();
+		    ClipboardData ret = new ClipboardData(CF_PNG.get(), data.length);
+		    MemorySegment mem = win.GlobalLock(ret.hmem());
+		    try {
+			FUtils.memcpy(mem, data);
+		    } finally {
+			win.GlobalUnlock(ret.hmem());
+		    }
+		    return(ret);
+		}
+
+		private ClipboardData cvt_paths(Collection<Path> paths) {
+		    StringBuilder buf = new StringBuilder();
+		    for(Path p : paths) {
+			buf.append(p.toString());
+			buf.append('\0');
+		    }
+		    buf.append('\0');
+		    ByteBuffer enc = win.C_WCHARSET().encode(CharBuffer.wrap(buf));
+		    ClipboardData ret = new ClipboardData(Win32.CF_HDROP, win.sizeof_DROPFILES() + enc.remaining());
+		    MemorySegment mem = win.GlobalLock(ret.hmem());
+		    try {
+			DROPFILES head = win.DROPFILES(mem);
+			head.pFiles((int)head.sizeof()).fWide(true);
+			FUtils.memcpy(mem, enc, head.sizeof(), enc.position(), enc.remaining());
+		    } finally {
+			win.GlobalUnlock(ret.hmem());
+		    }
+		    return(ret);
+		}
+
+		public void put(Contents c, Runnable expire) {
+		    List<Promise<? extends ClipboardData>> items = new ArrayList<>();
+		    for(Item<?> item : c.items) {
+			if(item.fmt == Format.TEXT) {
+			    items.add(item.check(Format.TEXT).get().then(val -> Promise.deferred(() -> cvt_text(val), t -> Defer.later(t, null))));
+			} else if(item.fmt == Format.IMAGE) {
+			    items.add(item.check(Format.IMAGE).get().then(val -> Promise.deferred(() -> cvt_dib(val), t -> Defer.later(t, null))));
+			    items.add(item.check(Format.IMAGE).get().then(val -> Promise.deferred(() -> cvt_png(val), t -> Defer.later(t, null))));
+			} else if(item.fmt == Format.PATHS) {
+			    items.add(item.check(Format.PATHS).get().then(val -> Promise.deferred(() -> cvt_paths(val), t -> Defer.later(t, null))));
+			}
+		    }
+		    Promise.collect(items).then(data -> openclipboard().then(_ -> Promise.deferred(() -> {
+			try {
+			    win.EmptyClipboard();
+			    for(ClipboardData datum : data) {
+				win.SetClipboardData(datum.format, datum.hmem());
+				datum.relinquish();
+			    }
+			} finally {
+			    win.CloseClipboard();
+			}
+			this.expire = expire;
+			return(null);
+		    }, WGLToolkit.this::msgrun)));
+		}
+
+		void lost() {
+		    if(expire != null) {
+			expire.run();
+			expire = null;
+		    }
+		}
+
+		private CharSequence mktext(Handle hmem, Charset charset) {
+		    MemorySegment mem = win.GlobalLock(hmem);
+		    try {
+			return(mem.getString(0, charset));
+		    } finally {
+			win.GlobalUnlock(hmem);
+		    }
+		}
+
+		private void mktext(List<Item<?>> buf, Handle hmem, Charset charset) {
+		    buf.add(new Item<CharSequence>(Format.TEXT, mktext(hmem, charset)));
+		}
+
+		private int colorbyte(int rgb, int boff, int size) {
+		    if(size == 8)
+			return((rgb >>> boff) & 0xff);
+		    int raw = (rgb >>> boff) & ((1 << size) - 1);
+		    return((raw << (8 - size)) | (raw >>> (size - (8 - size))));
+		}
+
+		private BufferedImage paldibtoimg(Coord sz, ByteBuffer pixels, int off, int rstride, int pstride, int bits, int[] palette) {
+		    WritableRaster buf = PUtils.imgraster(sz);
+		    for(int y = 0, roff = off; y < sz.y; y++, roff += rstride) {
+			for(int x = 0, poff = roff * 8; x < sz.x; x++, poff += pstride) {
+			    int idx = (pixels.get(poff >> 3) & 0xff) >>> (poff & 7);
+			    buf.setSample(x, y, 0, (palette[idx] >>> 16) & 0xff);
+			    buf.setSample(x, y, 1, (palette[idx] >>>  8) & 0xff);
+			    buf.setSample(x, y, 2, (palette[idx] >>>  0) & 0xff);
+			    buf.setSample(x, y, 3, 0xff);
+			}
+		    }
+		    return(PUtils.rasterimg(buf));
+		}
+
+		private BufferedImage rgbdibtoimg(Coord sz, ByteBuffer pixels, int off, int rstride, int pstride, int[] sizes, int[] boffs) {
+		    WritableRaster buf = PUtils.imgraster(sz);
+		    for(int y = 0, roff = off; y < sz.y; y++, roff += rstride) {
+			for(int x = 0, poff = roff; x < sz.x; x++, poff += pstride) {
+			    int rgb = pixels.getInt(poff);
+			    for(int b = 0; b < sizes.length; b++)
+				buf.setSample(x, y, b, colorbyte(rgb, boffs[b], sizes[b]));
+			    if(sizes.length < 4)
+				buf.setSample(x, y, 3, 0xff);
+			}
+		    }
+		    return(PUtils.rasterimg(buf));
+		}
+
+		private Supplier<BufferedImage> mkdib(Handle hmem) {
+		    MemorySegment mem = win.GlobalLock(hmem);
+		    try {
+			BITMAPV5HEADER bmp = win.BITMAPV5HEADER(mem);
+			if(bmp.bV5Size() == bmp.sizeof()) {
+			    Coord sz; boolean inv;
+			    if(bmp.bV5Height() < 0) {
+				sz = Coord.of(bmp.bV5Width(), -bmp.bV5Height());
+				inv = false;
+			    } else {
+				sz = Coord.of(bmp.bV5Width(), bmp.bV5Height());
+				inv = true;
+			    }
+			    int comp = bmp.bV5Compression();
+			    int bits = bmp.bV5BitCount();
+			    int palsize = bmp.bV5ClrUsed();
+			    if(palsize == 0) {
+				if(bits <= 8)
+				    palsize = 1 << bits;
+			    }
+			    int off = bmp.bV5Size() + (palsize * 4);
+			    int size = (int)(mem.byteSize() - off);
+			    int[] palette = FUtils.memcpyi(mem, bmp.bV5Size(), palsize);
+			    ByteBuffer pixels = ByteBuffer.allocate(size);
+			    pixels.order(ByteOrder.LITTLE_ENDIAN);
+			    MemorySegment.copy(mem, off, MemorySegment.ofBuffer(pixels), 0, size);
+			    int rowsz = (((sz.x * bits) >> 3) + 3) & ~3;
+			    switch(comp) {
+			    case Win32.BI_RGB:
+				switch(bits) {
+				case 1:
+				    if(inv)
+					return(() -> paldibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, 1, 1, palette));
+				    else
+					return(() -> paldibtoimg(sz, pixels, 0, rowsz, 1, 1, palette));
+				case 4:
+				    if(inv)
+					return(() -> paldibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, 4, 4, palette));
+				    else
+					return(() -> paldibtoimg(sz, pixels, 0, rowsz, 4, 4, palette));
+				case 8:
+				    if(inv)
+					return(() -> paldibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, 8, 8, palette));
+				    else
+					return(() -> paldibtoimg(sz, pixels, 0, rowsz, 8, 8, palette));
+				case 16:
+				    if(inv)
+					return(() -> rgbdibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, 2, new int[] {5, 5, 5}, new int[] {10, 5, 0}));
+				    else
+					return(() -> rgbdibtoimg(sz, pixels, 0, rowsz, 2, new int[] {5, 5, 5}, new int[] {10, 5, 0}));
+				case 24:
+				    if(inv)
+					return(() -> rgbdibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, 3, new int[] {8, 8, 8}, new int[] {16, 8, 0}));
+				    else
+					return(() -> rgbdibtoimg(sz, pixels, 0, rowsz, 3, new int[] {8, 8, 8}, new int[] {16, 8, 0}));
+				case 32:
+				    if(inv)
+					return(() -> rgbdibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, 4, new int[] {8, 8, 8}, new int[] {16, 8, 0}));
+				    else
+					return(() -> rgbdibtoimg(sz, pixels, 0, rowsz, 4, new int[] {8, 8, 8}, new int[] {16, 8, 0}));
+				default:
+				    return(() -> {throw(new RuntimeException("unexpected RGB DIB bit-count: " + bits));});
+				}
+			    case Win32.BI_BITFIELDS: {
+				int[] masks = new int[] {bmp.bV5RedMask(), bmp.bV5GreenMask(), bmp.bV5BlueMask(), bmp.bV5AlphaMask()};
+				if(masks[3] == 0)
+				    masks = Arrays.copyOf(masks, 3);
+				int[] sizes = new int[masks.length], boffs = new int[masks.length];
+				for(int i = 0; i < masks.length; i++) {
+				    boffs[i] = Integer.numberOfTrailingZeros(masks[i]);
+				    sizes[i] = Integer.bitCount(masks[i]);
+				}
+				if(inv)
+				    return(() -> rgbdibtoimg(sz, pixels, rowsz * (sz.y - 1), -rowsz, bits >> 3, sizes, boffs));
+				else
+				    return(() -> rgbdibtoimg(sz, pixels, 0, rowsz, bits >> 3, sizes, boffs));
+			    }
+			    default:
+				return(() -> {throw(new RuntimeException("unexpected DIB compression type: " + comp));});
+			    }
+			} else {
+			    return(() -> {throw(new RuntimeException("unexpected DIB header size: " + bmp.bV5Size()));});
+			}
+		    } finally {
+			win.GlobalUnlock(hmem);
+		    }
+		}
+
+		private void mkdib(List<Item<?>> buf, Handle hmem) {
+		    buf.add(new Item<BufferedImage>(Format.IMAGE, () -> Promise.deferred(mkdib(hmem), t -> Defer.later(t, null))));
+		}
+
+		private Collection<Path> mkfiles(Handle hmem) {
+		    MemorySegment mem = win.GlobalLock(hmem);
+		    try {
+			DROPFILES head = win.DROPFILES(mem);
+			int off = head.pFiles();
+			boolean wide = head.fWide();
+			ByteBuffer raw = ByteBuffer.wrap(FUtils.memcpy(mem, off, (int)(mem.byteSize() - off)));
+			Collection<String> names = new ArrayList<>();
+			if(head.fWide()) {
+			    for(int p = 0, o = 0; o < raw.capacity(); o += 2) {
+				if(raw.getShort(o) == 0) {
+				    if(o == p)
+					break;
+				    names.add(win.C_WCHARSET().decode(raw.duplicate().position(p).limit(o)).toString());
+				    p = o + 2;
+				}
+			    }
+			} else {
+			    Charset charset = win.codepage(win.GetACP(), Win32.latin1);
+			    for(int p = 0, o = 0; o < raw.capacity(); o++) {
+				if(raw.get(o) == 0) {
+				    if(o == p)
+					break;
+				    names.add(charset.decode(raw.duplicate().position(p).limit(o)).toString());
+				    p = o + 1;
+				}
+			    }
+			}
+			Collection<Path> paths = new ArrayList<>();
+			names.forEach(nm -> paths.add(Paths.get(nm)));
+			return(paths);
+		    } finally {
+			win.GlobalUnlock(hmem);
+		    }
+		}
+
+		private void mkfiles(List<Item<?>> buf, Handle hmem) {
+		    buf.add(new Item<Collection<Path>>(Format.PATHS, () -> Promise.of(() -> mkfiles(hmem))));
+		}
+
+		private Contents mkcontents() {
+		    try {
+			List<Item<?>> ret = new ArrayList<>();
+			if(win.IsClipboardFormatAvailable(Win32.CF_UNICODETEXT))
+			    mktext(ret, win.GetClipboardData(Win32.CF_UNICODETEXT), win.C_WCHARSET());
+			if(win.IsClipboardFormatAvailable(Win32.CF_DIBV5))
+			    mkdib(ret, win.GetClipboardData(Win32.CF_DIBV5));
+			if(win.IsClipboardFormatAvailable(Win32.CF_HDROP))
+			    mkfiles(ret, win.GetClipboardData(Win32.CF_HDROP));
+			return(new Contents(ret));
+		    } finally {
+			win.CloseClipboard();
+		    }
+		}
+
+		public Promise<Contents> get() {
+		    return(openclipboard().then(_ -> Promise.deferred(this::mkcontents, WGLToolkit.this::msgrun)));
+		}
+	    }
+
+	    public class DropTarget implements IDropTarget {
+		public final BMap<DropHandler.Action, Integer> actmap =
+		    new HashBMap<>(Utils.<DropHandler.Action, Integer>map()
+				   .put(DropHandler.Action.COPY, DROPEFFECT_COPY)
+				   .put(DropHandler.Action.MOVE, DROPEFFECT_MOVE)
+				   .put(DropHandler.Action.LINK, DROPEFFECT_LINK)
+				   .map());
+		public final DropHandler handler;
+		private Clipboard.Contents current;
+
+		public DropTarget(DropHandler handler) {
+		    this.handler = handler;
+		}
+
+		private Promise<CharSequence> cvt_text(IDataObject data) {
+		    return(Promise.deferred(() -> {
+			COM.FORMATETC fmt = com.FORMATETC();
+			fmt.dwAspect(COM.DVASPECT_CONTENT).lindex(-1).tymed(COM.TYMED_HGLOBAL);
+			COM.STGMEDIUM stg = data.GetData(fmt.cfFormat(Win32.CF_UNICODETEXT));
+			return(clipboard.mktext(((HGlobal)stg.get()).hmem(), win.C_WCHARSET()));
+		    }, WGLToolkit.this::msgrun));
+		}
+
+		private Promise<BufferedImage> cvt_dib(IDataObject data) {
+		    return(Promise.deferred(() -> {
+			COM.FORMATETC fmt = com.FORMATETC();
+			fmt.dwAspect(COM.DVASPECT_CONTENT).lindex(-1).tymed(COM.TYMED_HGLOBAL);
+			COM.STGMEDIUM stg = data.GetData(fmt.cfFormat(Win32.CF_DIBV5));
+			return(clipboard.mkdib(((HGlobal)stg.get()).hmem()));
+		    }, WGLToolkit.this::msgrun).defer().map(Supplier::get));
+		}
+
+		private Promise<Collection<Path>> cvt_files(IDataObject data) {
+		    return(Promise.deferred(() -> {
+			COM.FORMATETC fmt = com.FORMATETC();
+			fmt.dwAspect(COM.DVASPECT_CONTENT).lindex(-1).tymed(COM.TYMED_HGLOBAL);
+			COM.STGMEDIUM stg = data.GetData(fmt.cfFormat(Win32.CF_HDROP));
+			return(clipboard.mkfiles(((HGlobal)stg.get()).hmem()));
+		    }, WGLToolkit.this::msgrun));
+		}
+
+		private boolean query(IDataObject data, int fmt) {
+		    COM.FORMATETC etc = com.FORMATETC();
+		    etc.dwAspect(COM.DVASPECT_CONTENT).lindex(-1).tymed(COM.TYMED_HGLOBAL);
+		    try {
+			return(data.QueryGetData(etc.cfFormat(fmt)) == Win32.S_OK);
+		    } catch(HResultError e) {
+			return(false);
+		    }
+		}
+
+		private Clipboard.Contents mkcontents(IDataObject data) {
+		    List<Clipboard.Item<?>> items = new ArrayList<>();
+		    if(query(data, Win32.CF_UNICODETEXT))
+			items.add(new Clipboard.Item<CharSequence>(Clipboard.Format.TEXT, () -> cvt_text(data)));
+		    if(query(data, Win32.CF_DIBV5))
+			items.add(new Clipboard.Item<BufferedImage>(Clipboard.Format.IMAGE, () -> cvt_dib(data)));
+		    if(query(data, Win32.CF_HDROP))
+			items.add(new Clipboard.Item<Collection<Path>>(Clipboard.Format.PATHS, () -> cvt_files(data)));
+		    return(new Clipboard.Contents(items));
+		}
+
+		private int hover(Clipboard.Contents cont, Coord wndc) {
+		    class Event implements DropHandler.DropHoverEvent {
+			public Coord wndc() {return(wndc);}
+			public Set<DropHandler.Action> actions() {return(EnumSet.allOf(DropHandler.Action.class));}
+			public Clipboard.Contents contents() {return(cont);}
+		    }
+		    Integer ract = actmap.get(handler.drophover(new Event()));
+		    return((ract == null) ? DROPEFFECT_NONE : ract);
+		}
+
+		public int DragEnter(IDataObject dataobj, int keystate, Coord pt) {
+		    return(hover(current = mkcontents(dataobj), win.ScreenToClient(hwnd, pt)));
+		}
+
+		public int DragOver(int keystate, Coord pt) {
+		    return(hover(current, win.ScreenToClient(hwnd, pt)));
+		}
+
+		public void DragLeave() {
+		    current = null;
+		}
+
+		public int Drop(IDataObject dataobj, int keystate, Coord pt) {
+		    Coord wndc = win.ScreenToClient(hwnd, pt);
+		    Clipboard.Contents cont = mkcontents(dataobj);
+		    class Event implements DropHandler.DroppedEvent {
+			DropHandler.Action accepted = null;
+
+			public Coord wndc() {return(wndc);}
+			public Set<DropHandler.Action> actions() {return(EnumSet.allOf(DropHandler.Action.class));}
+			public Clipboard.Contents contents() {return(cont);}
+
+			public void accept(DropHandler.Action act) {
+			    accepted = act;
+			}
+		    }
+		    Event ev = new Event();
+		    if(!handler.dropped(ev))
+			throw(new HResultError(HResultError.DRAGDROP_S_CANCEL));
+		    Integer ract = actmap.get(ev.accepted);
+		    return((ract == null) ? DROPEFFECT_NONE : ract);
+		}
+	    }
+
+	    public WGLWindow drophandler(DropHandler h) {
+		msgrun(() -> {
+		    if(h == null)
+			com.RevokeDragDrop(hwnd);
+		    else
+			com.RegisterDragDrop(hwnd, new DropTarget(h));
+		});
+		return(this);
 	    }
 
 	    public class W32KeyEvent {
@@ -1065,6 +1594,76 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 
 	public Windeye window() {
 	    return(new WGLWindow());
+	}
+
+	public class ShellPicker implements FilePicker.Factory {
+	    public class Picker implements FilePicker {
+		private Mode mode;
+		private Handle parent;
+		private String[][] filter = {
+		    {"All files", "*.*"}
+		};
+
+		public Picker(Mode mode, WGLWindow parent) {
+		    this.mode = mode;
+		    this.parent = (parent == null) ? Handle.nil : parent.hwnd;
+		}
+
+		public void filter(String desc, String... exts) {
+		    StringBuilder spec = new StringBuilder();
+		    for(String ext : exts) {
+			if(spec.length() > 0)
+			    spec.append(';');
+			spec.append("*." + ext);
+		    }
+		    filter = new String[][] {
+			{desc, spec.toString()},
+			{"All files", "*.*"}
+		    };
+		}
+
+		public Promise<Path> show() {
+		    Promise<Path> ret = new Promise<>();
+		    Thread th = new HackThread(() -> {
+			com.CoInitializeEx(COM.COINIT_APARTMENTTHREADED | COM.COINIT_DISABLE_OLE1DDE);
+			boolean done = false;
+			try {
+			    IFileDialog dlg = com.CoCreateInstance(((mode == Mode.OPEN) ?
+								    IFileDialog.CLSID_FileOpenDialog :
+								    IFileDialog.CLSID_FileSaveDialog),
+								   null, COM.CLSCTX_INPROC_SERVER, IFileDialog.IID);
+			    dlg.SetFileTypes(filter);
+			    try {
+				dlg.Show(parent);
+				ret.resolve(Paths.get(dlg.GetResult().GetDisplayName(IShellItem.SIGDN_FILESYSPATH)));
+				done = true;
+			    } catch(HResultError e) {
+				if(e.hresult == HResultError.ERROR_CANCELLED)
+				    ret.resolve(null);
+				else
+				    ret.reject(e);
+				done = true;
+			    }
+			} catch(Throwable t) {
+			    if(!done)
+				ret.reject(t);
+			} finally {
+			    com.CoUninitialize();
+			}
+		    }, "File picker thread");
+		    th.setDaemon(true);
+		    th.start();
+		    return(ret);
+		}
+	    }
+
+	    public FilePicker make(FilePicker.Mode mode, Windeye parent) {
+		return(new Picker(mode, (WGLWindow)parent));
+	    }
+	}
+
+	public FilePicker.Factory picker() {
+	    return(new ShellPicker());
 	}
 
 	private Handle makeicon(BufferedImage img, Coord hotspot) {

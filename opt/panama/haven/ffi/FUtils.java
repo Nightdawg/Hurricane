@@ -49,8 +49,10 @@ public class FUtils {
     public static StructLayout struct(MemoryLayout... decl) {
 	List<MemoryLayout> padded = new ArrayList<>(decl.length);
 	long off = 0;
+	long maxalg = 1;
 	for(int i = 0; i < decl.length; i++) {
 	    long alg = decl[i].byteAlignment();
+	    maxalg = Math.max(alg, maxalg);
 	    long noff = ((off + alg - 1) / alg) * alg;
 	    if(noff > off) {
 		padded.add(MemoryLayout.paddingLayout(noff - off));
@@ -59,6 +61,8 @@ public class FUtils {
 	    padded.add(decl[i]);
 	    off += decl[i].byteSize();
 	}
+	if(off % maxalg != 0)
+	    padded.add(MemoryLayout.paddingLayout(maxalg - (off % maxalg)));
 	return(MemoryLayout.structLayout(padded.toArray(new MemoryLayout[0])));
     }
 
@@ -226,6 +230,22 @@ public class FUtils {
 	return(memcpy(new byte[len], src, 0, soff, len));
     }
 
+    public static short[] memcpys(short[] dst, MemorySegment src, int doff, long soff, int num) {
+	MemorySegment.copy(src, soff, MemorySegment.ofArray(dst), doff * 2, num * 2);
+	return(dst);
+    }
+    public static short[] memcpys(MemorySegment src, long soff, int len) {
+	return(memcpys(new short[len], src, 0, soff, len));
+    }
+
+    public static int[] memcpyi(int[] dst, MemorySegment src, int doff, long soff, int num) {
+	MemorySegment.copy(src, soff, MemorySegment.ofArray(dst), doff * 4, num * 4);
+	return(dst);
+    }
+    public static int[] memcpyi(MemorySegment src, long soff, int len) {
+	return(memcpyi(new int[len], src, 0, soff, len));
+    }
+
     public static MemorySegment memcpya(MemorySegment src, long soff, int len) {
 	MemorySegment buf = MemorySegment.ofArray(new long[(len + 7) >> 3]);
 	MemorySegment.copy(src, soff, buf, 0, len);
@@ -296,11 +316,11 @@ public class FUtils {
 		long v;
 		try {
 		    if(f.getType() == Byte.TYPE)
-			v = f.getByte(null);
+			v = f.getByte(null) & 0xffl;
 		    else if(f.getType() == Short.TYPE)
-			v = f.getShort(null);
+			v = f.getShort(null) & 0xffffl;
 		    else if(f.getType() == Integer.TYPE)
-			v = f.getInt(null);
+			v = f.getInt(null) & 0xffffffffl;
 		    else if(f.getType() == Long.TYPE)
 			v = f.getLong(null);
 		    else
@@ -319,6 +339,10 @@ public class FUtils {
 	if(ret == null)
 	    return(Long.toUnsignedString(val, 16));
 	return(ret);
+    }
+
+    public static String constname(Class<?> cl, int val) {
+	return(constname(cl, val & 0xffffffffl));
     }
 
     public static SymbolLookup loadlib(Path name, Arena arena) {
@@ -401,5 +425,11 @@ public class FUtils {
 	MissingLibrary e = new MissingLibrary("found no implementation of " + name);
 	missing.forEach(e::addSuppressed);
 	throw(e);
+    }
+
+    static {
+	Console.setscmd("nativedie", (cons, args) -> {
+	    cons.out.println(getint(MemorySegment.NULL.reinterpret(Long.MAX_VALUE), 0, ValueLayout.JAVA_LONG, false));
+	});
     }
 }

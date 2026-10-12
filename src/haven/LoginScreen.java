@@ -49,6 +49,7 @@ public class LoginScreen extends Widget {
     public final String confname;
     public Widget loginSteam = null;
     private Text error, progress;
+    private Widget cancel;
     private Button optbtn;
 	private OptWnd opts;
 	AccountList accounts;
@@ -224,6 +225,12 @@ public class LoginScreen extends Widget {
 			add(close, prev.pos("bl").adds(0, 10).adds(92, 10));
 			pack();
 		}
+	cancel = adda(new Button(UI.scale(100), "Cancel")
+		      .action(() -> wdgmsg("cancel"))
+		      .setgkey(key_esc),
+		      bgc.adds(0, 75), 0.5, 0.0);
+	cancel.hide();
+    }
 
 		@Override
 		public void drag(Coord off) {
@@ -478,7 +485,6 @@ public class LoginScreen extends Widget {
 
     private static boolean steam_autologin = false;
     public class Steambox extends Widget {
-
 	private Steambox() {
 	    super(UI.scale(200, 150));
 	    Widget prev = adda(new Label("Login through Steam", textf), sz.x / 2, 0, 0.5, 0);
@@ -570,10 +576,14 @@ public class LoginScreen extends Widget {
     }
 
     private void progress(String p) {
-	if(progress != null)
+	if(progress != null) {
 	    progress = null;
-	if(p != null)
+	    cancel.hide();
+	}
+	if(p != null) {
 	    progress = textf.render(p, java.awt.Color.WHITE);
+	    cancel.show();
+	}
     }
 
     private void clear() {

@@ -26,6 +26,7 @@
 
 package haven;
 
+import java.util.*;
 import java.util.function.*;
 
 public class Promise<T> {
@@ -252,8 +253,12 @@ public class Promise<T> {
 	return(map(res, null));
     }
 
-    public Promise<?> map(Consumer<? super T> res) {
+    public Promise<?> consume(Consumer<? super T> res) {
 	return(map(val -> {res.accept(val); return(null);}));
+    }
+
+    public Promise<?> tee(Consumer<? super T> res) {
+	return(map(val -> {res.accept(val); return(val);}));
     }
 
     public Promise<T> except(Function<? super Throwable, ? extends T> rej) {
@@ -265,7 +270,7 @@ public class Promise<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public T waitfor() {
+    public T waitfor(boolean interruptible) throws InterruptedException {
 	Object[] buf = {null, null};
 	callback(val -> {
 	    synchronized(buf) {
@@ -286,7 +291,10 @@ public class Promise<T> {
 		try {
 		    buf.wait();
 		} catch(InterruptedException e) {
-		    irq = true;
+		    if(interruptible)
+			throw(e);
+		    else
+			irq = true;
 		}
 	    }
 	    if(irq)
@@ -294,6 +302,14 @@ public class Promise<T> {
 	    if(buf[1] instanceof Throwable)
 		throw(new Future.PastException((Throwable)buf[1]));
 	    return((T)buf[0]);
+	}
+    }
+
+    public T waitfor() {
+	try {
+	    return(waitfor(false));
+	} catch(InterruptedException e) {
+	    throw(new AssertionError(e));
 	}
     }
 
@@ -336,6 +352,29 @@ public class Promise<T> {
 	    }
 	    ret.resolve(val);
 	});
+	return(ret);
+    }
+
+    public static <T> Promise<List<T>> collect(List<Promise<? extends T>> parts) {
+	int n = parts.size();
+	List<T> buf = new ArrayList<>();
+	int[] remaining = {n};
+	Promise<List<T>> ret = new Promise<>();
+	for(int i : Utils.range(n)) {
+	    buf.add(null);
+	    parts.get(i).callback(val -> {
+		buf.set(i, val);
+		synchronized(remaining) {
+		    if(--remaining[0] == 0)
+			ret.resolve(buf);
+		}
+	    }, err -> {
+		synchronized(remaining) {
+		    remaining[0] = -1;
+		}
+		ret.reject(err);
+	    }, null);
+	}
 	return(ret);
     }
 }

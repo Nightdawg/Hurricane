@@ -45,6 +45,7 @@ import haven.ffi.objc.AppKit.*;
 import haven.ffi.objc.CGL.*;
 import haven.ffi.objc.CoreGraphics.*;
 import haven.ffi.objc.Foundation.*;
+import haven.ffi.objc.Runtime.*;
 import haven.ffi.objc.Runtime;
 import static haven.ffi.objc.Carbon.*;
 import static haven.iosys.tk.Key.Std.*;
@@ -92,7 +93,7 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
     public int priority() {
 	return(System.getProperty("os.name", "").startsWith("Mac OS") ? 100 : 0);
     }
-    public boolean experimental() {return(true);}
+    public boolean experimental() {return(false);}
 
     private NSApplication app = null;
     public NSApplication app() {
@@ -188,6 +189,7 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
 	public final Map<String, LayoutMap> layouts = new IdentityHashMap<>();
 	public final int kbdtype;
 	public final NSCursor nocursor = ak.NSCursor(ak.NSImage(cg.CGSize(Coord.of(1, 1))), cg.CGPoint(Coord.z));
+	private final Collection<CocoaWindow> windows = new HashSet<>();
 	private CGLEnvironment glenv;
 	private NSView curglview = null;
 
@@ -198,6 +200,31 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
 		    layouts.put(is.inputSourceID(), new LayoutMap(is));
 	    }
 	    app = app();
+	    NSObject orgdel = app.delegate();
+	    app.setDelegate(new Forwarder() {
+		final Collection<Runtime.SEL> capture = Arrays.asList(rt.sel_registerName("applicationShouldTerminate:"));
+		final NSObject delegate = ak.NSApplicationDelegate(new AppDelegate());
+
+		public boolean supports(Runtime.SEL sel) {
+		    if(capture.contains(sel))
+			return(rt.respondsToSelector(delegate.id(), sel));
+		    return(rt.respondsToSelector(orgdel.id(), sel));
+		}
+
+		public NSMethodSignature signature(Runtime.SEL sel) {
+		    if(capture.contains(sel))
+			return(rt.methodSignatureForSelector(delegate.id(), sel));
+		    return(rt.methodSignatureForSelector(orgdel.id(), sel));
+		}
+
+		public boolean forward(NSInvocation inv) {
+		    if(capture.contains(inv.selector()))
+			inv.invokeWithTarget(delegate.id());
+		    else
+			inv.invokeWithTarget(orgdel.id());
+		    return(true);
+		}
+	    });
 	    NSOpenGLPixelFormat fmt = null;
 	    for(int ver : glversions) {
 		int[] ctxattribs = {
@@ -213,6 +240,16 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
 	    if(fmt == null)
 		throw(new Unavailable("could not create OpenGL context"));
 	    ctx = cgl.NSOpenGLContext(fmt, null);
+	}
+
+	public class AppDelegate implements AppKit.NSApplicationDelegate {
+	    public int applicationShouldTerminate(NSApplication app) {
+		synchronized(windows) {
+		    for(CocoaWindow wnd : windows)
+			wnd.callback(new CloseRequest() {});
+		}
+		return(AppKit.NSTerminateCancel);
+	    }
 	}
 
 	public class CocoaMonitor implements Monitor {
@@ -564,15 +601,15 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
 			if(item.fmt == Format.TEXT) {
 			    item.check(Format.TEXT).get()
 				.then(val -> mtpromise(() -> {buf.cvt_text(val); return(null);}))
-				.map(buf.checkput());
+				.consume(buf.checkput());
 			} else if(item.fmt == Format.IMAGE) {
 			    item.check(Format.IMAGE).get()
 				.then(val -> mtpromise(() -> {buf.cvt_image(val); return(null);}))
-				.map(buf.checkput());
+				.consume(buf.checkput());
 			} else if(item.fmt == Format.PATHS) {
 			    item.check(Format.PATHS).get()
 				.then(val -> mtpromise(() -> {buf.cvt_paths(val); return(null);}))
-				.map(buf.checkput());
+				.consume(buf.checkput());
 			}
 		    }
 		});
@@ -720,6 +757,9 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
 		view.registerForDraggedTypes("public.tiff", "public.file-url", "public.utf8-plain-text");
 		nsw.setContentView(view);
 		nsw.setReleasedWhenClosed(true);
+		synchronized(windows) {
+		    windows.add(this);
+		}
 	    }
 
 	    class WindowDelegate implements AppKit.WindowDelegate {
@@ -1226,6 +1266,9 @@ public class CocoaContext implements Providers.Factory<Toolkit> {
 	    }
 
 	    public void dispose() {
+		synchronized(windows) {
+		    windows.remove(this);
+		}
 		nsw.close();
 	    }
 	}

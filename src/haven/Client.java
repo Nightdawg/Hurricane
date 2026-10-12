@@ -114,20 +114,6 @@ public class Client implements Console.Directory {
 	    }
 	}
 
-	private static int buttonid(MouseBtn btn) {
-	    if(btn == MouseBtn.Std.LEFT)
-		return(1);
-	    else if(btn == MouseBtn.Std.MIDDLE)
-		return(2);
-	    else if(btn == MouseBtn.Std.RIGHT)
-		return(3);
-	    else if(btn == MouseBtn.Std.BACK)
-		return(4);
-	    else if(btn == MouseBtn.Std.FORWARD)
-		return(5);
-	    return(0);
-	}
-
 	public void dispatch(UI ui) {
 	    List<Toolkit.Event> evs;
 	    Toolkit.MouseMoveEvent mousemv;
@@ -138,29 +124,21 @@ public class Client implements Console.Directory {
 		pending.clear();
 	    }
 	    if(mousemv != null) {
-		ui.mousemove(AWTCompat.mkawt(mousemv), mousemv.wndc());
+		ui.mousemove(mousemv);
 	    }
 	    for(Toolkit.Event ev : evs) {
 		if(ev instanceof Toolkit.MouseDownEvent) {
-		    Toolkit.MouseDownEvent e = (Toolkit.MouseDownEvent)ev;
-		    int btn = buttonid(e.button());
-		    if(btn > 0)
-			ui.mousedown(AWTCompat.mkawt(e), e.wndc(), btn);
+		    ui.mousedown((Toolkit.MouseDownEvent)ev);
 		} else if(ev instanceof Toolkit.MouseUpEvent) {
-		    Toolkit.MouseUpEvent e = (Toolkit.MouseUpEvent)ev;
-		    int btn = buttonid(e.button());
-		    if(btn > 0)
-			ui.mouseup(AWTCompat.mkawt(e), e.wndc(), btn);
+		    ui.mouseup((Toolkit.MouseUpEvent)ev);
 		} else if(ev instanceof Toolkit.MouseWheelEvent) {
-		    Toolkit.MouseWheelEvent e = (Toolkit.MouseWheelEvent)ev;
-		    if(e.axis() == Toolkit.MouseWheelEvent.Axis.VERT)
-			ui.mousewheel(AWTCompat.mkawt(e), e.wndc(), e.amount(), e.subamount());
+		    ui.mousewheel((Toolkit.MouseWheelEvent)ev);
 		} else if(ev instanceof Toolkit.KeyDownEvent) {
-		    ui.keydown(AWTCompat.mkawt((Toolkit.KeyEvent)ev));
-		    Debug.keyevent(AWTCompat.mkawt((Toolkit.KeyEvent)ev));
+		    ui.keydown((Toolkit.KeyDownEvent)ev);
+		    Debug.keyevent((Toolkit.KeyEvent)ev);
 		} else if(ev instanceof Toolkit.KeyUpEvent) {
-		    ui.keyup(AWTCompat.mkawt((Toolkit.KeyEvent)ev));
-		    Debug.keyevent(AWTCompat.mkawt((Toolkit.KeyEvent)ev));
+		    ui.keyup((Toolkit.KeyUpEvent)ev);
+		    Debug.keyevent((Toolkit.KeyEvent)ev);
 		}
 		ui.lastevent = Utils.rtime();
 	    }
@@ -199,10 +177,10 @@ public class Client implements Console.Directory {
 	}
 
 	protected boolean bgmode() {
+	    if(wnd.focused())
+		return(false);
 	    Windeye.Visibility v = wnd.visible();
-	    if(v == Windeye.Visibility.UNKNOWN)
-		return(!wnd.focused());
-	    return(v == Windeye.Visibility.NONE);
+	    return((v == Windeye.Visibility.NONE) || (v == Windeye.Visibility.UNKNOWN));
 	}
     }
 
