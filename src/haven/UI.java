@@ -867,7 +867,7 @@ public class UI {
 
     public void keydown(Toolkit.KeyDownEvent ev) {
 	setmods(ev.mods());
-        if (ev.getKeyCode() == KeyEvent.VK_ESCAPE && gui != null) {
+        if (ev.sym() == Key.Std.ESCAPE && gui != null) {
             if (gui.autoRepeatFlowerMenuScriptThread != null) {
                 gui.autoRepeatFlowerMenuScriptThread.interrupt();
                 gui.autoRepeatFlowerMenuScriptThread = null;
@@ -890,6 +890,10 @@ public class UI {
 	    return(2);
 	else if(btn == MouseBtn.Std.RIGHT)
 	    return(3);
+	else if(btn == MouseBtn.Std.BACK)
+	    return(4);
+	else if(btn == MouseBtn.Std.FORWARD)
+	    return(5);
 	return(0);
     }
 

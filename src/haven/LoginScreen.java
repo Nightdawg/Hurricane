@@ -225,13 +225,6 @@ public class LoginScreen extends Widget {
 			add(close, prev.pos("bl").adds(0, 10).adds(92, 10));
 			pack();
 		}
-	cancel = adda(new Button(UI.scale(100), "Cancel")
-		      .action(() -> wdgmsg("cancel"))
-		      .setgkey(key_esc),
-		      bgc.adds(0, 75), 0.5, 0.0);
-	cancel.hide();
-    }
-
 		@Override
 		public void drag(Coord off) {
 			// ND: Don't do anything
@@ -244,6 +237,11 @@ public class LoginScreen extends Widget {
 				super.wdgmsg(sender, msg, args);
 		}
 	};
+	cancel = adda(new Button(UI.scale(100), "Cancel")
+		      .action(() -> wdgmsg("cancel"))
+		      .setgkey(key_esc),
+		      bgc.adds(0, 75), 0.5, 0.0);
+	cancel.hide();
 	Config.githubLatestVersion = "Loading...";
 	GitHubVersionFetcher.fetchLatestVersion("Nightdawg", "Hurricane", new GitHubVersionFetcher.VersionCallback() {
 		@Override
