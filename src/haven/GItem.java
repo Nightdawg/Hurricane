@@ -673,31 +673,39 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 					quality = this.info().stream().filter(info -> info instanceof Quality).mapToDouble(info -> ((Quality) info).q).findFirst().orElse(0.0);
 				}
 				if (quality > 0.1 && contentswnd == null) {
-					if (itemBaseName.equals("halite")) {
-						if (AutoDropManagerWindow.autoDropHaliteCheckbox.a && parseTextEntryInt(AutoDropManagerWindow.autoDropHaliteQualityTextEntry) > quality) {
-							this.wdgmsg("drop", Coord.z);
-						}
-					} else if (itemBaseName.equals("cinnabar")) {
-						if (AutoDropManagerWindow.autoDropCinnabarCheckbox.a && parseTextEntryInt(AutoDropManagerWindow.autoDropCinnabarQualityTextEntry) > quality) {
-							this.wdgmsg("drop", Coord.z);
-						}
-					} else if (AutoDropManagerWindow.autoDropStonesCheckbox.a && Config.stoneItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality) {
-						this.wdgmsg("drop", Coord.z);
-					} else if (AutoDropManagerWindow.autoDropCoalsCheckbox.a && Config.coalItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropCoalsQualityTextEntry) > quality) {
-						this.wdgmsg("drop", Coord.z);
-					} else if (AutoDropManagerWindow.autoDropOresCheckbox.a && Config.oreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropOresQualityTextEntry) > quality) {
-						this.wdgmsg("drop", Coord.z);
-					} else if (AutoDropManagerWindow.autoDropPreciousOresCheckbox.a && Config.preciousOreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropPreciousOresQualityTextEntry) > quality) {
-						this.wdgmsg("drop", Coord.z);
-					} else if (AutoDropManagerWindow.autoDropMinedCuriosCheckbox.a && Config.minedCuriosItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropMinedCuriosQualityTextEntry) > quality) {
-						this.wdgmsg("drop", Coord.z);
-					} else if (AutoDropManagerWindow.autoDropQuarryartzCheckbox.a && itemBaseName.equals("quarryquartz") && parseTextEntryInt(AutoDropManagerWindow.autoDropQuarryartzQualityTextEntry) > quality) {
+					if (shouldAutoDrop(itemBaseName, quality)) {
 						this.wdgmsg("drop", Coord.z);
 					}
 					checkedAutodrop = true;
 				}
 			}
 		}
+	}
+
+	private boolean shouldAutoDrop(String itemBaseName, double quality) {
+		return switch (itemBaseName) {
+			case "halite" -> AutoDropManagerWindow.autoDropHaliteCheckbox.a
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropHaliteQualityTextEntry) > quality;
+			case "cinnabar" -> AutoDropManagerWindow.autoDropCinnabarCheckbox.a
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropCinnabarQualityTextEntry) > quality;
+			case "quarryquartz" -> AutoDropManagerWindow.autoDropQuarryartzCheckbox.a
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropQuarryartzQualityTextEntry) > quality;
+			default -> (AutoDropManagerWindow.autoDropStonesCheckbox.a
+					&& Config.stoneItemBaseNames.contains(itemBaseName)
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality)
+					|| (AutoDropManagerWindow.autoDropCoalsCheckbox.a
+					&& Config.coalItemBaseNames.contains(itemBaseName)
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropCoalsQualityTextEntry) > quality)
+					|| (AutoDropManagerWindow.autoDropOresCheckbox.a
+					&& Config.oreItemBaseNames.contains(itemBaseName)
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropOresQualityTextEntry) > quality)
+					|| (AutoDropManagerWindow.autoDropPreciousOresCheckbox.a
+					&& Config.preciousOreItemBaseNames.contains(itemBaseName)
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropPreciousOresQualityTextEntry) > quality)
+					|| (AutoDropManagerWindow.autoDropMinedCuriosCheckbox.a
+					&& Config.minedCuriosItemBaseNames.contains(itemBaseName)
+					&& parseTextEntryInt(AutoDropManagerWindow.autoDropMinedCuriosQualityTextEntry) > quality);
+		};
 	}
 
 	private int parseTextEntryInt(TextEntry textEntry){
