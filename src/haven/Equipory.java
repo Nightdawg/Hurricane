@@ -432,7 +432,8 @@ public class Equipory extends Widget implements DTarget {
 				checkForTicks = false;
 			}
 		}
-		if (!myOwnEquipory && !isWardrobe && !isMannequin){
+		if (!myOwnEquipory && !isWardrobe && !isMannequin
+				&& OptWnd.autoLootEnabledCheckBox != null && OptWnd.autoLootEnabledCheckBox.a) {
 			if ((now - autoLootDelayTime) > 300){
                 for (int slot = 0; slot < slots.length; slot++) {
                     if (slots[slot] == null) continue;

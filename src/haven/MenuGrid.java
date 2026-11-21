@@ -773,6 +773,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Toggles/ClearAllCombatDamage");
 		makeLocal("customclient/menugrid/Toggles/AnimalAutoPeace");
 		makeLocal("customclient/menugrid/Toggles/AutoDrinking");
+		makeLocal("customclient/menugrid/Toggles/AutoLooting");
 		makeLocal("customclient/menugrid/Toggles/TileCentering");
 		makeLocal("customclient/menugrid/Toggles/QueuedMovementWindow");
 		makeLocal("customclient/menugrid/Toggles/AutoDrop");
@@ -874,6 +875,8 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				OptWnd.autoPeaceAnimalsWhenCombatStartsCheckBox.set(!OptWnd.autoPeaceAnimalsWhenCombatStartsCheckBox.a);
 			} else if (ad[2].equals("AutoDrinking")) {
 				OptWnd.autoDrinkingCheckBox.set(!OptWnd.autoDrinkingCheckBox.a);
+			} else if (ad[2].equals("AutoLooting")) {
+				OptWnd.autoLootEnabledCheckBox.set(!OptWnd.autoLootEnabledCheckBox.a);
 			} else if (ad[2].equals("TileCentering")) {
 				OptWnd.tileCenteringCheckBox.set(!OptWnd.tileCenteringCheckBox.a);
 			} else if (ad[2].equals("QueuedMovementWindow")) {

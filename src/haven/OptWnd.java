@@ -4899,6 +4899,7 @@ public class OptWnd extends Window {
 
 	}
 
+	public static CheckBox autoLootEnabledCheckBox;
     public static CheckBox autoLootHeadgearCheckBox;
     public static CheckBox autoLootNecklaceCheckBox;
     public static CheckBox autoLootShouldersCheckBox;
@@ -4935,9 +4936,17 @@ public class OptWnd extends Window {
             Widget leftColumn, rightColumn;
 
 			Scrollport scroll = add(new Scrollport(UI.scale(new Coord(350, 40))), 0, 0);
-			prev = scroll.cont;
-			addbtn(prev, "Loot Nearest Knocked Player hotkey:", GameUI.kb_lootNearestKnockedPlayer, 0);
+			addbtn(scroll.cont, "Loot Nearest Knocked Player hotkey:", GameUI.kb_lootNearestKnockedPlayer, 0);
 
+			prev = add(autoLootEnabledCheckBox = new CheckBox("Enable Auto-Loot") {
+				{a = Utils.getprefb("autoLootEnabled", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootEnabled", val);
+					if (ui != null && ui.gui != null) {
+						ui.gui.optionInfoMsg("Auto-Looting is now " + (val ? "ENABLED" : "DISABLED") + "!", (val ? msgGreen : msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+					}
+				}
+			}, scroll.pos("bl").adds(0, 6));
 			prev = add(new Label("Auto-Loot the following gear from players (when stealing):"), prev.pos("bl").adds(0, 6));
 
             leftColumn = add(autoLootHeadgearCheckBox = new CheckBox("Headgear"){
