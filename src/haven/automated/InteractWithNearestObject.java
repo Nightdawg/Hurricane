@@ -45,7 +45,8 @@ public class InteractWithNearestObject implements Runnable {
             "gemstone",
             "boarspear",
             "antkey",
-            "antkeynew"
+            "antkeynew",
+            "pondscum"
     ));
 
     public final static Set<String> otherForageablesThatRequireFlowerMenuPick = new HashSet<String>(Arrays.asList(
