@@ -11,6 +11,10 @@ public class AutoDropManagerWindow extends Window {
     public static CheckBox onlyDropWhenPickaxeCursorIsActiveCheckBox;
     public static CheckBox autoDropStonesCheckbox;
     public static TextEntry autoDropStonesQualityTextEntry;
+    public static CheckBox autoDropHaliteCheckbox;
+    public static TextEntry autoDropHaliteQualityTextEntry;
+    public static CheckBox autoDropCinnabarCheckbox;
+    public static TextEntry autoDropCinnabarQualityTextEntry;
     public static CheckBox autoDropCoalsCheckbox;
     public static TextEntry autoDropCoalsQualityTextEntry;
     public static CheckBox autoDropOresCheckbox;
@@ -63,6 +67,24 @@ public class AutoDropManagerWindow extends Window {
                 super.changed();
             }
         }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropHaliteCheckbox = new CheckBox("Halite (Rock Salt)"){
+            {a = Utils.getprefb("autoDropHalite", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropHalite", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").x(UI.scale(134)));
+        add(autoDropHaliteQualityTextEntry = miningQualityEntry("autoDropHaliteQuality"),
+                prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropCinnabarCheckbox = new CheckBox("Cinnabar"){
+            {a = Utils.getprefb("autoDropCinnabar", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropCinnabar", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").x(UI.scale(134)));
+        add(autoDropCinnabarQualityTextEntry = miningQualityEntry("autoDropCinnabarQuality"),
+                prev.pos("ur").adds(6, -2).x(UI.scale(156)));
         prev = add(autoDropCoalsCheckbox = new CheckBox("Coals"){
             {a = Utils.getprefb("autoDropCoals", false);}
             public void changed(boolean val) {
@@ -135,6 +157,17 @@ public class AutoDropManagerWindow extends Window {
         }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
         this.c = Utils.getprefc("wndc-autoDropManagerWindow", UI.unscale(new Coord(200, 100)));
         pack();
+    }
+
+    private TextEntry miningQualityEntry(String pref) {
+        return new TextEntry(UI.scale(36), Utils.getpref(pref, "30")) {
+            protected void changed() {
+                String digits = this.text().replaceAll("[^\\d]", "");
+                this.settext(digits);
+                Utils.setpref(pref, digits);
+                super.changed();
+            }
+        };
     }
 
     @Override

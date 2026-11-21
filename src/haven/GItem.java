@@ -673,7 +673,15 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 					quality = this.info().stream().filter(info -> info instanceof Quality).mapToDouble(info -> ((Quality) info).q).findFirst().orElse(0.0);
 				}
 				if (quality > 0.1 && contentswnd == null) {
-					if (AutoDropManagerWindow.autoDropStonesCheckbox.a && Config.stoneItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality) {
+					if (itemBaseName.equals("halite")) {
+						if (AutoDropManagerWindow.autoDropHaliteCheckbox.a && parseTextEntryInt(AutoDropManagerWindow.autoDropHaliteQualityTextEntry) > quality) {
+							this.wdgmsg("drop", Coord.z);
+						}
+					} else if (itemBaseName.equals("cinnabar")) {
+						if (AutoDropManagerWindow.autoDropCinnabarCheckbox.a && parseTextEntryInt(AutoDropManagerWindow.autoDropCinnabarQualityTextEntry) > quality) {
+							this.wdgmsg("drop", Coord.z);
+						}
+					} else if (AutoDropManagerWindow.autoDropStonesCheckbox.a && Config.stoneItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);
 					} else if (AutoDropManagerWindow.autoDropCoalsCheckbox.a && Config.coalItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropCoalsQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);
