@@ -36,6 +36,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.util.*;
+import java.util.function.Supplier;
 import java.text.*;
 import java.util.regex.*;
 import haven.iosys.tk.*;
@@ -66,6 +67,20 @@ public class ChatUI extends Widget {
     private QuickLine qline = null;
     private final LinkedList<Notification> notifs = new LinkedList<Notification>();
     private UI.Grab qgrab;
+    private ChatLog chatlog;
+
+    private void logchat(Channel chan, String line, Supplier<String> sender) {
+	if(!ChatLog.enabled())
+	    return;
+	if(chatlog == null) {
+	    GameUI gui = getparent(GameUI.class);
+	    String account = ChatLog.accountKey(ui);
+	    if((gui == null) || (gui.chrid == null) || gui.chrid.isEmpty() || (account == null))
+		return;
+	    chatlog = new ChatLog(account, gui.chrid);
+	}
+	chatlog.append(chan::logname, sender, line);
+    }
 
     public ChatUI() {
 	super(Coord.z);
@@ -320,6 +335,11 @@ public class ChatUI extends Widget {
 
 	public void append(Message msg) {
 	    append(msg, 0);
+	}
+
+	protected void appendChat(Message msg, int urgency, String line, Supplier<String> sender) {
+	    append(msg, urgency);
+	    getparent(ChatUI.class).logchat(this, line, sender);
 	}
 
 	public void append(String line, Color col) {
@@ -768,6 +788,14 @@ public class ChatUI extends Widget {
 
 	public abstract String name();
 
+	private String logname() {
+	    if(this instanceof PrivChat priv)
+		return("Private with " + priv.peername());
+	    if(this instanceof RealmChannel)
+		return(name() + " (Public)");
+	    return(name());
+	}
+
 	public boolean selmousedown(Coord c, int btn) {return(false);}
 	public boolean selmouseup(Coord c, int btn) {return(false);}
 	public boolean selclicked(Coord c, int btn) {return(false);}
@@ -865,7 +893,10 @@ public class ChatUI extends Widget {
 		if(col == null) col = Color.WHITE;
 		int urgency = (args.length > 2) ? Utils.iv(args[2]) : 0;
 		Message cmsg = new SimpleMessage(line, col);
-		append(cmsg, urgency);
+		if(msg == "msg")
+		    appendChat(cmsg, urgency, line, null);
+		else
+		    append(cmsg, urgency);
 	    } else {
 		super.uimsg(msg, args);
 	    }
@@ -911,7 +942,8 @@ public class ChatUI extends Widget {
 	    }
 
 	    private String nm() {
-		BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(from);
+		GameUI gui = getparent(GameUI.class);
+		BuddyWnd.Buddy b = ((gui == null) || (gui.buddies == null)) ? null : gui.buddies.find(from);
 		return((b == null) ? "??? (Not Memorised)" : b.name);
 	    }
 
@@ -975,10 +1007,10 @@ public class ChatUI extends Widget {
 		String line = (String)args[1];
 		if (processMessage(line, -1)){
 		if(from == null) {
-		    append(new MyMessage(line), -1);
+		    appendChat(new MyMessage(line), -1, line, () -> "You");
 		} else {
-		    Message cmsg = new NamedMessage(from.intValue(), line, fromcolor(from.intValue()));
-		    append(cmsg, urgency);
+		    NamedMessage cmsg = new NamedMessage(from.intValue(), line, fromcolor(from.intValue()));
+		    appendChat(cmsg, urgency, line, cmsg::nm);
 		}
 		}
 	    } else if(msg == "mutable") {
@@ -1205,10 +1237,10 @@ public class ChatUI extends Widget {
 			col = pm.col;
 		}
 		if(from == null) {
-		    append(new MyMessage(line), -1);
+		    appendChat(new MyMessage(line), -1, line, () -> "You");
 		} else {
-		    Message cmsg = new NamedMessage(from.intValue(), line, Utils.blendcol(col, Color.WHITE, 0.5));
-		    append(cmsg, urgency);
+		    NamedMessage cmsg = new NamedMessage(from.intValue(), line, Utils.blendcol(col, Color.WHITE, 0.5));
+		    appendChat(cmsg, urgency, line, cmsg::nm);
 		}
 		}
 	    } else {
@@ -1265,9 +1297,9 @@ public class ChatUI extends Widget {
 		String line = (String)args[1];
 		if(t.equals("in")) {
 		    Message cmsg = new InMessage(line);
-		    append(cmsg, 3);
+		    appendChat(cmsg, 3, line, this::peername);
 		} else if(t.equals("out")) {
-		    append(new OutMessage(line), -1);
+		    appendChat(new OutMessage(line), -1, line, () -> "You");
 		}
 	    } else if(msg == "err") {
 		String err = (String)args[0];
@@ -1280,8 +1312,18 @@ public class ChatUI extends Widget {
 	    }
 	}
 	
+	private String peername() {
+	    BuddyWnd.Buddy b = peer();
+	    return((b == null) ? "??? (Not Memorised) #" + other : b.name);
+	}
+
+	private BuddyWnd.Buddy peer() {
+	    GameUI gui = getparent(GameUI.class);
+	    return(((gui == null) || (gui.buddies == null)) ? null : gui.buddies.find(other));
+	}
+
 	public String name() {
-	    BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(other);
+	    BuddyWnd.Buddy b = peer();
 	    if(b == null)
 		return("??? (Not Memorised)");
 	    else

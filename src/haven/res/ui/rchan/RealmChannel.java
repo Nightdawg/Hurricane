@@ -71,7 +71,8 @@ public class RealmChannel extends ChatUI.MultiChat {
 	}
 
 	private String nm() {
-	    BuddyWnd.Buddy b = getparent(GameUI.class).buddies.find(from.bid);
+	    GameUI gui = getparent(GameUI.class);
+	    BuddyWnd.Buddy b = ((gui == null) || (gui.buddies == null)) ? null : gui.buddies.find(from.bid);
 		if(b != null) {
 			if (from.name != null){
 				return (from.name + " [Memo: " + b.name + "]");
@@ -234,15 +235,15 @@ public class RealmChannel extends ChatUI.MultiChat {
 	    if(args.length > 4)
 		pname = (String)args[4];
 	    if(cfrom == null) {
-		append(new MyMessage(line));
+		appendChat(new MyMessage(line), 0, line, () -> "You");
 	    } else {
 		Sender from = frombyid(cfrom.longValue(), bfrom.intValue());
 		if((pname != null) && (from.name == null))
 		    from.name = pname;
 		from.lastseen = now;
 		if(now > from.muted) {
-		    Message cmsg = new PNamedMessage(from, line);
-		    append(cmsg);
+		    PNamedMessage cmsg = new PNamedMessage(from, line);
+		    appendChat(cmsg, 0, line, cmsg::nm);
 		}
 	    }
 	} else if(msg == "err") {

@@ -1922,6 +1922,7 @@ public class OptWnd extends Window {
 	public static CheckBox autoSelectNewChatCheckBox;
 	public static CheckBox protectChatFocusCheckBox;
 	public static CheckBox removeRealmChatCheckBox;
+	public static CheckBox logChatChannelsCheckBox;
 	public static CheckBox showKinStatusChangeMessages;
 
 	public static HSlider systemMessagesListSizeSlider;
@@ -2023,6 +2024,14 @@ public class OptWnd extends Window {
 					systemMessagesDurationLabel.settext(val + (val > 1 ? " seconds" : " second"));
 				}
 			}, prev.pos("bl").adds(0, 2));
+
+			prev = add(logChatChannelsCheckBox = new CheckBox("Log chat channels to disk") {
+				{a = Utils.getprefb("logChatChannels", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("logChatChannels", val);
+				}
+			}, prev.pos("bl").adds(0, 10));
+			prev.tooltip = RichText.render("Applies to all accounts. After you enter the game, saves new chat messages, including private messages, as daily plain-text files per character in the chat-logs folder inside your client folder. Turning this off does not delete existing logs.", UI.scale(250));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
