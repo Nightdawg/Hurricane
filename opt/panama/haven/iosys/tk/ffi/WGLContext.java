@@ -46,12 +46,19 @@ import haven.ffi.gl.*;
 import haven.ffi.windows.Win32.*;
 import static haven.iosys.tk.Key.Std.*;
 
+/*
+ * TODO:
+ *   * Use OLE clipboard.
+ *   * Figure out why eventloop blocks while windows
+ *     are being moved/resized.
+ */
 @Toolkit.Available(name = "wgl")
 public class WGLContext implements Providers.Factory<Toolkit> {
     private final Win32 win;
     private final WGL wgl;
     private final SHCore shcore;
     private final COM com;
+    private final WinRT ro;
 
     private WGLContext() {
 	try {
@@ -66,6 +73,11 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    shcore = SHCore.get();
 	} catch(RuntimeException e) {}
 	this.shcore = shcore;
+	WinRT ro = null;
+	try {
+	    ro = WinRT.get();
+	} catch(RuntimeException e) {}
+	this.ro = ro;
     }
 
     private static WGLContext instance = null;
@@ -89,6 +101,8 @@ public class WGLContext implements Providers.Factory<Toolkit> {
     public boolean experimental() {return(false);}
 
     public class WGLToolkit implements Toolkit {
+	private static final int WM_USER_WAKE  = Win32.WM_USER + 1;
+	private static final int WM_USER_XLATE = Win32.WM_USER + 2;
 	private static final int[][] glversions = {
 	    {4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0},
 				    {3, 3}, {3, 2}, {3, 1}, {3, 0},
@@ -182,16 +196,21 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		this.minf = win.MONITORINFO();
 		win.GetMonitorInfo(hm, minf);
 		this.gdpi = gdpi;
+		int udpi = 0, mdpi = 0, fac = 0;
 		if(shcore != null) {
-		    Coord udpi = shcore.GetDpiForMonitor(hm, SHCore.MDT_EFFECTIVE_DPI);
-		    this.udpi = (udpi.x + udpi.y) / 2;
-		    Coord mdpi = shcore.GetDpiForMonitor(hm, SHCore.MDT_RAW_DPI);
-		    this.mdpi = (mdpi.x + mdpi.y) / 2;
-		    this.fac = shcore.GetScaleFactorForMonitor(hm);
-		} else {
-		    this.udpi = this.mdpi = 0;
-		    this.fac = 0;
+		    try {
+			Coord v = shcore.GetDpiForMonitor(hm, SHCore.MDT_EFFECTIVE_DPI);
+			udpi = (v.x + v.y) / 2;
+		    } catch(HResultError e) {}
+		    try {
+			Coord v = shcore.GetDpiForMonitor(hm, SHCore.MDT_RAW_DPI);
+			mdpi = (v.x + v.y) / 2;
+		    } catch(HResultError e) {}
+		    try {
+			fac = shcore.GetScaleFactorForMonitor(hm);
+		    } catch(HResultError e) {}
 		}
+		this.udpi = udpi; this.mdpi = mdpi; this.fac = fac;
 	    }
 
 	    public Coord resolution() {
@@ -291,6 +310,18 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    return(wnd.message(hwnd, umsg, wparam, lparam));
 	}
 
+	private long keymsgid = 1;
+	private void dispatchmsg(MSG msg) {
+	    boolean bracket = (msg.hwnd() != Handle.nil) && ((msg.message() == Win32.WM_KEYDOWN) ||
+							     (msg.message() == Win32.WM_SYSKEYDOWN));
+	    if(bracket)
+		win.PostMessage(msg.hwnd(), WM_USER_XLATE, keymsgid, 1);
+	    win.TranslateMessage(msg);
+	    if(bracket)
+		win.PostMessage(msg.hwnd(), WM_USER_XLATE, keymsgid, 2);
+	    win.DispatchMessage(msg);
+	}
+
 	private final Object mtmon = new Object();
 	private Thread msgthread = null;
 	private boolean msgrunning = true;
@@ -300,6 +331,8 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	private void handlemsgs() {
 	    try {
 		com.OleInitialize();
+		if(ro != null)
+		    ro.RoInitialize(WinRT.RO_INIT_SINGLETHREADED);
 		MSG msg = win.MSG();
 		win.PeekMessage(msg, null, 0, 0, Win32.PM_NOREMOVE);
 		synchronized(mtmon) {
@@ -318,10 +351,10 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    if(task != null)
 			task.run();
 		    while(win.PeekMessage(msg, null, 0, 0, Win32.PM_REMOVE))
-			win.DispatchMessage(msg);
+			dispatchmsg(msg);
 		    if(task == null) {
 			if(win.GetMessage(msg, null, 0, 0))
-			    win.DispatchMessage(msg);
+			    dispatchmsg(msg);
 		    }
 		}
 	    } finally {
@@ -330,6 +363,8 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 			msgthread = null;
 		}
 		com.OleUninitialize();
+		if(ro != null)
+		    ro.RoUninitialize();
 	    }
 	}
 
@@ -357,7 +392,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		mtasks.add(task);
 		ckmsgthread();
 	    }
-	    win.PostThreadMessage(msgthreadid, Win32.WM_USER, 0, 0);
+	    win.PostThreadMessage(msgthreadid, WM_USER_WAKE, 0, 0);
 	}
 
 	private <T> T msgrun(Supplier<T> task) {
@@ -390,9 +425,28 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    return(r.val);
 	}
 
-	private void glrun(Handle hwnd, Runnable task) {
+	public static class MissingDCException extends RuntimeException {
+	    public final boolean destroyed, showing;
+	    public final Windeye.State state;
+	    public final Coord size;
+
+	    public MissingDCException(WGLWindow wnd) {
+		super("GDI device context missing for window");
+		this.destroyed = wnd.destroyed;
+		this.showing = wnd.showing;
+		this.state = wnd.curstate;
+		this.size = wnd.size;
+	    }
+	}
+
+	private void glrun(WGLWindow wnd, Runnable task) {
 	    msgrun(() -> {
-		Handle hdc = win.GetDC(hwnd);
+		Handle hdc;
+		try {
+		    hdc = win.GetDC(wnd.hwnd);
+		} catch(StdError e) {
+		    throw(new MissingDCException(wnd));
+		}
 		try {
 		    wgl.wglMakeCurrent(hdc, ctx);
 		    try {
@@ -401,14 +455,19 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 			wgl.wglMakeCurrent(hdc, null);
 		    }
 		} finally {
-		    win.ReleaseDC(hwnd, hdc);
+		    win.ReleaseDC(wnd.hwnd, hdc);
 		}
 	    });
 	}
 
-	private <T> T glrun(Handle hwnd, Supplier<T> task) {
+	private <T> T glrun(WGLWindow wnd, Supplier<T> task) {
 	    return(msgrun(() -> {
-		Handle hdc = win.GetDC(hwnd);
+		Handle hdc;
+		try {
+		    hdc = win.GetDC(wnd.hwnd);
+		} catch(StdError e) {
+		    throw(new MissingDCException(wnd));
+		}
 		try {
 		    wgl.wglMakeCurrent(hdc, ctx);
 		    T ret;
@@ -419,7 +478,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    }
 		    return(ret);
 		} finally {
-		    win.ReleaseDC(hwnd, hdc);
+		    win.ReleaseDC(wnd.hwnd, hdc);
 		}
 	    }));
 	}
@@ -433,7 +492,11 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 
 	private void unregister(WGLWindow wnd) {
 	    synchronized(mtmon) {
-		windows.remove(wnd.hwnd);
+		WGLWindow reg = windows.remove(wnd.hwnd);
+		if(reg == null)
+		    throw(new IllegalStateException("window unregistered doubly"));
+		else if(reg != wnd)
+		    throw(new RuntimeException("window registration not matching"));
 	    }
 	}
 
@@ -620,7 +683,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    private final W32Clipboard clipboard = new W32Clipboard();
 	    private final boolean[] visible = new boolean[visgrid.length];
 	    private Coord size = Coord.z;
-	    private boolean showing = false;
+	    private boolean focused, showing = false, destroyed = false;
 	    private State curstate = State.NORMAL;
 	    private WGLEnvironment renv;
 	    private int vwheelacc = 0, hwheelacc = 0;
@@ -629,50 +692,32 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	    private Area preexcl = null;
 	    private Handle icon = null, cursor = null;
 	    private int cursi = -1;
-	    private boolean focused;
 
 	    private WGLWindow() {
 		Arrays.fill(visible, true);
-		hwnd = msgrun(() -> win.CreateWindowEx(0, wclassname, null, STYLE_NORMAL,
-						       null, null, null, null, hInstance));
+		hwnd = win.CreateWindowEx(0, wclassname, null, STYLE_NORMAL,
+					  null, null, null, null, hInstance);
 		register(this);
-		msgrun(() -> {
-		    Handle hdc = win.GetDC(hwnd);
-		    try {
-			win.SetPixelFormat(hdc, pfmt, pfd);
-		    } finally {
-			win.ReleaseDC(hwnd, hdc);
-		    }
-		});
+		Handle hdc = win.GetDC(hwnd);
+		try {
+		    win.SetPixelFormat(hdc, pfmt, pfd);
+		} finally {
+		    win.ReleaseDC(hwnd, hdc);
+		}
 	    }
 
 	    public class WGLEnvironment extends FFIEnvironment {
-		private int qstate;
-
 		private WGLEnvironment() {
 		    super(gl);
 		}
 
-		private void process() {
-		    synchronized(this) {
-			qstate = 2;
-		    }
-		    process(gl);
-		    synchronized(this) {
-			if((qstate & 1) != 0)
-			    glrun(hwnd, (Runnable)this::process);
-			qstate &= ~2;
-		    }
-		}
-
 		public void submit(Render cmd) {
-		    super.submit(cmd);
-		    synchronized(this) {
-			if(renv == this) {
-			    if(qstate == 0)
-				glrun(hwnd, (Runnable)this::process);
-			    qstate |= 1;
-			}
+		    Submission task = submission(cmd);
+		    synchronized(WGLWindow.this) {
+			if(renv == this)
+			    glrun(WGLWindow.this, () -> task.accept(gl));
+			else
+			    task.abort();
 		    }
 		}
 
@@ -693,6 +738,13 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		for(EventListener l : callbacks)
 		    l.event(ev);
 	    }
+	    private void callback(W32KeyDownEvent ev) {
+		ev.finish();
+		/* Filter IME-consumed keys entirely. */
+		if(ev.code == Win32.VK_PROCESSKEY)
+		    return;
+		callback((Event)ev);
+	    }
 
 	    private void minmaxinfo(long wparam, long lparam) {
 		Win32.MINMAXINFO inf = win.MINMAXINFO(lparam);
@@ -702,6 +754,8 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    inf.ptMaxTrackSize(minsize);
 	    }
 
+	    private W32KeyDownEvent xlating = null;
+	    private boolean xlstate = false;
 	    private long message(Handle hwnd, int umsg, long wparam, long lparam) {
 		// System.err.printf("%x %x %x\n", umsg, wparam, lparam);
 		switch(umsg) {
@@ -738,18 +792,45 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    }
 		    return(win.DefWindowProc(hwnd, umsg, wparam, lparam));
 
-		case Win32.WM_KEYDOWN:
-		    callback(new W32KeyDownEvent(wparam, lparam));
+		case Win32.WM_KEYDOWN: case Win32.WM_SYSKEYDOWN:
+		    if(xlating != null) {
+			/* Apparently, the Win32 message queue always picks all posted
+			 * messages (including from TranslateMessage) before picking any
+			 * new system-posted messages, so there *should* never be a reason
+			 * to be buffering multiple WM_KEYDOWNs for out-of-order
+			 * translation. Perhaps there might still be some weird Windows
+			 * thing necessitating this at some point in the future,
+			 * however... */
+			Warning.warn("WM_KEYDOWN strangely not done translating upon new one: " + xlating);
+			callback(xlating);
+		    }
+		    xlating = new W32KeyDownEvent(keymsgid++, wparam, lparam);
+		    return((umsg == Win32.WM_KEYDOWN) ? 0 : win.DefWindowProc(hwnd, umsg, wparam, lparam));
+		case Win32.WM_CHAR: case Win32.WM_SYSCHAR:
+		    if(xlstate) {
+			xlating.strbuf.append((char)wparam);
+		    } else {
+			callback(new W32CharEvent((char)wparam));
+		    }
+		    return((umsg == Win32.WM_CHAR) ? 0 : win.DefWindowProc(hwnd, umsg, wparam, lparam));
+		case WM_USER_XLATE:
+		    if(xlating == null) {
+			Warning.warn("got WM_USER_XLATE without any pending WM_KEYDOWN");
+		    } else if(xlating.keymsgid != wparam) {
+			Warning.warn("got WM_USER_XLATE with mismatched keymsgid");
+		    } else {
+			if(lparam == 1) {
+			    xlstate = true;
+			} else if(lparam == 2) {
+			    callback(xlating);
+			    xlating = null;
+			    xlstate = false;
+			}
+		    }
 		    return(0);
-		case Win32.WM_SYSKEYDOWN:
-		    callback(new W32KeyDownEvent(wparam, lparam));
-		    return(win.DefWindowProc(hwnd, umsg, wparam, lparam));
-		case Win32.WM_KEYUP:
+		case Win32.WM_KEYUP: case Win32.WM_SYSKEYUP:
 		    callback(new W32KeyUpEvent(wparam, lparam));
-		    return(0);
-		case Win32.WM_SYSKEYUP:
-		    callback(new W32KeyUpEvent(wparam, lparam));
-		    return(win.DefWindowProc(hwnd, umsg, wparam, lparam));
+		    return((umsg == Win32.WM_KEYUP) ? 0 : win.DefWindowProc(hwnd, umsg, wparam, lparam));
 		case Win32.WM_SYSCOMMAND:
 		    if((wparam & 0xfff0) == Win32.SC_KEYMENU)
 			return(0);
@@ -875,7 +956,8 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    fixsize = fixsize(info.fixsize);
 		    minsize = fixsize(info.minsize);
 		    maxsize = fixsize(info.maxsize);
-		    setstate(curstate);
+		    if(showing)
+			setstate(curstate);
 		});
 		return(this);
 	    }
@@ -940,13 +1022,15 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		if(renv == null) {
 		    synchronized(this) {
 			if(renv == null)
-			    renv = glrun(hwnd, () -> new WGLEnvironment());
+			    renv = glrun(this, () -> new WGLEnvironment());
 		    }
 		}
 		return(renv);
 	    }
 
 	    public Visibility visible() {
+		if(curstate == State.MINIMIZED)
+		    return(Visibility.NONE);
 		boolean any = false, all = true;
 		for(boolean v : visible) {
 		    any |= v;
@@ -993,7 +1077,10 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 
 	    public void dispose() {
 		unregister(this);
-		msgrun(() -> win.DestroyWindow(hwnd));
+		msgrun(() -> {
+		    win.DestroyWindow(hwnd);
+		    destroyed = true;
+		});
 	    }
 
 	    public class W32Clipboard implements Clipboard {
@@ -1463,6 +1550,25 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		return(this);
 	    }
 
+	    public class W32CharEvent implements KeyDownEvent {
+		public String string;
+		public Set<Key.Mod> mods;
+
+		public W32CharEvent(char ch) {
+		    this.string = Character.toString(ch);
+		    mods = xlmods(kb);
+		}
+
+		public String string() {return(string);}
+		public Key key() {return(Key.nil);}
+		public Key.Sym sym() {return(null);}
+		public Set<Key.Mod> mods() {return(mods);}
+
+		public String toString() {
+		    return(String.format("#<%s \"%s\">", getClass().getSimpleName(), Utils.strsafe(string)));
+		}
+	    }
+
 	    public class W32KeyEvent {
 		public int code, repeat, scancode;
 		public boolean ext, ctx, pstate, tstate;
@@ -1493,16 +1599,18 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		}
 	    }
 	    public class W32KeyDownEvent extends W32KeyEvent implements KeyDownEvent {
+		public final long keymsgid;
+		public StringBuilder strbuf = new StringBuilder();
 		public String string;
 		public Key.Sym sym = null;
 
-		public W32KeyDownEvent(long wparam, long lparam) {
+		public W32KeyDownEvent(long keymsgid, long wparam, long lparam) {
 		    super(wparam, lparam);
-		    int pst = kb.get(code);
-		    kb.set(code, pst | 0x80);
-		    char[] chars = win.ToUnicodeEx(code, scancode, kb, 0, win.GetKeyboardLayout(0));
-		    kb.set(code, pst);
-		    string = ((chars == null) || (chars.length == 0)) ? "" : new String(chars);
+		    this.keymsgid = keymsgid;
+		}
+
+		W32KeyDownEvent finish() {
+		    string = strbuf.toString();
 		    if(string.length() == 1) {
 			for(Key.Sym sym : key.syms()) {
 			    if((sym instanceof Key.Std) && (((Key.Std)sym).ch == Character.toUpperCase(string.charAt(0)))) {
@@ -1516,6 +1624,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 		    }
 		    if(sym == null)
 			sym = key.primary();
+		    return(this);
 		}
 
 		public Key.Sym sym() {return(sym);}
@@ -1593,7 +1702,7 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	}
 
 	public Windeye window() {
-	    return(new WGLWindow());
+	    return(msgrun(WGLWindow::new));
 	}
 
 	public class ShellPicker implements FilePicker.Factory {
@@ -1837,4 +1946,45 @@ public class WGLContext implements Providers.Factory<Toolkit> {
 	.put(592, Key.Loc.Std.RWIN).put(593, Key.Loc.Std.MENU).put(529, Key.Loc.Std.RCTL).put(575, Key.Loc.Std.LEFT).put(580, Key.Loc.Std.DOWN)
 	.put(577, Key.Loc.Std.RGHT).put( 82, Key.Loc.Std.KP0 ).put( 83, Key.Loc.Std.KPDL)
 	.map();
+
+    static {
+	haven.Console.setscmd("authtest", (cons, args) -> {
+	    WGLToolkit.WGLWindow wnd = (WGLToolkit.WGLWindow)((Widget)cons.host()).ui.wnd;
+	    wnd.toolkit().msgrun(() -> {
+		try {
+		    WinRT ro = WinRT.get();
+		    var ms = ro.RoGetActivationFactory(IWebAuthenticationCoreManagerStatics.class);
+		    var async = ms.FindAccountProviderWithAuthorityAsync(ro.HString("https://login.microsoft.com"), ro.HString("consumers"));
+		    Debug.dump(async.GetRuntimeClassName(), async.GetIids());
+		    Debug.dump(async.QueryInterface(IAsyncInfo.IID).get_Id());
+		    async.put_Completed((info, status) -> {
+			if(status != IAsyncOperation.Completed) {
+			    Debug.dump(status);
+			    return;
+			}
+			var req = ro.RoGetActivationFactory(IWebTokenRequestFactory.class)
+			    .Create(info.GetResults(), ro.HString("User.Read"), ro.HString("9745919d-b4aa-4c66-b42f-31213082be0d"));
+			ro.RoGetActivationFactory(IWebAuthenticationCoreManagerInterop.class)
+			    .RequestTokenForWindowAsync2(wnd.hwnd, req)
+			    .put_Completed((rinfo, rstatus) -> {
+				if(rstatus != IAsyncOperation.Completed) {
+				    Debug.dump(status);
+				    return;
+				}
+				var res = rinfo.GetResults();
+				Debug.dump(res.get_ResponseStatus(),
+					   res.get_ResponseError(),
+					   res.get_ResponseError().get_ErrorCode(),
+					   res.get_ResponseError().get_ErrorMessage());
+				var props = res.get_ResponseError().get_Properties();
+				Debug.dump(props.get_Size());
+				Debug.dump(props.GetRuntimeClassName(), props.GetIids());
+			    });
+		    });
+		} catch(Throwable t) {
+		    t.printStackTrace();
+		}
+	    });
+	});
+    }
 }

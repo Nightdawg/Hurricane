@@ -115,32 +115,13 @@ public class LWJGLToolkit extends AWTToolkit {
 	    setSwapInterval(cursi = 1);
 	}
 
-	private void process() {
-	    PanelEnvironment env = this.env;
-	    synchronized(this) {
-		pstate = 2;
-	    }
-	    runInContext(() -> {
-		env.process(LWJGLWrap.instance);
-	    });
-	    synchronized(this) {
-		if((pstate & 1) != 0)
-		    EventQueue.invokeLater(this::process);
-		pstate &= ~2;
-	    }
-	}
-
 	public class PanelEnvironment extends LWJGLEnvironment {
 	    public PanelEnvironment() {
 	    }
 
 	    public void submit(Render cmd) {
-		super.submit(cmd);
-		synchronized(LWJGLPanel.this) {
-		    if(pstate == 0)
-			EventQueue.invokeLater(LWJGLPanel.this::process);
-		    pstate |= 1;
-		}
+		Submission task = submission(cmd);
+		EventQueue.invokeLater(() -> runInContext(() -> task.accept(LWJGLWrap.instance)));
 	    }
 
 	    public LWJGLPanel panel() {

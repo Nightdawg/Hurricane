@@ -40,7 +40,7 @@ public interface ReadLine {
     public int mark();
     public void mark(int m);
     public void setline(String line);
-    public boolean key(char c, KeyEvent ev, int mod);
+    public boolean key(Widget.KeyDownEvent ev);
     public double mtime();
 
     public default boolean empty() {return(length() == 0);}
@@ -58,27 +58,6 @@ public interface ReadLine {
 		return(false);
 	}
 	return(true);
-    }
-
-    public default boolean key(KeyEvent ev) {
-	int mod = UI.modflags(ev);
-	char c = ev.getKeyChar();
-	if(c == KeyEvent.CHAR_UNDEFINED)
-	    c = '\0';
-	if(((mod & C) != 0) && (c < 32)) {
-	    /* Undo Java's TTY Control-code mangling */
-	    if(ev.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-	    } else if(ev.getKeyCode() == KeyEvent.VK_ENTER) {
-	    } else if(ev.getKeyCode() == KeyEvent.VK_TAB) {
-	    } else if(ev.getKeyCode() == KeyEvent.VK_ESCAPE) {
-	    } else {
-		if((ev.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0)
-		    c = (char)(c + 'A' - 1);
-		else
-		    c = (char)(c + 'a' - 1);
-	    }
-	}
-	return(key(c, ev, mod));
     }
 
     public static interface Owner {
@@ -150,11 +129,11 @@ public interface ReadLine {
 	    return(from);
 	}
 
-	protected abstract boolean key2(char c, KeyEvent ev, int mod);
+	protected abstract boolean key2(Widget.KeyDownEvent ev);
 
-	public boolean key(char c, KeyEvent ev, int mod) {
+	public boolean key(Widget.KeyDownEvent ev) {
 	    int pseq = this.seq;
-	    boolean ret = key2(c, ev, mod);
+	    boolean ret = key2(ev);
 	    if(this.seq != pseq)
 		owner.changed(this);
 	    if(ret)
@@ -255,7 +234,10 @@ public interface ReadLine {
 	    }
 	}
 
-	public boolean key2(char c, KeyEvent ev, int mod) {
+	public boolean key2(Widget.KeyDownEvent uev) {
+	    KeyEvent ev = uev.awt;
+	    char c = uev.c;
+	    int mod = uev.mods;
 	    int code = ev.getKeyCode();
 	    boolean s = (mod & S) != 0;
 	    mod &= ~S;
@@ -274,7 +256,7 @@ public interface ReadLine {
 		} else {
 		    rmsel();
 		}
-	    } else if(Widget.key_act.match(ev)) {
+	    } else if(Widget.key_act.match(uev)) {
 		owner.done(this);
 	    } else if((c == 127) && (mod == 0)) {
 		if(mark < 0) {
@@ -419,7 +401,10 @@ public interface ReadLine {
 	    }
 	}
 
-	public boolean key2(char c, KeyEvent ev, int mod) {
+	public boolean key2(Widget.KeyDownEvent uev) {
+	    KeyEvent ev = uev.awt;
+	    char c = uev.c;
+	    int mod = uev.mods;
 	    mod &= ~S;
 	    if(mark > length)
 		mark = length;
@@ -438,7 +423,7 @@ public interface ReadLine {
 		    kill(line(b, point - b));
 		remove(b, point - b);
 		point = b;
-	    } else if(Widget.key_act.match(ev)) {
+	    } else if(Widget.key_act.match(uev)) {
 		owner.done(this);
 	    } else if((c == 'd') && (mod == C)) {
 		mode("erase");

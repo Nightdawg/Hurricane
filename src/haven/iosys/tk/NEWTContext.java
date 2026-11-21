@@ -457,17 +457,17 @@ public class NEWTContext implements Providers.Factory<Toolkit> {
 
 	    private void process(GL gl) {
 		GLContext ctx = gl.getContext();
-		GLEnvironment env;
+		JOGLEnvironment env;
 		synchronized(this) {
 		    if((this.env == null) || (this.env.ctx != ctx)) {
 			if(this.env != null)
 			    this.env.dispose();
 			this.env = new JOGLEnvironment(gl, ctx) {
-				public void submit(Render cmd) {
-				    super.submit(cmd);
-				    bk.invoke(false, NEWTWindow.this::process);
-				}
-			    };
+			    public void submit(Render cmd) {
+				super.submit(cmd);
+				bk.invoke(false, NEWTWindow.this::process);
+			    }
+			};
 			notifyAll();
 			initgl(gl);
 		    }

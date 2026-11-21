@@ -142,6 +142,34 @@ public class Utils {
 	return(val);
     }
 
+    public static UUID byteuuid(byte[] data) {
+	long msb = 0, lsb = 0;
+	for(int i = 0; i < 8; i++)
+	    msb |= (data[i] & 0xffl) << (8 * (7 - i));
+	for(int i = 0; i < 8; i++)
+	    lsb |= (data[i + 8] & 0xffl) << (8 * (7 - i));
+	return(new UUID(msb, lsb));
+    }
+
+    public static byte[] uuidbytes(UUID uuid) {
+	byte[] ret = new byte[16];
+	for(int i = 0; i < 8; i++)
+	    ret[i] = (byte)(uuid.getMostSignificantBits() >>> (8 * (7 - i)));
+	for(int i = 0; i < 8; i++)
+	    ret[i + 8] = (byte)(uuid.getLeastSignificantBits() >>> (8 * (7 - i)));
+	return(ret);
+    }
+
+    public static UUID uuid5(UUID ns, byte[] data) {
+	byte[] dig = Digest.hash(Digest.SHA1, uuidbytes(ns), data);
+	dig[6] = (byte)((dig[6] & 0x0f) | 0x50);
+	dig[8] = (byte)((dig[8] & 0x3f) | 0x80);
+	return(byteuuid(dig));
+    }
+    public static UUID uuid5(UUID ns, String data) {
+	return(uuid5(ns, data.getBytes(utf8)));
+    }
+
     public static SocketChannel connect(String host, int port) throws IOException {
 	double DELAY = 0.25, TIMEOUT = 5;
 	InetAddress[] haddrs = InetAddress.getAllByName(host);

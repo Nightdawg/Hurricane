@@ -813,12 +813,11 @@ public class RichText extends Text {
 	}
 
 	private static Coord bounds(Part fp) {
-	    Coord sz = new Coord(0, 0);
+	    Coord sz = Coord.z;
 	    for(Part p = fp; p != null; p = p.next) {
 		int x = p.x + p.width();
 		int y = p.y + p.height();
-		if(x > sz.x) sz.x = x;
-		if(y > sz.y) sz.y = y;
+		sz = sz.max(x, y);
 	    }
 	    return(sz);
 	}

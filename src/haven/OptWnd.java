@@ -40,6 +40,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.*;
+import haven.iosys.tk.*;
 import java.util.function.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -3294,12 +3295,12 @@ public class OptWnd extends Window {
 		super.draw(g);
 	    }
 
-	    protected KeyMatch mkmatch(KeyEvent ev) {
+	    protected KeyMatch mkmatch(KeyDownEvent ev) {
 		return(KeyMatch.forevent(ev, ~cmd.modign));
 	    }
 
-	    protected boolean handle(KeyEvent ev) {
-		if(ev.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+	    protected boolean handle(KeyDownEvent ev) {
+		if(ev.tkev().sym() == Key.Std.BACKSPACE) {
 		    cmd.set(null);
 		    super.set(cmd.key());
 		    return(true);
@@ -5079,25 +5080,22 @@ public class OptWnd extends Window {
 	    }
 	}
 
-	private boolean handle(KeyEvent ev) {
-	    switch(ev.getKeyCode()) {
-	    case KeyEvent.VK_SHIFT: case KeyEvent.VK_CONTROL: case KeyEvent.VK_ALT:
-	    case KeyEvent.VK_META: case KeyEvent.VK_WINDOWS:
+	private boolean handle(KeyDownEvent ev) {
+	    if(ev.tkev().key().primary(Key.Std.MODKEYS) != null)
 		return(false);
-	    }
-	    int code = ev.getKeyCode();
-	    if(code == KeyEvent.VK_ESCAPE) {
+	    if(ev.tkev().sym() == Key.Std.ESCAPE) {
 		return(true);
 	    }
-	    if(code == KeyEvent.VK_BACK_SPACE) {
+	    if(ev.tkev().sym() == Key.Std.BACKSPACE) {
 		cmd.set(null);
 		return(true);
 	    }
-	    if(code == KeyEvent.VK_DELETE) {
+	    if(ev.tkev().sym() == Key.Std.DELETE) {
 		cmd.set(KeyMatch.nil);
 		return(true);
 	    }
 	    KeyMatch key = KeyMatch.forevent(ev, ~cmd.modign);
+	    Debug.dump(key);
 	    if(key != null)
 		cmd.set(key);
 	    return(true);
@@ -5147,7 +5145,7 @@ public class OptWnd extends Window {
 	public boolean keydown(KeyDownEvent ev) {
 	    if(!ev.grabbed)
 		return(super.keydown(ev));
-	    if(handle(ev.awt)) {
+	    if(handle(ev)) {
 		kg.remove();
 		kg = null;
 		cmd = null;

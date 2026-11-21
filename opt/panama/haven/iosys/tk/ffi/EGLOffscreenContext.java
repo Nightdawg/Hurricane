@@ -62,6 +62,7 @@ public class EGLOffscreenContext implements Providers.Factory<EGLOffscreenContex
 	private final OpenGL gl;
 	private final FFIEnvironment env;
 	private final Thread processor;
+	private final Queue<Consumer<GL>> submitted = new LinkedList<>();
 	private boolean disposed = false;
 
 	private EGLOffscreen(EGLDisplay dpy) {
@@ -102,7 +103,15 @@ public class EGLOffscreenContext implements Providers.Factory<EGLOffscreenContex
 		} catch(EGLException e) {
 		    throw(new Unavailable("could not create EGL context", e));
 		}
-		this.env = glrun(() -> new FFIEnvironment(gl));
+		this.env = glrun(() -> new FFIEnvironment(gl) {
+		    public void submit(Render cmd) {
+			Submission task = submission(cmd);
+			synchronized(submitted) {
+			    submitted.add(task);
+			    submitted.notifyAll();
+			}
+		    }
+		});
 		this.processor = new HackThread(this::loop, "EGL command processor");
 		this.processor.setDaemon(true);
 		this.processor.start();
@@ -124,7 +133,12 @@ public class EGLOffscreenContext implements Providers.Factory<EGLOffscreenContex
 	}
 
 	private Object process() {
-	    env.process(gl);
+	    Collection<Consumer<GL>> copy;
+	    synchronized(submitted) {
+		copy = new ArrayList<>(submitted);
+		submitted.clear();
+	    }
+	    copy.forEach(task -> task.accept(gl));
 	    try {
 		env.finish(gl);
 	    } catch(InterruptedException e) {
@@ -137,7 +151,10 @@ public class EGLOffscreenContext implements Providers.Factory<EGLOffscreenContex
 	private void loop() {
 	    try {
 		while(true) {
-		    env.submitwait();
+		    synchronized(submitted) {
+			while(submitted.isEmpty())
+			    submitted.wait();
+		    }
 		    glrun(this::process);
 		}
 	    } catch(InterruptedException e) {

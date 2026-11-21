@@ -42,6 +42,13 @@ public class HResultError extends RuntimeException {
     }
 
     public String getMessage() {
-	return(FUtils.constname(HResultError.class, hresult));
+	try {
+	    String msg = Win32.get().FormatMessage(Win32.FORMAT_MESSAGE_FROM_SYSTEM |
+						   Win32.FORMAT_MESSAGE_IGNORE_INSERTS,
+						   null, hresult, 0);
+	    return(String.format("%s (%s)", Integer.toUnsignedString(hresult, 16), msg.trim()));
+	} catch(Throwable t) {
+	    return(FUtils.constname(HResultError.class, hresult));
+	}
     }
 }

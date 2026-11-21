@@ -26,28 +26,199 @@
 
 package haven;
 
-import java.awt.event.*;
+import java.util.*;
+import haven.iosys.tk.*;
+import haven.iosys.tk.Toolkit.*;
+import haven.iosys.tk.Key.*;
 import static java.awt.event.KeyEvent.VK_UNDEFINED;
 
-public class KeyMatch {
+public abstract class KeyMatch {
+    private static final String sepchars = ":\"'/ \n\0";
     public static final int S = 1, C = 2, M = 4, SUPER = 8, MODS = S | C | M;
-    public static final KeyMatch nil = new KeyMatch('\0', false, VK_UNDEFINED, false, "None", 0, 0);
-    public char chr;
-    public boolean casematch, extmatch;
-    public int code;
     public String keyname;
     public int modmask, modmatch;
 
-    public KeyMatch(char chr, boolean casematch, int code, boolean extmatch, String keyname, int modmask, int modmatch) {
-	this.chr = casematch ? chr : Character.toUpperCase(chr);
-	this.casematch = casematch;
-	this.code = code;
-	this.extmatch = extmatch;
+    public KeyMatch(String keyname, int modmask, int modmatch) {
 	this.keyname = setProperKeyNames(keyname);
 	this.modmask = modmask & MODS;
 	this.modmatch = modmatch & MODS;
     }
 
+    /* Arguably, needing this should be considered deprecated, so
+     * CharMatch as a whole.. */
+    public static char keychar(KeyDownEvent ev) {
+	String t = ev.string();
+	if(t.length() != 1)
+	    return(0);
+	char c = t.charAt(0);
+	if((c < 32) && ev.mods().contains(Key.Mod.CONTROL)) {
+	    /* Undo the TTY Control-code mangling that most systems do. */
+	    Key.Sym sym = ev.sym();
+	    if(sym == Std.BACKSPACE) {
+	    } else if(sym == Std.ENTER) {
+	    } else if(sym == Std.TAB) {
+	    } else if(sym == Std.ESCAPE) {
+	    } else {
+		c = (char)(c + (ev.mods().contains(Key.Mod.SHIFT) ? 'A' : 'a') - 1);
+	    }
+	}
+	return(c);
+    }
+
+    public static class CharMatch extends KeyMatch {
+	public char chr;
+	public boolean casematch;
+
+	public CharMatch(char chr, boolean casematch, String keyname, int modmask, int modmatch) {
+	    super(keyname, modmask, modmatch);
+	    this.chr = casematch ? chr : Character.toUpperCase(chr);
+	    this.casematch = casematch;
+	}
+
+	public boolean match(KeyEvent ev, int modign) {
+	    if(!(ev instanceof KeyDownEvent))
+		return(false);
+	    int mod = mods(ev);
+	    if((mod & modmask & ~modign) != (modmatch & ~modign))
+		return(false);
+	    char evc = keychar((KeyDownEvent)ev);
+	    if(!casematch)
+		evc = Character.toUpperCase(evc);
+	    return(evc == chr);
+	}
+
+	private boolean equals(CharMatch that) {
+	    return((this.chr == that.chr) && (this.casematch == that.casematch) && equals((KeyMatch)that));
+	}
+
+	public boolean equals(Object o) {
+	    return((o instanceof CharMatch) && equals((CharMatch)o));
+	}
+
+	public String reduce() {
+	    StringBuilder buf = new StringBuilder();
+	    reducemods(buf);
+	    buf.append(String.format("g%s%x:%s", casematch ? "=" : "", (int)chr, keyname));
+	    return(buf.toString());
+	}
+
+	public static CharMatch restore(char id, String desc, int modmask, int modmatch) {
+	    int p = 0;
+	    boolean casematch = false;
+	    if(desc.charAt(p) == '=') {
+		casematch = true;
+		p++;
+	    }
+	    int p2 = desc.indexOf(':', p);
+	    char chr = (char)Integer.parseInt(desc.substring(p, p2), 16);
+	    String nm = desc.substring(p2 + 1);
+	    return(new CharMatch(chr, casematch, nm, modmask, modmatch));
+	}
+    }
+
+    public static class CodeMatch extends KeyMatch {
+	public int code;
+	public boolean extmatch;
+
+	public CodeMatch(int code, boolean extmatch, String keyname, int modmask, int modmatch) {
+	    super(keyname, modmask, modmatch);
+	    this.code = code;
+	    this.extmatch = extmatch;
+	}
+
+	public boolean match(KeyEvent ev, int modign) {
+	    int mod = mods(ev);
+	    if((mod & modmask & ~modign) != (modmatch & ~modign))
+		return(false);
+	    return(code == AWTCompat.revawt.getOrDefault(ev.key().primary(AWTCompat.revawt.keySet()), VK_UNDEFINED));
+	}
+
+	private boolean equals(CodeMatch that) {
+	    return((this.code == that.code) && (this.extmatch == that.extmatch) && equals((KeyMatch)that));
+	}
+
+	public boolean equals(Object o) {
+	    return((o instanceof CodeMatch) && equals((CodeMatch)o));
+	}
+
+	public String reduce() {
+	    StringBuilder buf = new StringBuilder();
+	    reducemods(buf);
+	    buf.append(String.format("%c%x:%s", extmatch ? 'k' : 'K', (int)code, keyname));
+	    return(buf.toString());
+	}
+
+	public static CodeMatch restore(char id, String desc, int modmask, int modmatch) {
+	    int p = desc.indexOf(':');
+	    int code = Integer.parseInt(desc.substring(0, p), 16);
+	    String nm = desc.substring(p + 1);
+	    return(new CodeMatch(code, id == 'k', nm, modmask, modmatch));
+	}
+    }
+
+    public static class TypedSymMatch extends KeyMatch {
+	public String sym;
+
+	public TypedSymMatch(String sym, String keyname, int modmask, int modmatch) {
+	    super(keyname, modmask, modmatch);
+	    this.sym = sym;
+	}
+
+	public TypedSymMatch(Sym sym, int modmask, int modmatch) {
+	    this(sym.id(), sym.nm(), modmask, modmatch);
+	}
+
+	public boolean match(KeyEvent kev, int modign) {
+	    if(!(kev instanceof KeyDownEvent))
+		return(false);
+	    int mod = mods(kev);
+	    if((mod & modmask & ~modign) != (modmatch & ~modign))
+		return(false);
+	    KeyDownEvent ev = (KeyDownEvent)kev;
+	    return((ev.sym() != null) && (ev.sym().id() == this.sym));
+	}
+
+	private boolean equals(TypedSymMatch that) {
+	    return((this.sym == that.sym) && equals((KeyMatch)that));
+	}
+
+	public boolean equals(Object o) {
+	    return((o instanceof TypedSymMatch) && equals((TypedSymMatch)o));
+	}
+
+	public String reduce() {
+	    StringBuilder buf = new StringBuilder();
+	    reducemods(buf);
+	    for(int i = 0; i < sepchars.length(); i++) {
+		char sep = sepchars.charAt(i);
+		if(sym.indexOf(sep) < 0) {
+		    buf.append(String.format("t%c%s%c%s", sep, sym, sep, keyname));
+		    break;
+		}
+	    }
+	    return(buf.toString());
+	}
+
+	public static TypedSymMatch restore(char id, String desc, int modmask, int modmatch) {
+	    char sep = desc.charAt(0);
+	    int p = desc.indexOf(sep, 1);
+	    String sym = desc.substring(1, p);
+	    String nm = desc.substring(p + 1);
+	    return(new TypedSymMatch(sym, nm, modmask, modmatch));
+	}
+    }
+
+    public static class PriSymMatch extends KeyMatch {
+	public String sym;
+
+	public PriSymMatch(String sym, String keyname, int modmask, int modmatch) {
+	    super(keyname, modmask, modmatch);
+	    this.sym = sym;
+	}
+
+	public PriSymMatch(Sym sym, int modmask, int modmatch) {
+	    this(sym.id(), sym.nm(), modmask, modmatch);
+	}
 	private String setProperKeyNames(String keyname){
 		if (keyname.contains("NumPad "))
 			return keyname.replace("NumPad ", "n");
@@ -62,44 +233,149 @@ public class KeyMatch {
 
     public static int mods(KeyEvent ev) {return(UI.modflags(ev));}
 
-    public boolean match(KeyEvent ev, int modign) {
-	int mod = mods(ev);
-	if((mod & modmask & ~modign) != (modmatch & ~modign))
-	    return(false);
-	if(chr != 0) {
-	    char evc = ev.getKeyChar();
-	    if(((mod & C) != 0) && (evc < 32)) {
-		/* Undo Java's TTY Control-code mangling */
-		switch(ev.getKeyCode()) {
-		case KeyEvent.VK_BACK_SPACE:
-		case KeyEvent.VK_ENTER:
-		case KeyEvent.VK_TAB:
-		case KeyEvent.VK_ESCAPE:
-		    break;
-		default:
-		    evc = (char)(evc + 'A' - 1);
+	public boolean match(KeyEvent ev, int modign) {
+	    int mod = mods(ev);
+	    if((mod & modmask & ~modign) != (modmatch & ~modign))
+		return(false);
+	    Sym sym = ev.key().primary();
+	    return((sym != null) && (sym.id() == this.sym));
+	}
+
+	private boolean equals(PriSymMatch that) {
+	    return((this.sym == that.sym) && equals((KeyMatch)that));
+	}
+
+	public boolean equals(Object o) {
+	    return((o instanceof PriSymMatch) && equals((PriSymMatch)o));
+	}
+
+	public String reduce() {
+	    StringBuilder buf = new StringBuilder();
+	    reducemods(buf);
+	    for(int i = 0; i < sepchars.length(); i++) {
+		char sep = sepchars.charAt(i);
+		if(sym.indexOf(sep) < 0) {
+		    buf.append(String.format("y%c%s%c%s", sep, sym, sep, keyname));
 		    break;
 		}
 	    }
-	    if(!casematch)
-		evc = Character.toUpperCase(evc);
-	    return(evc == chr);
-	} else if(code != VK_UNDEFINED) {
-	    if(extmatch)
-		return(ev.getExtendedKeyCode() == code);
-	    else
-		return(ev.getKeyCode() == code);
-	} else {
-	    return(false);
+	    return(buf.toString());
+	}
+
+	public static PriSymMatch restore(char id, String desc, int modmask, int modmatch) {
+	    char sep = desc.charAt(0);
+	    int p = desc.indexOf(sep, 1);
+	    String sym = desc.substring(1, p);
+	    String nm = desc.substring(p + 1);
+	    return(new PriSymMatch(sym, nm, modmask, modmatch));
 	}
     }
+
+    public static class CatSymMatch extends KeyMatch {
+	public Sym sym;
+	public Collection<? extends Sym> cat;
+
+	public CatSymMatch(Sym sym, Collection<? extends Sym> cat, int modmask, int modmatch) {
+	    super(sym.nm(), modmask, modmatch);
+	    this.sym = sym;
+	    this.cat = cat;
+	}
+
+	public boolean match(KeyEvent ev, int modign) {
+	    int mod = mods(ev);
+	    if((mod & modmask & ~modign) != (modmatch & ~modign))
+		return(false);
+	    Sym sym = ev.key().primary(cat);
+	    return((sym != null) && (sym.id() == this.sym.id()));
+	}
+
+	private boolean equals(CatSymMatch that) {
+	    return((this.sym.id() == that.sym.id()) && this.cat.equals(that.cat) && equals((KeyMatch)that));
+	}
+
+	public boolean equals(Object o) {
+	    return((o instanceof CatSymMatch) && equals((CatSymMatch)o));
+	}
+
+	public String reduce() {
+	    throw(new RuntimeException("symbol-category matches cannot be reduced"));
+	}
+    }
+
+    public static class PhysicalMatch extends KeyMatch {
+	public String id;
+
+	public PhysicalMatch(String id, String keyname, int modmask, int modmatch) {
+	    super(keyname, modmask, modmatch);
+	    this.id = id;
+	}
+
+	public PhysicalMatch(Loc loc, int modmask, int modmatch) {
+	    this(loc.id(), loc.id(), modmask, modmatch);
+	}
+
+	public boolean match(KeyEvent ev, int modign) {
+	    int mod = mods(ev);
+	    if((mod & modmask & ~modign) != (modmatch & ~modign))
+		return(false);
+	    return(ev.key().location().id() == this.id);
+	}
+
+	private boolean equals(PhysicalMatch that) {
+	    return((this.id == that.id) && equals((KeyMatch)that));
+	}
+
+	public boolean equals(Object o) {
+	    return((o instanceof PhysicalMatch) && equals((PhysicalMatch)o));
+	}
+
+	public String reduce() {
+	    StringBuilder buf = new StringBuilder();
+	    reducemods(buf);
+	    for(int i = 0; i < sepchars.length(); i++) {
+		char sep = sepchars.charAt(i);
+		if(id.indexOf(sep) < 0) {
+		    buf.append(String.format("l%c%s%c%s", sep, id, sep, keyname));
+		    break;
+		}
+	    }
+	    return(buf.toString());
+	}
+
+	public static PhysicalMatch restore(char id, String desc, int modmask, int modmatch) {
+	    char sep = desc.charAt(0);
+	    int p = desc.indexOf(sep, 1);
+	    String locid = desc.substring(1, p);
+	    String nm = desc.substring(p + 1);
+	    return(new PhysicalMatch(locid, nm, modmask, modmatch));
+	}
+    }
+
+    public static final KeyMatch nil = new KeyMatch("None", 0, 0) {
+	public boolean match(KeyEvent ev, int modign) {
+	    return(false);
+	}
+
+	public String reduce() {
+	    StringBuilder buf = new StringBuilder();
+	    reducemods(buf);
+	    buf.append('n');
+	    return(buf.toString());
+	}
+    };
+
+    public static int mods(KeyEvent ev) {return(UI.modflags(ev.mods()));}
+
+    public abstract boolean match(KeyEvent ev, int modign);
 
     public boolean match(KeyEvent ev) {
 	return(match(ev, 0));
     }
-
+    public boolean match(Widget.KbdEvent ev, int modign) {
+	return(match(ev.tkev(), modign));
+    }
     public boolean match(Widget.KbdEvent ev) {
-	return(match(ev.awt));
+	return(match(ev.tkev()));
     }
 
     public String name() {
@@ -126,65 +402,81 @@ public class KeyMatch {
 		return(buf.toString());
 	}
 
-    private boolean equals(KeyMatch that) {
-	return((this.chr == that.chr) && (this.casematch == that.casematch) &&
-	       (this.code == that.code) && (this.extmatch == that.extmatch) &&
-	       (this.modmask == that.modmask) && (this.modmatch == that.modmatch));
-    }
-
-    public boolean equals(Object o) {
-	return((o instanceof KeyMatch) && equals((KeyMatch)o));
+    protected boolean equals(KeyMatch that) {
+	return((this.modmask == that.modmask) && (this.modmatch == that.modmatch));
     }
 
     public static KeyMatch forchar(char chr, int modmask, int modmatch) {
-	return(new KeyMatch('\0', false, KeyEvent.getExtendedKeyCodeForChar(chr), false, Character.toString(chr), modmask, modmatch));
+	return(new CharMatch(chr, false, Character.toString(chr), modmask, modmatch));
     }
     public static KeyMatch forchar(char chr, int mods) {
 	return(forchar(chr, S | C | M, mods));
     }
 
     public static KeyMatch forcode(int code, int modmask, int modmatch) {
-	return(new KeyMatch('\0', false, code, false, KeyEvent.getKeyText(code), modmask, modmatch));
+	return(new CodeMatch(code, false, java.awt.event.KeyEvent.getKeyText(code), modmask, modmatch));
     }
     public static KeyMatch forcode(int code, int mods) {
 	return(forcode(code, S | C | M, mods));
     }
 
-    public static KeyMatch forevent(KeyEvent ev, int modmask) {
-	int mod = mods(ev) & modmask;
-	char key = Character.toUpperCase(ev.getKeyChar());
-	int extended = ev.getExtendedKeyCode();
-	int code = ev.getKeyCode();
-	if(code != VK_UNDEFINED){
-		return(new KeyMatch('\0', false, code, false, KeyEvent.getKeyText(code), modmask, mod));
-	} else if(extended != VK_UNDEFINED){
-		String nm;
-		if(!Character.isISOControl(key))
-		nm = Character.toString(key);
-	    else
-		nm = String.format("%X", code);
-	    return(new KeyMatch('\0', false, extended, true, nm, modmask, mod));
-	}
-	return(null);
+    public static KeyMatch fortsym(Sym sym, int modmask, int modmatch) {
+	return(new TypedSymMatch(sym, modmask, modmatch));
+    }
+    public static KeyMatch fortsym(Sym sym, int mods) {
+	return(fortsym(sym, S | C | M, mods));
     }
 
-    public String reduce() {
-	StringBuilder buf = new StringBuilder();
+    public static KeyMatch forcsym(Collection<? extends Sym> cat, Sym sym, int modmask, int modmatch) {
+	return(new CatSymMatch(sym, cat, modmask, modmatch));
+    }
+    public static KeyMatch forcsym(Collection<? extends Sym> cat, Sym sym, int mods) {
+	return(forcsym(cat, sym, S | C | M, mods));
+    }
+
+    public static KeyMatch forpsym(Sym sym, int modmask, int modmatch) {
+	return(new PriSymMatch(sym, modmask, modmatch));
+    }
+    public static KeyMatch forpsym(Sym sym, int mods) {
+	return(forpsym(sym, S | C | M, mods));
+    }
+
+    public static KeyMatch forloc(Loc loc, String name, int modmask, int modmatch) {
+	return(new PhysicalMatch(loc.id(), name, modmask, modmatch));
+    }
+    public static KeyMatch forloc(Loc loc, String name, int mods) {
+	return(forloc(loc, name, S | C | M, mods));
+    }
+
+    @Deprecated
+    public static KeyMatch forevent(KeyEvent ev, int modmask) {
+	int mod = mods(ev) & modmask;
+	char chr = (ev instanceof KeyDownEvent) ?
+	    Character.toUpperCase(keychar((KeyDownEvent)ev)) :
+	    0;
+	/* In due time, switch to use PriSymMatch */
+	int code = AWTCompat.revawt.getOrDefault(ev.key().primary(AWTCompat.revawt.keySet()), VK_UNDEFINED);
+	if(code != VK_UNDEFINED) {
+	    String nm = ev.key().primary().nm();
+	    return(new CodeMatch(code, true, nm, modmask, mod));
+	}
+	if(!Character.isISOControl(chr))
+	    return(new CharMatch(chr, false, Character.toString(chr), modmask, mod));
+	return(null);
+    }
+    public static KeyMatch forevent(Widget.KbdEvent ev, int modmask) {
+	return(forevent(ev.tkev(), modmask));
+    }
+
+    protected void reducemods(StringBuilder buf) {
 	if((modmask & S) != 0)
 	    buf.append(((modmatch & S) != 0) ? 'S' : 's');
 	if((modmask & C) != 0)
 	    buf.append(((modmatch & C) != 0) ? 'C' : 'c');
 	if((modmask & M) != 0)
 	    buf.append(((modmatch & M) != 0) ? 'M' : 'm');
-	if(chr != 0) {
-	    buf.append(String.format("g%s%x:%s", casematch ? "=" : "", (int)chr, keyname));
-	} else if(code != VK_UNDEFINED) {
-	    buf.append(String.format("%c%x:%s", extmatch ? 'k' : 'K', (int)code, keyname));
-	} else {
-	    buf.append(String.format("n"));
-	}
-	return(buf.toString());
     }
+    public abstract String reduce();
 
     public static String reduce(KeyMatch key) {
 	if(key == null)
@@ -200,23 +492,16 @@ public class KeyMatch {
 	    case 'S': modmatch |= S; case 's': modmask |= S; break;
 	    case 'C': modmatch |= C; case 'c': modmask |= C; break;
 	    case 'M': modmatch |= M; case 'm': modmask |= M; break;
-	    case 'g': {
-		boolean casematch = false;
-		if(desc.charAt(p) == '=') {
-		    casematch = true;
-		    p++;
-		}
-		int p2 = desc.indexOf(':', p);
-		char chr = (char)Integer.parseInt(desc.substring(p, p2), 16);
-		String nm = desc.substring(p2 + 1);
-		return(new KeyMatch(chr, casematch, VK_UNDEFINED, false, nm, modmask, modmatch));
-	    }
-	    case 'k': case 'K': {
-		int p2 = desc.indexOf(':', p);
-		int code = Integer.parseInt(desc.substring(p, p2), 16);
-		String nm = desc.substring(p2 + 1);
-		return(new KeyMatch('\0', false, code, c == 'k', nm, modmask, modmatch));
-	    }
+	    case 'g':
+		return(CharMatch.restore(c, desc.substring(p), modmask, modmatch));
+	    case 'k': case 'K':
+		return(CodeMatch.restore(c, desc.substring(p), modmask, modmatch));
+	    case 't':
+		return(TypedSymMatch.restore(c, desc.substring(p), modmask, modmatch));
+	    case 'y':
+		return(PriSymMatch.restore(c, desc.substring(p), modmask, modmatch));
+	    case 'l':
+		return(PhysicalMatch.restore(c, desc.substring(p), modmask, modmatch));
 	    case 'n':
 		return(nil);
 	    default:
@@ -257,26 +542,23 @@ public class KeyMatch {
 	    }
 	}
 
-	protected KeyMatch mkmatch(KeyEvent ev) {
+	protected KeyMatch mkmatch(KeyDownEvent ev) {
 	    return(forevent(ev, MODS));
 	}
 
-	protected boolean handle(KeyEvent ev) {
-	    switch(ev.getKeyCode()) {
-	    case KeyEvent.VK_SHIFT: case KeyEvent.VK_CONTROL: case KeyEvent.VK_ALT:
-	    case KeyEvent.VK_META: case KeyEvent.VK_WINDOWS:
+	protected boolean handle(KeyDownEvent kev) {
+	    Toolkit.KeyDownEvent ev = kev.tkev();
+	    if(ev.key().primary(Std.MODKEYS) != null)
 		return(false);
-	    }
-	    int code = ev.getKeyCode();
-	    if(code == KeyEvent.VK_ESCAPE) {
+	    if(ev.sym() == Std.ESCAPE) {
 		change(namefor(this.key));
 		return(true);
 	    }
-	    if(code == KeyEvent.VK_DELETE) {
+	    if(ev.sym() == Std.DELETE) {
 		set(nil);
 		return(true);
 	    }
-	    KeyMatch key = mkmatch(ev);
+	    KeyMatch key = mkmatch(kev);
 	    if(key != null)
 		set(key);
 	    else
@@ -287,7 +569,7 @@ public class KeyMatch {
 	public boolean keydown(KeyDownEvent ev) {
 	    if(!ev.grabbed)
 		return(super.keydown(ev));
-	    if(handle(ev.awt)) {
+	    if(handle(ev)) {
 		grab.remove();
 		grab = null;
 	    }
@@ -351,12 +633,12 @@ public class KeyMatch {
 	    }
 	}
 
-	protected boolean handle(KeyEvent ev) {
-	    switch(ev.getKeyCode()) {
-	    case KeyEvent.VK_ESCAPE:
+	protected boolean handle(KeyDownEvent ev) {
+	    if(ev.tkev().sym() == Std.ESCAPE) {
 		change(modname(match));
 		return(true);
-	    case KeyEvent.VK_DELETE:
+	    }
+	    if(ev.tkev().sym() == Std.ESCAPE) {
 		set(0);
 		return(true);
 	    }
@@ -366,9 +648,7 @@ public class KeyMatch {
 	public boolean keyup(KeyUpEvent ev) {
 	    if(!ev.grabbed)
 		return(super.keyup(ev));
-	    switch(ev.code) {
-	    case KeyEvent.VK_SHIFT: case KeyEvent.VK_CONTROL: case KeyEvent.VK_ALT:
-	    case KeyEvent.VK_META: case KeyEvent.VK_WINDOWS:
+	    if(ev.tkev().key().primary(Std.MODKEYS) != null) {
 		grab.remove();
 		grab = null;
 		set(nmatch);
@@ -380,10 +660,8 @@ public class KeyMatch {
 	public boolean keydown(KeyDownEvent ev) {
 	    if(!ev.grabbed)
 		return(super.keydown(ev));
-	    switch(ev.code) {
-	    case KeyEvent.VK_SHIFT: case KeyEvent.VK_CONTROL: case KeyEvent.VK_ALT:
-	    case KeyEvent.VK_META: case KeyEvent.VK_WINDOWS:
-		nmatch |= (mods(ev.awt) & mask);
+	    if(ev.tkev().key().primary(Std.MODKEYS) != null) {
+		nmatch |= (mods(ev.tkev()) & mask);
 		return(true);
 	    }
 	    if(handle(ev)) {

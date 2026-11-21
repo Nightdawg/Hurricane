@@ -654,14 +654,11 @@ public class MCache implements MapSource {
 	}
 
 	public void ivneigh(Coord nc) {
-	    Coord cc = new Coord();
-	    for(cc.y = 0; cc.y < cutn.y; cc.y++) {
-		for(cc.x = 0; cc.x < cutn.x; cc.x++) {
-		    if((((nc.x < 0) && (cc.x == 0)) || ((nc.x > 0) && (cc.x == cutn.x - 1)) || (nc.x == 0)) &&
-		       (((nc.y < 0) && (cc.y == 0)) || ((nc.y > 0) && (cc.y == cutn.y - 1)) || (nc.y == 0)))
-		    {
-			geticut(Coord.of(cc)).invalidate();
-		    }
+	    for(Coord cc : Area.sized(cutn)) {
+		if((((nc.x < 0) && (cc.x == 0)) || ((nc.x > 0) && (cc.x == cutn.x - 1)) || (nc.x == 0)) &&
+		   (((nc.y < 0) && (cc.y == 0)) || ((nc.y > 0) && (cc.y == cutn.y - 1)) || (nc.y == 0)))
+		{
+		    geticut(Coord.of(cc)).invalidate();
 		}
 	    }
 	}
@@ -1248,14 +1245,10 @@ public class MCache implements MapSource {
     }
 
     public void reqarea(Coord ul, Coord br) {
-	ul = ul.div(cutsz); br = br.div(cutsz);
-	Coord rc = new Coord();
-	for(rc.y = ul.y; rc.y <= br.y; rc.y++) {
-	    for(rc.x = ul.x; rc.x <= br.x; rc.x++) {
-		try {
-		    getcut(Coord.of(rc));
-		} catch(Loading e) {}
-	    }
+	for(Coord rc : Area.corni(ul.div(cutsz), br.div(cutsz))) {
+	    try {
+		getcut(Coord.of(rc));
+	    } catch(Loading e) {}
 	}
     }
 

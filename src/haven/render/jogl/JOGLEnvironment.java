@@ -26,14 +26,18 @@
 
 package haven.render.jogl;
 
+import java.util.*;
 import java.nio.*;
 import haven.*;
+import haven.render.*;
 import haven.render.gl.*;
 import com.jogamp.opengl.*;
 import haven.render.gl.GL;
 
 public class JOGLEnvironment extends GLEnvironment {
     public final GLContext ctx;
+    private final Queue<Submission> submitted = new LinkedList<>();
+    private boolean invalid;
 
     private static GL bestwrap(com.jogamp.opengl.GL back) {
 	try {
@@ -85,5 +89,43 @@ public class JOGLEnvironment extends GLEnvironment {
 	SysBuffer ret = new JOGLBuffer(data.duplicate());
 	data.position(data.position() + sz);
 	return(ret);
+    }
+
+    public void submit(Render cmd) {
+	Submission task = submission(cmd);
+	synchronized(submitted) {
+	    if(!invalid) {
+		submitted.add(task);
+		task = null;
+	    }
+	}
+	if(task != null)
+	    task.abort();
+    }
+
+    public void process(GL gl) {
+	Collection<Submission> copy;
+	synchronized(submitted) {
+	    copy = new ArrayList<>(submitted);
+	    submitted.clear();
+	}
+	copy.forEach(task -> task.accept(gl));
+    }
+
+    public void dispose() {
+	super.dispose();
+	Collection<Submission> copy;
+	synchronized(submitted) {
+	    copy = new ArrayList<>(submitted);
+	    submitted.clear();
+	}
+	copy.forEach(Submission::abort);
+    }
+
+    public void submitwait() throws InterruptedException {
+	synchronized(submitted) {
+	    while(submitted.peek() == null)
+		submitted.wait();
+	}
     }
 }

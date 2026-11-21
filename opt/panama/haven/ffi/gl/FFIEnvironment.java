@@ -32,7 +32,7 @@ import haven.render.gl.*;
 import java.nio.*;
 import java.lang.foreign.*;
 
-public class FFIEnvironment extends GLEnvironment {
+public abstract class FFIEnvironment extends GLEnvironment {
     public FFIEnvironment(OpenGL gl) {
 	super(gl);
     }

@@ -139,14 +139,27 @@ public abstract class COM {
     public abstract MemoryLayout C_STGMEDIUM();
     public abstract STGMEDIUM STGMEDIUM();
 
-    static MemorySegment memguid(UUID uuid) {
-	MemorySegment ret = Arena.ofAuto().allocate(16);
-	ret.set(ValueLayout.JAVA_INT, 0, (int)(uuid.getMostSignificantBits() >>> 32));
-	ret.set(ValueLayout.JAVA_SHORT, 4, (short)(uuid.getMostSignificantBits() >>> 16));
-	ret.set(ValueLayout.JAVA_SHORT, 6, (short)(uuid.getMostSignificantBits() >>> 0));
+    public static MemorySegment memguid(MemorySegment buf, UUID uuid) {
+	buf.set(ValueLayout.JAVA_INT_UNALIGNED, 0, (int)(uuid.getMostSignificantBits() >>> 32));
+	buf.set(ValueLayout.JAVA_SHORT_UNALIGNED, 4, (short)(uuid.getMostSignificantBits() >>> 16));
+	buf.set(ValueLayout.JAVA_SHORT_UNALIGNED, 6, (short)(uuid.getMostSignificantBits() >>> 0));
 	for(int i = 0; i < 8; i++)
-	    ret.set(ValueLayout.JAVA_BYTE, 15 - i, (byte)(uuid.getLeastSignificantBits() >>> (i * 8)));
-	return(ret);
+	    buf.set(ValueLayout.JAVA_BYTE, 15 - i, (byte)(uuid.getLeastSignificantBits() >>> (i * 8)));
+	return(buf);
+    }
+
+    public static MemorySegment memguid(UUID uuid) {
+	return(memguid(Arena.ofAuto().allocate(16), uuid));
+    }
+
+    public static UUID guidmem(MemorySegment buf) {
+	long msb = 0, lsb = 0;
+	msb |= (buf.get(ValueLayout.JAVA_INT_UNALIGNED,   0) & 0xffffffffl) << 32;
+	msb |= (buf.get(ValueLayout.JAVA_SHORT_UNALIGNED, 4) & 0x0000ffffl) << 16;
+	msb |= (buf.get(ValueLayout.JAVA_SHORT_UNALIGNED, 6) & 0x0000ffffl) <<  0;
+	for(int i = 0; i < 8; i++)
+	    lsb |= (buf.get(ValueLayout.JAVA_BYTE, 15 - i) & 0xffl) << (i * 8);
+	return(new UUID(msb, lsb));
     }
 
     public static class CLSID {
@@ -160,6 +173,12 @@ public abstract class COM {
 
 	public CLSID(long msb, long lsb) {
 	    this(new UUID(msb, lsb));
+	}
+    }
+
+    public static class NoIIDException extends RuntimeException {
+	public NoIIDException(String msg) {
+	    super(msg);
 	}
     }
 
@@ -178,19 +197,38 @@ public abstract class COM {
 	    this(iface, new UUID(msb, lsb));
 	}
 
-	public static <I extends IUnknown> IID<I> get(Class<I> cl) {
-	    try {
-		Field f = cl.getDeclaredField("IID");
-		IID<?> iid = (IID<?>)f.get(null);
-		if(iid.iface != cl)
-		    throw(new RuntimeException(cl.toString()));
-		@SuppressWarnings("unchecked") IID<I> checked = (IID<I>)iid;
-		return(checked);
-	    } catch(NoSuchFieldException e) {
-		throw(new ClassCastException("not a declared COM interface: " + cl));
-	    } catch(IllegalAccessException e) {
-		throw(new RuntimeException(e));
+	public <I extends IUnknown> IID<I> cast(Class<I> cl) {
+	    if(!cl.isAssignableFrom(iface))
+		throw(new ClassCastException(iface + " -> " + cl));
+	    @SuppressWarnings("unchecked") IID<I> checked = (IID<I>)this;
+	    return(checked);
+	}
+
+	public static IID<? extends IUnknown> get(Type t) {
+	    if(t instanceof Class) {
+		Class<?> cl = (Class)t;
+		try {
+		    Field f = cl.getDeclaredField("IID");
+		    IID<?> iid = (IID<?>)f.get(null);
+		    if(iid.iface != cl)
+			throw(new RuntimeException(cl.toString()));
+		    return(iid);
+		} catch(NoSuchFieldException e) {
+		    throw(new NoIIDException("not a declared COM interface: " + cl));
+		} catch(IllegalAccessException e) {
+		    throw(new RuntimeException(e));
+		}
+	    } else if(t instanceof ParameterizedType) {
+		ParameterizedType pt = (ParameterizedType)t;
+		if((pt.getRawType() instanceof Class) && IUnknown.class.isAssignableFrom((Class<?>)pt.getRawType()))
+		    return(WinRT.ipiid(((Class<?>)pt.getRawType()).asSubclass(IUnknown.class),
+				       pt.getActualTypeArguments()));
 	    }
+	    throw(new NoIIDException(String.valueOf(t)));
+	}
+
+	public String toString() {
+	    return(String.format("#<com-iface %s for %s>", uuid, iface));
 	}
     }
 
@@ -209,12 +247,42 @@ public abstract class COM {
 	}
     }
 
+    public static class AdapterData {
+	public final COM com;
+	public final IID<?> iid;
+	public final Descriptor desc;
+	public final Method mth;
+
+	public AdapterData(COM com, IID<?> iid, Descriptor desc, Method mth) {
+	    this.com = com;
+	    this.iid = iid;
+	    this.desc = desc;
+	    this.mth = mth;
+	}
+    }
+
     public static interface DowncallAdapter {
 	public Object call(MemorySegment obj, Object[] args);
 
 	public static interface Arg {
 	    public Object convert(Arena st, Object val);
 	}
+
+	public static interface Constructor {
+	    public DowncallAdapter make(AdapterData data);
+
+	    public static final Constructor std = d -> {
+		Method handler = smethod(d.mth.getDeclaringClass(), "downcall_" + d.mth.getName());
+		if(handler != null)
+		    return(new CustomDowncall(d, handler));
+		else
+		    return(d.com.new StandardDowncall(d.iid, d.desc, d.mth));
+	    };
+	}
+
+	public static final DowncallAdapter nil = (self, args) -> {
+	    throw(new RuntimeException("no downcall defined"));
+	};
     }
 
     public static interface UpcallAdapter {
@@ -223,6 +291,14 @@ public abstract class COM {
 	public static final UpcallAdapter nil = (self, args) -> {
 	    throw(new RuntimeException("no upcall defined"));
 	};
+
+	public static interface Constructor {
+	    public UpcallAdapter make(AdapterData data);
+
+	    public static final Constructor std = d -> {
+		return(d.com.new StandardUpcall(d.iid, d.desc, d.mth));
+	    };
+	}
     }
 
     public static class ValueConversion {
@@ -254,6 +330,39 @@ public abstract class COM {
 	}
     }
 
+    private static Type actualize(Type type, IID<?> iid) {
+	if(type instanceof Class)
+	    return(type);
+	if(type instanceof ParameterizedType) {
+	    ParameterizedType pt = (ParameterizedType)type;
+	    if(pt.getOwnerType() == null) {
+		boolean ch = false;
+		Type raw = pt.getRawType();
+		Type araw = actualize(raw, iid);
+		ch |= araw != raw;
+		Type[] args = pt.getActualTypeArguments();
+		Type[] aargs = new Type[args.length];
+		for(int i = 0; i < args.length; i++)
+		    ch |= (aargs[i] = actualize(args[i], iid)) != args[i];
+		if(!ch)
+		    return(type);
+		return(new SimpleParameterizedType(null, araw, aargs));
+	    }
+	}
+	if(type instanceof TypeVariable) {
+	    TypeVariable<?> tv = (TypeVariable<?>)type;
+	    if(tv.getGenericDeclaration() == iid.iface) {
+		TypeVariable<?>[] vars = iid.iface.getTypeParameters();
+		for(int i = 0; i < vars.length; i++) {
+		    if(type.equals(vars[i]))
+			return(((WinRT.IPIID)iid).ptypes[i]);
+		}
+		throw(new IllegalArgumentException(type + " not in type variables of " + iid.iface));
+	    }
+	}
+	return(type);
+    }
+
     public class StandardDowncall implements DowncallAdapter {
 	private final int vindex;
 	private final MethodHandle fun;
@@ -261,18 +370,19 @@ public abstract class COM {
 	private final MemoryLayout outtype;
 	private final Function<MemorySegment, Object> outxf;
 
-	public StandardDowncall(Descriptor desc, Method mth) {
+	public StandardDowncall(IID<?> iid, Descriptor desc, Method mth) {
 	    Win32 win = Win32.get();
 	    this.vindex = desc.vindex;
 	    this.outtype = desc.outtype;
 	    Class<?>[] pars = mth.getParameterTypes();
+	    Type[] gpars = mth.getGenericParameterTypes();
 	    MemoryLayout[] args = desc.sig.argumentLayouts().toArray(new MemoryLayout[0]);
 	    if(pars.length != args.length - ((outtype == null) ? 1 : 2))
 		throw(new IllegalArgumentException(mth + ": " + Arrays.asList(pars) + " does not match " + Arrays.asList(args)));
 	    argxf = new Arg[pars.length];
 	    fun = ld.downcallHandle(desc.sig);
 	    for(int i = 0; i < pars.length; i++) {
-		Class<?> p = pars[i]; MemoryLayout a = args[i + 1];
+		Class<?> p = pars[i]; Type gp = gpars[i]; MemoryLayout a = args[i + 1];
 		Arg xf;
 		ValueConversion valxf = valxf(a, p);
 		if((valxf != null) && (valxf.darg != null)) {
@@ -321,7 +431,8 @@ public abstract class COM {
 		    } else if(p == String.class) {
 			xf = (st, v) -> (v == null) ? MemorySegment.NULL : st.allocateFrom((String)v, win.C_WCHARSET());
 		    } else if(IUnknown.class.isAssignableFrom(p)) {
-			xf = (st, v) -> reg.addrforobj((IUnknown)v, IID.get(p.asSubclass(IUnknown.class)));
+			IID<?> pariid = IID.get(actualize(gp, iid));
+			xf = (st, v) -> reg.addrforobj2((IUnknown)v, pariid, false, st);
 		    } else if(StructInstance.class.isAssignableFrom(p)) {
 			xf = (st, v) -> StructInstance.extract((StructInstance)v);
 		    } else {
@@ -335,12 +446,26 @@ public abstract class COM {
 	    if(outtype == null) {
 		outxf = null;
 	    } else {
-		Class<?> rtype = mth.getReturnType();
+		Type grtype = actualize(mth.getGenericReturnType(), iid);
+		Class<?> rtype;
+		if(grtype instanceof Class) {
+		    rtype = (Class<?>)grtype;
+		} else if(grtype instanceof ParameterizedType) {
+		    rtype = (Class<?>)((ParameterizedType)grtype).getRawType();
+		} else {
+		    throw(new IllegalArgumentException(String.valueOf(grtype)));
+		}
 		ValueConversion valxf = valxf(outtype, rtype);
 		if((valxf != null) && (valxf.dret != null)) {
 		    outxf = valxf.dret;
+		} else if(rtype == Boolean.TYPE) {
+		    if((outtype == ValueLayout.JAVA_INT) || (outtype == ValueLayout.JAVA_SHORT) || (outtype == ValueLayout.JAVA_BYTE)) {
+			outxf = buf -> ((int)getint(buf, 0, outtype, true)) != 0;
+		    } else {
+			throw(new IllegalArgumentException(outtype + " -> " + rtype));
+		    }
 		} else if(rtype == Integer.TYPE) {
-		    if((outtype == ValueLayout.JAVA_INT) || (outtype == ValueLayout.JAVA_SHORT) || (outtype == ValueLayout.JAVA_INT)) {
+		    if((outtype == ValueLayout.JAVA_INT) || (outtype == ValueLayout.JAVA_SHORT) || (outtype == ValueLayout.JAVA_BYTE)) {
 			outxf = buf -> (int)getint(buf, 0, outtype, true);
 		    } else {
 			throw(new IllegalArgumentException(outtype + " -> " + rtype));
@@ -360,7 +485,8 @@ public abstract class COM {
 		    }
 		} else if(IUnknown.class.isAssignableFrom(rtype)) {
 		    if(outtype == ADDRESS) {
-			outxf = buf -> reg.objforaddr(buf.get(ADDRESS, 0), rtype.asSubclass(IUnknown.class), false);
+			IID<?> outiid = IID.get(grtype);
+			outxf = buf -> reg.objforaddr(buf.get(ADDRESS, 0), outiid, false);
 		    } else {
 			throw(new IllegalArgumentException(outtype + " -> " + rtype));
 		    }
@@ -403,8 +529,8 @@ public abstract class COM {
 	private final Downcall info;
 	private final Method handler;
 
-	public CustomDowncall(Descriptor desc, Method mth, Method handler) {
-	    this.info = new Downcall(COM.get(), ld.downcallHandle(desc.sig));
+	public CustomDowncall(AdapterData d, Method handler) {
+	    this.info = new Downcall(d.com, ld.downcallHandle(d.desc.sig));
 	    this.handler = handler;
 	}
 
@@ -417,6 +543,12 @@ public abstract class COM {
 	}
     }
 
+    public static class COMReturn extends HResultError {
+	public COMReturn(int hresult) {
+	    super(hresult);
+	}
+    }
+
     public class StandardUpcall implements UpcallAdapter {
 	private final Function<Object, Object>[] argxf;
 	private final BiConsumer<Object, MemorySegment> outxf;
@@ -425,17 +557,18 @@ public abstract class COM {
 	private final boolean resret;
 
 	@SuppressWarnings("unchecked")
-	public StandardUpcall(Descriptor desc, Method mth) {
+	public StandardUpcall(IID<?> iid, Descriptor desc, Method mth) {
 	    Win32 win = Win32.get();
 	    this.method = mth;
 	    outtype = desc.outtype;
 	    Class<?>[] pars = mth.getParameterTypes();
+	    Type[] gpars = mth.getGenericParameterTypes();
 	    MemoryLayout[] args = desc.sig.argumentLayouts().toArray(new MemoryLayout[0]);
 	    argxf = new Function[pars.length];
 	    if(pars.length != args.length - ((outtype == null) ? 1 : 2))
-		throw(new IllegalArgumentException());
+		throw(new IllegalArgumentException(mth + ": " + Arrays.asList(pars) + " does not match " + Arrays.asList(args)));
 	    for(int i = 0; i < pars.length; i++) {
-		Class<?> p = pars[i]; MemoryLayout a = args[i + 1];
+		Class<?> p = pars[i]; Type gp = gpars[i]; MemoryLayout a = args[i + 1];
 		Function<Object, Object> xf;
 		ValueConversion valxf = valxf(a, p);
 		if((valxf != null) && (valxf.uarg != null)) {
@@ -460,7 +593,8 @@ public abstract class COM {
 		    } else if(p == Handle.class) {
 			xf = v -> Handle.of((MemorySegment)v);
 		    } else if(IUnknown.class.isAssignableFrom(p)) {
-			xf = v -> reg.objforaddr((MemorySegment)v, p.asSubclass(IUnknown.class), true);
+			IID<?> pariid = IID.get(actualize(gp, iid));
+			xf = v -> reg.objforaddr((MemorySegment)v, pariid, true);
 		    } else if(StructInstance.class.isAssignableFrom(p)) {
 			try {
 			    Method cons = p.getDeclaredMethod("fromcom", MemorySegment.class);
@@ -515,7 +649,8 @@ public abstract class COM {
 			    }
 			};
 		    } else if(IUnknown.class.isAssignableFrom(rtype)) {
-			outxf = (v, buf) -> buf.set(ADDRESS, 0, reg.addrforobj((IUnknown)v, IID.get(rtype.asSubclass(IUnknown.class))));
+			IID<?> outiid = IID.get(actualize(mth.getGenericReturnType(), iid));
+			outxf = (v, buf) -> buf.set(ADDRESS, 0, reg.addrforobj2((IUnknown)v, outiid, true, null));
 		    } else {
 			throw(new IllegalArgumentException(rtype + " -> "  + outtype));
 		    }
@@ -536,7 +671,7 @@ public abstract class COM {
 		if(resret)
 		    return(((Number)rv).intValue());
 		return(0);
-	    } catch(HResultError e) {
+	    } catch(COMReturn e) {
 		return(e.hresult);
 	    }
 	}
@@ -546,8 +681,8 @@ public abstract class COM {
 	public final int vindex;
 	public final FunctionDescriptor sig;
 	public final MemoryLayout outtype;
-	DowncallAdapter da = null;
-	UpcallAdapter ua = null;
+	DowncallAdapter.Constructor mda = DowncallAdapter.Constructor.std;
+	UpcallAdapter.Constructor mua = UpcallAdapter.Constructor.std;
 
 	public Descriptor(int vindex, FunctionDescriptor sig, MemoryLayout outtype) {
 	    this.vindex = vindex;
@@ -559,46 +694,141 @@ public abstract class COM {
 	    this(vindex, sig, null);
 	}
 
+	public Descriptor downcall(DowncallAdapter.Constructor mda) {
+	    this.mda = mda; return(this);
+	}
 	public Descriptor downcall(DowncallAdapter da) {
-	    this.da = da; return(this);
+	    return(downcall(data -> da));
+	}
+	public Descriptor upcall(UpcallAdapter.Constructor mua) {
+	    this.mua = mua; return(this);
 	}
 	public Descriptor upcall(UpcallAdapter ua) {
-	    this.ua = ua; return(this);
+	    return(upcall(data -> ua));
 	}
 
-	private static final Map<Method, Descriptor> cache = new ConcurrentHashMap<>();
+	private static final Map<Method, Descriptor> cache = new HashMap<>();
 	public static Descriptor get(Method method) {
-	    Descriptor ret = cache.get(method);
-	    if(ret != null)
-		return(ret);
-	    try {
-		Field f = method.getDeclaringClass().getDeclaredField("sig_" + method.getName());
-		if(!Modifier.isStatic(f.getModifiers()))
+	    synchronized(cache) {
+		Descriptor ret = cache.get(method);
+		if(ret != null)
+		    return(ret);
+		try {
+		    Field f = method.getDeclaringClass().getDeclaredField("sig_" + method.getName());
+		    if(!Modifier.isStatic(f.getModifiers()))
+			return(null);
+		    ret = (Descriptor)f.get(null);
+		    cache.put(method, ret);
+		    return(ret);
+		} catch(ReflectiveOperationException e) {
 		    return(null);
-		ret = (Descriptor)f.get(null);
-		synchronized(ret) {
-		    if(ret.da == null) {
-			Method handler = smethod(method.getDeclaringClass(), "downcall_" + method.getName());
-			if(handler != null)
-			    ret.da = new CustomDowncall(ret, method, handler);
-			else
-			    ret.da = COM.get().new StandardDowncall(ret, method);
-		    }
-		    if(ret.ua == null) {
-			ret.ua = COM.get().new StandardUpcall(ret, method);
-		    }
 		}
-		cache.put(method, ret);
-		return(ret);
-	    } catch(ReflectiveOperationException e) {
-		return(null);
 	    }
 	}
     }
 
+    private static IID<?>[] getiids(Class<?> fcl, Collection<WinRT.IPIID<?>> hints) {
+	class Buffer {
+	    final Map<Class<?>, WinRT.IPIID> ihints = new HashMap<>();
+	    final Collection<IID<?>> iids = new ArrayList<>();
+
+	    Buffer() {
+		for(WinRT.IPIID<?> hint : hints)
+		    ihints.put(hint.iface, hint);
+		addclass(fcl, new Type[fcl.getTypeParameters().length]);
+	    }
+
+	    void addclass(Class<?> cl, Type[] tpars) {
+		TypeVariable<?>[] vars = cl.getTypeParameters();
+		WinRT.IPIID hint = ihints.get(cl);
+		if(hint != null) {
+		    for(int i = 0; i < vars.length; i++) {
+			if(tpars[i] == null)
+			    tpars[i] = hint.ptypes[i];
+			else if(!tpars[i].equals(hint.ptypes[i]))
+			    throw(new IllegalArgumentException(cl + ": " + tpars[i] + " != " + hint.ptypes[i]));
+		    }
+		}
+
+		addiid(cl, tpars);
+
+		addsuper(cl, cl.getGenericSuperclass(), vars, tpars);
+		for(Type iface : cl.getGenericInterfaces())
+		    addsuper(cl, iface, vars, tpars);
+	    }
+
+	    void addiid(Class<?> cl, Type[] tpars) {
+		if(IUnknown.class.isAssignableFrom(cl)) {
+		    try {
+			if(tpars.length == 0) {
+			    iids.add(IID.get(cl));
+			} else {
+			    for(int i = 0; i < tpars.length; i++) {
+				if(tpars[i] == null)
+				    return;
+			    }
+			    iids.add(IID.get(new SimpleParameterizedType(null, cl, tpars)));
+			}
+		    } catch(NoIIDException e) {
+		    }
+		}
+	    }
+
+	    Type actualize(Type type, Class<?> vcl, TypeVariable<?>[] vars, Type[] tpars) {
+		if(type instanceof Class)
+		    return(type);
+		if(type instanceof ParameterizedType) {
+		    ParameterizedType pt = (ParameterizedType)type;
+		    if(pt.getOwnerType() == null) {
+			boolean ch = false;
+			Type raw = pt.getRawType();
+			Type araw = actualize(raw, vcl, vars, tpars);
+			ch |= araw != raw;
+			Type[] args = pt.getActualTypeArguments();
+			Type[] aargs = new Type[args.length];
+			for(int i = 0; i < args.length; i++)
+			    ch |= (aargs[i] = actualize(args[i], vcl, vars, tpars)) != args[i];
+			if(!ch)
+			    return(type);
+			return(new SimpleParameterizedType(null, araw, aargs));
+		    }
+		}
+		if(type instanceof TypeVariable) {
+		    TypeVariable<?> tv = (TypeVariable<?>)type;
+		    if(tv.getGenericDeclaration() == vcl) {
+			for(int i = 0; i < vars.length; i++) {
+			    if(type.equals(vars[i]))
+				return((tpars[i] != null) ? tpars[i] : type);
+			}
+			throw(new IllegalArgumentException(type + " not in type variables of " + vcl));
+		    }
+		}
+		return(type);
+	    }
+
+	    void addsuper(Class<?> ccl, Type st, TypeVariable<?>[] vars, Type[] tpars) {
+		if(st instanceof Class) {
+		    Class<?> scl = (Class<?>)st;
+		    /* Apparently, lambda objects of parameterized classes don't declare
+		     * themselves as parameterized types. That's what the IID hint is
+		     * basically for. */
+		    addclass(scl, new Type[scl.getTypeParameters().length]);
+		} else if(st instanceof ParameterizedType) {
+		    ParameterizedType pt = (ParameterizedType)st;
+		    Class<?> scl = (Class<?>)pt.getRawType();
+		    Type[] apars = pt.getActualTypeArguments();
+		    Type[] stpars = new Type[apars.length];
+		    for(int i = 0; i < stpars.length; i++)
+			stpars[i] = actualize(apars[i], ccl, vars, tpars);
+		}
+	    }
+	}
+	return(new Buffer().iids.toArray(new IID<?>[0]));
+    }
+
     public class Registry {
-	private final Map<Pair<IUnknown, IID>, LocalStub<?>> stubsbyobj = new HashMap<>();
-	private final Map<Long, LocalStub> stubsbyaddr = new HashMap<>();
+	private final Map<IUnknown, LocalStub> stubsbyobj = new HashMap<>();
+	private final Map<Long, LocalStub.Iface> stubsbyaddr = new HashMap<>();
 	private final Map<Long, Reference<Foreign>> foreign = new HashMap<>();
 
 	public class Callback {
@@ -622,7 +852,7 @@ public abstract class COM {
 		throw(new IllegalArgumentException(String.valueOf(type)));
 	    }
 
-	    Callback(Arena alloc, Method mth, Descriptor desc) {
+	    Callback(Arena alloc, IID<?> iid, Method mth, Descriptor desc) {
 		MemoryLayout[] args = desc.sig.argumentLayouts().toArray(new MemoryLayout[0]);
 		Class<?>[] pars = new Class<?>[args.length];
 		for(int i = 0; i < args.length; i++)
@@ -634,21 +864,22 @@ public abstract class COM {
 		handler = handler.asType(type);
 		this.stub = ld.upcallStub(handler, desc.sig, alloc);
 		this.method = mth;
-		this.ua = desc.ua;
+		this.ua = desc.mua.make(new AdapterData(COM.this, iid, desc, mth));
 	    }
 
 	    private static final MethodHandle callback = vlookup(MethodHandles.lookup(), Callback.class, "callback", Integer.TYPE,
 								 MemorySegment.class, Object[].class);
 	    private int callback(MemorySegment self, Object[] args) {
 		return(upcallwrap(() -> {
-		    LocalStub<?> stub;
+		    LocalStub.Iface ip;
 		    synchronized(Registry.this) {
-			stub = stubsbyaddr.get(self.address());
+			ip = stubsbyaddr.get(self.address());
 		    }
-		    if(stub == null) {
+		    if(ip == null) {
 			Warning.warn("call to " + method + " on unregistered stub $" + Long.toUnsignedString(self.address(), 16));
 			return(HResultError.E_FAIL);
 		    }
+		    LocalStub stub = ip.stub();
 		    if((method != null) && !method.getDeclaringClass().isInstance(stub.obj)) {
 			Warning.warn("call to " + method + " on non-matching " + stub.obj);
 			return(HResultError.E_FAIL);
@@ -658,16 +889,17 @@ public abstract class COM {
 	    }
 	}
 
-	public class VTable {
+	public class VTable<I extends IUnknown> {
 	    public final MemorySegment vtbl;
 	    private final Callback[] retain;
 
-	    VTable(Class<? extends IUnknown> iface) {
+	    VTable(IID<I> iid) {
+		Class<I> iface = iid.iface;
 		Arena alloc = Arena.ofAuto();
 		Callback[] table = new Callback[3];
-		table[0] = stub_QueryInterface;
-		table[1] = stub_AddRef;
-		table[2] = stub_Release;
+		table[0] = new Callback(alloc, iid, null, desc_QueryInterface);
+		table[1] = new Callback(alloc, iid, null, desc_AddRef);
+		table[2] = new Callback(alloc, iid, null, desc_Release);
 		for(Method mth : iface.getMethods()) {
 		    if(!IUnknown.class.isAssignableFrom(mth.getDeclaringClass()) || (mth.getDeclaringClass() == IUnknown.class))
 			continue;
@@ -676,7 +908,7 @@ public abstract class COM {
 			continue;
 		    if(desc.vindex >= table.length)
 			table = Arrays.copyOf(table, desc.vindex + 1);
-		    table[desc.vindex] = new Callback(alloc, mth, desc);
+		    table[desc.vindex] = new Callback(alloc, iid, mth, desc);
 		}
 		vtbl = alloc.allocate(ADDRESS, table.length);
 		for(int i = 0; i < table.length; i++) {
@@ -686,40 +918,82 @@ public abstract class COM {
 		retain = table;
 	    }
 	}
-	private final Map<Class<? extends IUnknown>, VTable> vtables = new WeakHashMap<>();
-	public VTable vtable(Class<? extends IUnknown> iface) {
+	private final Map<IID<? extends IUnknown>, VTable<? extends IUnknown>> vtables = new WeakHashMap<>();
+	public <I extends IUnknown> VTable<I> vtable(IID<I> iid) {
 	    synchronized(vtables) {
-		return(vtables.computeIfAbsent(iface, VTable::new));
+		@SuppressWarnings("unchecked") VTable<I> ret = (VTable<I>)vtables.computeIfAbsent(iid, k -> new VTable<>(k));
+		return(ret);
 	    }
 	}
 
-	private final Callback stub_QueryInterface, stub_AddRef, stub_Release;
-	{
-	    Arena alloc = Arena.ofAuto();
-	    stub_QueryInterface = new Callback(alloc, null, new Descriptor(0, FunctionDescriptor.of(HRESULT(), ADDRESS, REFIID(), LPVOID()), ADDRESS)
-					       .upcall(LocalStub::QueryInterface));
-	    stub_AddRef = new Callback(alloc, null, new Descriptor(0, FunctionDescriptor.of(UINT(), ADDRESS))
-				       .upcall(LocalStub::AddRef));
-	    stub_Release = new Callback(alloc, null, new Descriptor(0, FunctionDescriptor.of(UINT(), ADDRESS))
-				       .upcall(LocalStub::Release));
-	}
-	public class LocalStub<I extends IUnknown> {
-	    private final AtomicInteger rc = new AtomicInteger(1);
-	    private final I obj;
-	    private final IID<I> iface;
-	    private final MemorySegment mem;
+	private final Descriptor desc_QueryInterface =
+	    new Descriptor(0, FunctionDescriptor.of(HRESULT(), ADDRESS, REFIID(), LPVOID()), ADDRESS)
+	    .upcall(LocalStub::QueryInterface);
+	private final Descriptor desc_AddRef =
+	    new Descriptor(0, FunctionDescriptor.of(UINT(), ADDRESS))
+	    .upcall(LocalStub::AddRef);
+	private final Descriptor desc_Release =
+	    new Descriptor(0, FunctionDescriptor.of(UINT(), ADDRESS))
+	    .upcall(LocalStub::Release);
+	public class LocalStub {
+	    final Arena alloc = Arena.ofAuto();;
+	    final AtomicInteger rc = new AtomicInteger(1);
+	    final IUnknown obj;
+	    final Map<IID<?>, Iface> ifaces = new HashMap<>();
 
-	    LocalStub(I obj, IID<I> iface) {
+	    LocalStub(IUnknown obj) {
 		this.obj = obj;
-		this.iface = iface;
-		mem = Arena.ofAuto().allocate(ADDRESS);
-		mem.set(ADDRESS, 0, vtable(iface.iface).vtbl);
+	    }
+
+	    public class Iface<I extends IUnknown> {
+		final IID<I> iid;
+		final MemorySegment mem;
+
+		Iface(IID<I> iid) {
+		    this.iid = iid;
+		    mem = alloc.allocate(ADDRESS);
+		    mem.set(ADDRESS, 0, vtable(iid).vtbl);
+		}
+
+		LocalStub stub() {return(LocalStub.this);}
+
+		public String toString() {
+		    return(String.format("#<com-iface @ %x for %s, %s>", mem.address(), iid, obj));
+		}
+	    }
+
+	    <I extends IUnknown> Iface<I> iface(IID<I> iid) {
+		synchronized(ifaces) {
+		    @SuppressWarnings("unchecked") Iface<I> ip = (Iface<I>)ifaces.get(iid);
+		    if(ip == null) {
+			synchronized(Registry.this) {
+			    ifaces.put(iid, ip = new Iface<>(iid));
+			    stubsbyaddr.put(ip.mem.address(), ip);
+			}
+		    }
+		    return(ip);
+		}
 	    }
 
 	    Registry reg() {return(Registry.this);}
 
+	    private IID<?>[] iids = null;
 	    static int QueryInterface(LocalStub stub, Object[] args) {
-		Warning.warn("QueryInterface called on COM stub");
+		if(stub.iids == null) {
+		    Collection<WinRT.IPIID<?>> hints = new ArrayList<>();
+		    for(IID<?> iid : stub.ifaces.keySet()) {
+			if(iid instanceof WinRT.IPIID)
+			    hints.add((WinRT.IPIID<?>)iid);;
+		    }
+		    stub.iids = getiids(stub.obj.getClass(), hints);
+		}
+		UUID tgtid = guidmem(((MemorySegment)args[0]).reinterpret(16));
+		for(IID<?> iid : stub.iids) {
+		    if(iid.uuid.equals(tgtid)) {
+			((MemorySegment)args[1]).reinterpret(ADDRESS.byteSize()).set(ADDRESS, 0, stub.reg().addrforobj2(stub.obj, iid, true, null));
+			return(0);
+		    }
+		}
 		return(HResultError.E_NOINTERFACE);
 	    }
 
@@ -732,35 +1006,50 @@ public abstract class COM {
 		if(rc == 0) {
 		    Registry reg = stub.reg();
 		    synchronized(reg) {
-			if(reg.stubsbyaddr.remove(stub.mem) != stub)
-			    throw(new RuntimeException("stub mismatch for " + stub.obj + " when released"));
-			if(reg.stubsbyobj.remove(new Pair<>(stub.obj, stub.iface)) != stub)
+			for(LocalStub.Iface iface : stub.ifaces.values()) {
+			    if(reg.stubsbyaddr.remove(iface.mem.address()) != iface)
+				throw(new RuntimeException("interface-pointer mismatch for " + iface + ", " + stub.obj + " when released"));
+			}
+			if(reg.stubsbyobj.remove(stub.obj) != stub)
 			    throw(new RuntimeException("stub mismatch for " + stub.obj + " when released"));
 		    }
 		}
 		return(rc);
 	    }
+
+	    public String toString() {
+		return(String.format("#<com-stub %s>", obj));
+	    }
 	}
 
+	private final Map<Pair<IID<?>, Method>, DowncallAdapter> dcache = new ConcurrentHashMap<>();
 	public class Foreign implements InvocationHandler {
 	    private static final Method mth_toString = vmethod(Object.class, "toString");
-	    public final Class<? extends IUnknown> iface;
+	    public final IID<?> iid;
 	    final MemorySegment mem;
 	    Object proxy = null;
 
-	    Foreign(MemorySegment mem, Class<? extends IUnknown> iface) {
-		this.iface = iface;
+	    Foreign(MemorySegment mem, IID<?> iid) {
+		this.iid = iid;
 		this.mem = mem;
 	    }
 
 	    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 		if(method.equals(mth_toString))
-		    return("#<com-proxy " + iface + ">");
+		    return("#<com-proxy " + iid.iface + " @ " + Long.toUnsignedString(mem.address(), 16) + ">");
 		if(args == null)
 		    args = new Object[0];
-		Descriptor desc = Descriptor.get(method);
-		if(desc != null)
-		    return(desc.da.call(mem, args));
+		DowncallAdapter da = dcache.get(new Pair<>(iid, method));
+		if(da == null) {
+		    Descriptor desc = Descriptor.get(method);
+		    if(desc != null)
+			da = desc.mda.make(new AdapterData(COM.this, iid, desc, method));
+		    else
+			da = DowncallAdapter.nil;
+		    dcache.put(new Pair<>(iid, method), da);
+		}
+		if(da != DowncallAdapter.nil)
+		    return(da.call(mem, args));
 		if(method.isDefault())
 		    return(InvocationHandler.invokeDefault(proxy, method, args));
 		throw(new RuntimeException("no downcall implementation for " + method));
@@ -780,23 +1069,28 @@ public abstract class COM {
 
 	final int VINDEX_RELEASE = 2;
 	final MethodHandle native_Release = ld.downcallHandle(FunctionDescriptor.of(ULONG(), ADDRESS));
-	void release(MemorySegment obj) {
+	int release(MemorySegment obj) {
 	    MemorySegment rfun = getvtab(obj, VINDEX_RELEASE);
+	    int rv;
 	    try {
-		native_Release.invoke(rfun, obj);
+		rv = (int)native_Release.invoke(rfun, obj);
 	    } catch(Throwable t) {
 		throw(new InvocationException(t));
 	    }
+	    return(rv);
 	}
 
-	public <I extends IUnknown> I objforaddr(MemorySegment mem, Class<I> iface, boolean borrowed) {
+	public <I extends IUnknown> I objforaddr(MemorySegment mem, IID<I> iid, boolean borrowed) {
+	    if(nullp(mem))
+		return(null);
 	    synchronized(this) {
 		{
-		    LocalStub stub = stubsbyaddr.get(mem.address());
-		    if(stub != null) {
+		    LocalStub.Iface<?> ip = stubsbyaddr.get(mem.address());
+		    if(ip != null) {
+			LocalStub stub = ip.stub();
 			if(!borrowed)
 			    stub.rc.decrementAndGet();
-			return(iface.cast(stub));
+			return(iid.iface.cast(stub.obj));
 		    }
 		}
 		{
@@ -805,8 +1099,8 @@ public abstract class COM {
 		    if(obj == null) {
 			if(borrowed)
 			    addref(mem);
-			obj = new Foreign(mem, iface);
-			obj.proxy = Proxy.newProxyInstance(iface.getClassLoader(), new Class<?>[] {iface}, obj);
+			obj = new Foreign(mem, iid);
+			obj.proxy = Proxy.newProxyInstance(iid.iface.getClassLoader(), new Class<?>[] {iid.iface}, obj);
 			Reference<Foreign> nref = new WeakReference<>(obj);
 			Finalizer.finalize(obj, () -> {
 			    if(foreign.remove(mem.address()) != nref)
@@ -818,12 +1112,12 @@ public abstract class COM {
 			if(!borrowed)
 			    release(mem);
 		    }
-		    return(iface.cast(obj.proxy));
+		    return(iid.iface.cast(obj.proxy));
 		}
 	    }
 	}
 
-	public <I extends IUnknown> MemorySegment addrforobj(I obj, IID<I> iface) {
+	public <I extends IUnknown> MemorySegment addrforobj(I obj, IID<I> iid, boolean get, Object retainer) {
 	    if(obj == null)
 		return(MemorySegment.NULL);
 	    InvocationHandler h = null;
@@ -833,22 +1127,36 @@ public abstract class COM {
 	    }
 	    if(h instanceof Foreign) {
 		Foreign f = (Foreign)h;
-		if(!iface.iface.isInstance(obj))
-		    throw(new ClassCastException("foreign instance is " + f.iface + ", not " + iface.iface));
+		if(!iid.iface.isInstance(obj))
+		    throw(new ClassCastException("foreign instance is " + f.iid.iface + ", not " + iid.iface));
+		if(get)
+		    addref(f.mem);
 		return(f.mem);
 	    }
 	    if(obj instanceof IUnknown) {
 		synchronized(this) {
-		    LocalStub<?> stub = stubsbyobj.get(new Pair<>(obj, iface));
-		    if(stub != null)
-			return(stub.mem);
-		    stub = new LocalStub<I>(obj, iface);
-		    stubsbyobj.put(new Pair<>(obj, iface), stub);
-		    stubsbyaddr.put(stub.mem.address(), stub);
-		    return(stub.mem);
+		    LocalStub stub = stubsbyobj.get(obj);
+		    if(stub == null) {
+			if(!get && (retainer == null))
+			    throw(new RuntimeException("cannot create new borrowed stubs without a retainer"));
+			LocalStub nstub = new LocalStub(obj);
+			stubsbyobj.put(obj, nstub);
+			if(retainer != null)
+			    Finalizer.finalize(retainer, () -> LocalStub.Release(nstub, new Object[0]));
+			stub = nstub;
+		    } else {
+			if(get)
+			    stub.rc.incrementAndGet();
+		    }
+		    LocalStub.Iface<I> ip = stub.iface(iid);
+		    return(ip.mem);
 		}
 	    }
 	    throw(new IllegalArgumentException(String.valueOf(obj)));
+	}
+
+	public <I extends IUnknown> MemorySegment addrforobj2(IUnknown obj, IID<I> iface, boolean get, Object retainer) {
+	    return(addrforobj(iface.iface.cast(obj), iface, get, retainer));
 	}
     }
     final Registry reg = new Registry();
@@ -874,9 +1182,9 @@ public abstract class COM {
 	private static final MemoryLayout HBITMAP    = Win32.Win64Unicode.HBITMAP;
 	private static final MemoryLayout HGLOBAL    = Win32.Win64Unicode.HGLOBAL;
 	private static final MemoryLayout HWND       = Win32.Win64Unicode.HWND;
-	private static final MemoryLayout LPOLESTR   = ADDRESS;
-	private static final MemoryLayout REFCLSID   = ADDRESS;
-	private static final MemoryLayout REFIID     = ADDRESS;
+	static final MemoryLayout LPOLESTR = ADDRESS;
+	static final MemoryLayout REFCLSID = ADDRESS;
+	static final MemoryLayout REFIID   = ADDRESS;
 	private final SymbolLookup ole32 = loadlib("OLE32.DLL", Arena.global());
 
 	public MemoryLayout DWORD()   {return(DWORD);}
@@ -933,7 +1241,7 @@ public abstract class COM {
 	public <I extends IUnknown> I CoCreateInstance(CLSID clsid, IUnknown outer, int context, IID<I> iid) {
 	    try(Arena st = Arena.ofConfined()) {
 		MemorySegment buf = st.allocate(LPVOID);
-		MemorySegment outerp = (outer == null) ? MemorySegment.NULL : reg.addrforobj(outer, IUnknown.IID);
+		MemorySegment outerp = (outer == null) ? MemorySegment.NULL : reg.addrforobj(outer, IUnknown.IID, false, st);
 		int rv;
 		try {
 		    rv = (int)CoCreateInstance.invoke(clsid.mem, outerp, context, iid.mem, buf);
@@ -942,7 +1250,7 @@ public abstract class COM {
 		}
 		if(!SUCCEEDED(rv))
 		    throw(new HResultError(rv));
-		return(reg.objforaddr(buf.get(ADDRESS, 0), iid.iface, false));
+		return(reg.objforaddr(buf.get(ADDRESS, 0), iid, false));
 	    }
 	}
 
@@ -968,13 +1276,14 @@ public abstract class COM {
 
 	private final MethodHandle RegisterDragDrop = ld.downcallHandle(ole32.find("RegisterDragDrop").get(), FunctionDescriptor.of(HRESULT, HWND, ADDRESS));
 	public void RegisterDragDrop(Handle hwnd, IDropTarget droptarget) {
-	    MemorySegment dt = reg.addrforobj(droptarget, IDropTarget.IID);
+	    MemorySegment dt = reg.addrforobj(droptarget, IDropTarget.IID, true, null);
 	    int rv;
 	    try {
 		rv = (int)RegisterDragDrop.invoke(hwnd.bits, dt);
 	    } catch(Throwable e) {
 		throw(new InvocationException(e));
 	    }
+	    reg.release(dt);
 	    if(!SUCCEEDED(rv))
 		throw(new HResultError(rv));
 	}
@@ -1091,6 +1400,9 @@ public abstract class COM {
 				      (v, buf) -> {
 					  MemorySegment.copy(((STGMEDIUM)v).mem(), 0, buf, 0, _STGMEDIUM.byteSize());
 				      }));
+	    valxf(new ValueConversion(ADDRESS, IID.class,
+				      (st, v) -> ((IID)v).mem,
+				      null, null, null));
 	}
     }
 

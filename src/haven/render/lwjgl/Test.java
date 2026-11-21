@@ -34,7 +34,14 @@ public class Test {
 
 	public LWJGLEnvironment mkenv() {
 	    org.lwjgl.opengl.GL.createCapabilities();
-	    return(new LWJGLEnvironment());
+	    return(new LWJGLEnvironment() {
+		public void submit(Render cmd) {
+		    Submission task = submission(cmd);
+		    synchronized(TestPanel.this) {
+			runInContext(() -> task.accept(LWJGLWrap.instance));
+		    }
+		}
+	    });
 	}
     }
 
@@ -98,10 +105,6 @@ public class Test {
 	Render g = env.render();
 	draw(g);
 	env.submit(g);
-	p.runInContext(() -> {
-		env.process(LWJGLWrap.instance);
-		p.swapBuffers();
-	    });
     }
 
     void run() {

@@ -55,29 +55,29 @@ public interface Tex extends Disposable {
 	if((c.x >= cbr.x) || (c.y >= cbr.y) ||
 	   (c.x + dsz.x <= cul.x) || (c.y + dsz.y <= cul.y))
 	    return;
-	Coord dul = new Coord(c);
-	Coord dbr = new Coord(c.add(dsz));
+	int dl = c.x, du = c.y;
+	int dr = dl + dsz.x, db = du + dsz.y;
 	Coord tsz = sz();
 	float tl = 0, tu = 0, tr = tsz.x, tb = tsz.y;
-	if(dul.x < cul.x) {
-	    tl = ((float)(cul.x - dul.x) / dsz.x) * tsz.x;
-	    dul.x = cul.x;
+	if(dl < cul.x) {
+	    tl = ((float)(cul.x - dl) / dsz.x) * tsz.x;
+	    dl = cul.x;
 	}
-	if(dul.y < cul.y) {
-	    tu = ((float)(cul.y - dul.y) / dsz.y) * tsz.y;
-	    dul.y = cul.y;
+	if(du < cul.y) {
+	    tu = ((float)(cul.y - du) / dsz.y) * tsz.y;
+	    du = cul.y;
 	}
-	if(dbr.x > cbr.x) {
-	    tr -= ((float)(dbr.x - cbr.x) / dsz.x) * tsz.x;
-	    dbr.x = cbr.x;
+	if(dr > cbr.x) {
+	    tr -= ((float)(dr - cbr.x) / dsz.x) * tsz.x;
+	    dr = cbr.x;
 	}
-	if(dbr.y > cbr.y) {
-	    tb -= ((float)(dbr.y - cbr.y) / dsz.y) * tsz.y;
-	    dbr.y = cbr.y;
+	if(db > cbr.y) {
+	    tb -= ((float)(db - cbr.y) / dsz.y) * tsz.y;
+	    db = cbr.y;
 	}
 	float[] gc = {
-	    dul.x, dul.y, dbr.x, dul.y,
-	    dbr.x, dbr.y, dul.x, dbr.y,
+	    dl, du, dr, du,
+	    dr, db, dl, db,
 	};
 	float[] tc = {
 	    tl, tu, tr, tu,

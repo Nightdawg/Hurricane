@@ -28,6 +28,7 @@ package haven.ffi.windows;
 
 import java.lang.invoke.*;
 import java.lang.foreign.*;
+import haven.ffi.*;
 import haven.ffi.windows.COM.*;
 import static java.lang.foreign.ValueLayout.ADDRESS;
 
@@ -35,8 +36,23 @@ public interface IUnknown {
     public static final IID<IUnknown> IID = new IID<>(IUnknown.class, 0x00000000_0000_0000l, 0xc000_000000000046l);
     static final COM com = COM.get();
 
-    public static final Descriptor sig_QueryInterface = new Descriptor(0, FunctionDescriptor.of(com.HRESULT(), com.REFIID(), com.LPVOID()), ADDRESS);
+    public static final Descriptor sig_QueryInterface = new Descriptor(0, FunctionDescriptor.of(com.HRESULT(), ADDRESS, com.REFIID(), com.LPVOID()), ADDRESS);
     public default <I extends IUnknown> I QueryInterface(IID<I> iid) {throw(new AssertionError());}
+    public static<I extends IUnknown> I downcall_QueryInterface(COM.Downcall inf, MemorySegment self, IID<I> iid) {
+	try(Arena st = Arena.ofConfined()) {
+	    MemorySegment buf = st.allocate(ADDRESS);
+	    int rv;
+	    try {
+		rv = (int)inf.fun.invoke(inf.com.getvtab(self, sig_QueryInterface.vindex), self, iid.mem, buf);
+	    } catch(Throwable t) {
+		throw(new InvocationException(t));
+	    }
+	    if(!inf.com.SUCCEEDED(rv))
+		throw(new HResultError(rv));
+	    return(inf.com.reg.objforaddr(buf.get(ADDRESS, 0), iid, false));
+	}
+    }
+
     public default void AddRef() {throw(new AssertionError());}
     public default void Release() {throw(new AssertionError());}
 }

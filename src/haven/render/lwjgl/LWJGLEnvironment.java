@@ -32,7 +32,7 @@ import haven.render.gl.*;
 import org.lwjgl.opengl.awt.*;
 import haven.render.gl.GL;
 
-public class LWJGLEnvironment extends GLEnvironment {
+public abstract class LWJGLEnvironment extends GLEnvironment {
     public LWJGLEnvironment() {
 	super(LWJGLWrap.instance);
     }

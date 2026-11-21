@@ -44,10 +44,8 @@ public abstract class GLEnvironment implements Environment {
     final List<GLQuery> queries = new LinkedList<>(); // Synchronized on drawmon
     final Queue<Runnable> callbacks = new LinkedList<>();
     Thread cbthread = null;
-    final Queue<GLRender> submitted = new LinkedList<>();
     private GLRender prep = null;
     private Applier curstate = new Applier(this);
-    private boolean invalid = false;
 
     public static class HardwareException extends UnavailableException {
 	public final Caps caps;
@@ -312,68 +310,83 @@ public abstract class GLEnvironment implements Environment {
 	cmd.accept(gl);
     }
 
-    public void process(GL gl) {
-	GLRender prep;
-	Collection<GLRender> copy;
-	synchronized(submitted) {
-	    /* It is important to fetch the submitted renders before
-	     * prep, so that additional ones aren't submitted during
-	     * processing that haven't been prepared. */
-	    copy = new ArrayList<>(submitted);
-	    submitted.clear();
+    public class Submission implements Consumer<GL>, Abortable {
+	public final GLRender cmd;
+
+	Submission(GLRender cmd) {
+	    this.cmd = cmd;
 	}
-	if(copy.isEmpty())
-	    return;
-	synchronized(prepmon) {
-	    prep = this.prep;
-	    this.prep = null;
-	}
-	try {
-	    synchronized(drawmon) {
-		GLRender last = null;
-		for(GLRender cmd : copy) {
-		    if(last == null) {
-			process(gl, cmd, this::checkqueries);
-			if((prep != null) && (prep.gl != null)) {
-			    BufferBGL xf = new BufferBGL(16);
-			    this.curstate.apply(xf, prep.init);
-			    process(gl, cmd, xf::run);
-			    process(gl, cmd, prep.gl::run);
-			    this.curstate = prep.state;
-			    try {
-				process(gl, cmd, x -> GLException.checkfor(x, this));
-			    } catch(Exception exc) {
-				throw(new BGL.BGLException(prep.gl, null, exc));
-			    }
-			    prep.dispose();
+
+	public void accept(GL gl) {
+	    GLEnvironment env = GLEnvironment.this;
+	    GLRender prep;
+	    synchronized(prepmon) {
+		prep = env.prep;
+		env.prep = null;
+	    }
+	    if((prep != null) && (prep.gl == null)) {
+		prep.dispose();
+		prep = null;
+	    }
+	    try {
+		synchronized(drawmon) {
+		    process(gl, cmd, env::checkqueries);
+		    if(prep != null) {
+			BufferBGL xf = new BufferBGL(16);
+			env.curstate.apply(xf, prep.init);
+			process(gl, cmd, xf::run);
+			process(gl, cmd, prep.gl::run);
+			env.curstate = prep.state;
+			try {
+			    process(gl, cmd,x -> GLException.checkfor(x, env));
+			} catch(Exception exc) {
+			    throw(new BGL.BGLException(prep.gl, null, exc));
 			}
+			prep.dispose();
 		    }
-		    last = cmd;
 		    BufferBGL xf = new BufferBGL(16);
-		    this.curstate.apply(xf, cmd.init);
+		    env.curstate.apply(xf, cmd.init);
 		    process(gl, cmd, xf::run);
 		    process(gl, cmd, cmd.gl::run);
-		    this.curstate = cmd.state;
+		    env.curstate = cmd.state;
 		    try {
-			process(gl, cmd, x -> GLException.checkfor(x, this));
+			process(gl, cmd, x -> GLException.checkfor(x, env));
 		    } catch(Exception exc) {
 			throw(new BGL.BGLException(cmd.gl, null, exc));
 		    }
 		    cmd.dispose();
+		    process(gl, cmd, env::checkqueries);
+		    process(gl, cmd, disposeall()::run);
+		    clean();
+		    if(debuglog)
+			process(gl, cmd, env::checkdebuglog);
 		}
-		process(gl, last, this::checkqueries);
-		process(gl, last, disposeall()::run);
-		clean();
-		if(debuglog)
-		    process(gl, last, this::checkdebuglog);
+	    } catch(Exception e) {
+		for(Throwable c = e; c != null; c = c.getCause()) {
+		    if(c instanceof GLException)
+			((GLException)c).initenv(env);
+		}
+		throw(e);
 	    }
-	} catch(Exception e) {
-	    for(Throwable c = e; c != null; c = c.getCause()) {
-		if(c instanceof GLException)
-		    ((GLException)c).initenv(this);
-	    }
-	    throw(e);
 	}
+
+	public void abort() {
+	    cmd.gl.abort();
+	    cmd.dispose();
+	}
+    }
+
+    protected Submission submission(Render cmd) {
+	if(!(cmd instanceof GLRender))
+	    throw(new IllegalArgumentException("environment mismatch"));
+	GLRender gcmd = (GLRender)cmd;
+	if(gcmd.env != this)
+	    throw(new IllegalArgumentException("environment mismatch"));
+	if(gcmd.gl == null) {
+	    gcmd.dispose();
+	    return(null);
+	}
+	return(new Submission(gcmd));
     }
 
     public void finish(GL gl) throws InterruptedException {
@@ -383,37 +396,6 @@ public abstract class GLEnvironment implements Environment {
 	    if(!queries.isEmpty())
 		throw(new AssertionError("active queries left after glFinish"));
 	    synccallbacks();
-	}
-    }
-
-    public void submit(Render cmd) {
-	if(!(cmd instanceof GLRender))
-	    throw(new IllegalArgumentException("environment mismatch"));
-	GLRender gcmd = (GLRender)cmd;
-	if(gcmd.env != this)
-	    throw(new IllegalArgumentException("environment mismatch"));
-	boolean inv;
-	synchronized(submitted) {
-	    inv = invalid;
-	    if(gcmd.gl != null) {
-		if(!inv) {
-		    submitted.add(gcmd);
-		    submitted.notifyAll();
-		} else {
-		    gcmd.gl.abort();
-		}
-	    } else {
-		gcmd.dispose();
-	    }
-	}
-	if(inv)
-	    gcmd.dispose();
-    }
-
-    public void submitwait() throws InterruptedException {
-	synchronized(submitted) {
-	    while(submitted.peek() == null)
-		submitted.wait();
 	}
     }
 
@@ -1052,26 +1034,12 @@ public abstract class GLEnvironment implements Environment {
     }
 
     public void dispose() {
-	{
-	    Collection<GLRender> copy;
-	    synchronized(submitted) {
-		copy = new ArrayList<>(submitted);
-		submitted.clear();
-		invalid = true;
-	    }
-	    for(GLRender cmd : copy) {
-		cmd.gl.abort();
-		cmd.dispose();
-	    }
+	Collection<GLQuery> copy;
+	synchronized(drawmon) {
+	    copy = new ArrayList<>(queries);
+	    queries.clear();
 	}
-	{
-	    Collection<GLQuery> copy;
-	    synchronized(drawmon) {
-		copy = new ArrayList<>(queries);
-		queries.clear();
-	    }
-	    for(GLQuery query : copy)
-		query.abort();
-	}
+	for(GLQuery query : copy)
+	    query.abort();
     }
 }

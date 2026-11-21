@@ -171,7 +171,7 @@ public class JOGLToolkit extends AWTToolkit {
 
 	private void redraw(GL gl) {
 	    GLContext ctx = gl.getContext();
-	    GLEnvironment env;
+	    PanelEnvironment env;
 	    synchronized(this) {
 		if((this.env == null) || (this.env.ctx != ctx)) {
 		    if(this.env != null)
@@ -258,6 +258,15 @@ public class JOGLToolkit extends AWTToolkit {
 		throw(new IllegalArgumentException());
 	    gbuf.submit(gl -> panel.glswap(gl, ((Boolean)mode) ? 1 : 0));
 	    java.awt.EventQueue.invokeLater(dsp::process);
+	}
+
+	public void dispose() {
+	    super.dispose();
+	    synchronized(panel) {
+		if(panel.env != null)
+		    panel.env.dispose();
+		panel.env = null;
+	    }
 	}
     }
 

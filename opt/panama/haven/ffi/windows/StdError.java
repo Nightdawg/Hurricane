@@ -34,6 +34,13 @@ public class StdError extends RuntimeException {
     }
 
     public String getMessage() {
-	return(String.valueOf(code));
+	try {
+	    String msg = Win32.get().FormatMessage(Win32.FORMAT_MESSAGE_FROM_SYSTEM |
+						   Win32.FORMAT_MESSAGE_IGNORE_INSERTS,
+						   null, code, 0);
+	    return(String.format("%d (%s)", code, msg.trim()));
+	} catch(Throwable t) {
+	    return(String.valueOf(code));
+	}
     }
 }
