@@ -1903,8 +1903,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    act("lo", "cs");
 	    return(true);
 	} else if(kb_chat.key().match(ev)) {
-	    if(chat.visible() && !chat.hasfocus) {
-		setfocus(chat);
+	    if(chat.tvisible()) {
+		chatWnd.setfocus(chat);
 	    }
 //		else {
 //		if(chat.targetshow) {
@@ -2142,7 +2142,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		makewnd.toggleVisibility();
 		return(true);
     } else if((ev.c == 27) && (map != null) && !map.hasfocus) {
-	    setfocus(map);
+	    setfocus(map, true);
 	    return(true);
 	}
 	return(super.globtype(ev));

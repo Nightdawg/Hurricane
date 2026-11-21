@@ -571,17 +571,42 @@ public class Widget {
     }
 
     public void setfocus(Widget w) {
+	setfocus(w, false);
+    }
+
+    private static final ThreadLocal<Widget> mouseFocusTarget = new ThreadLocal<>();
+
+    ChatWnd protectedChatWindow() {
+	for(Widget w = this; (w != null) && w.visible(); w = w.focusctl ? w.focused : null) {
+	    if(w instanceof ChatWnd chat)
+		return((chat.tvisible() && Utils.getprefb("protectChatFocus", true)) ? chat : null);
+	}
+	return(null);
+    }
+
+    protected void setfocus(Widget w, boolean intentional) {
 	if(focusctl) {
 	    if(w != focused) {
 		Widget last = focused;
+		if(!intentional && hasfocus && (last != null)) {
+		    ChatWnd chat = last.protectedChatWindow();
+		    if(chat != null) {
+			Widget clicked = mouseFocusTarget.get();
+			// A click can focus the widget it reached, not an unrelated popup it opens.
+			if((w == null) || (!w.hasparent(chat) && ((clicked == null) || !clicked.hasparent(w))))
+			    return;
+		    }
+		}
 		focused = w;
 		if(hasfocus) {
 		    if(last != null)
 			last.hasfocus = false;
-		    w.hasfocus = true;
+		    if(w != null)
+			w.hasfocus = true;
 		    if(last != null)
 			last.lostfocus();
-		    w.gotfocus();
+		    if(w != null)
+			w.gotfocus();
 		} else if((last != null) && last.hasfocus) {
 		    /* Bug, but ah well. */
 		    last.hasfocus = false;
@@ -593,8 +618,14 @@ public class Widget {
 			wdgmsg("focus", id);
 		}
 	    }
-	    if((parent != null) && visible && canfocus)
-		parent.setfocus(this);
+	    if((parent != null) && visible && canfocus) {
+		if(intentional)
+		    parent.setfocus(this, true);
+		else
+		    parent.setfocus(this);
+	    }
+	} else if(intentional) {
+	    parent.setfocus(w, true);
 	} else {
 	    parent.setfocus(w);
 	}
@@ -1014,6 +1045,19 @@ public class Widget {
 	    this.b = from.b;
 	}
 
+	public boolean dispatch(Widget w) {
+	    Widget prev = mouseFocusTarget.get();
+	    mouseFocusTarget.set(c.isect(Coord.z, w.sz) ? w : null);
+	    try {
+		return(super.dispatch(w));
+	    } finally {
+		if(prev == null)
+		    mouseFocusTarget.remove();
+		else
+		    mouseFocusTarget.set(prev);
+	    }
+	}
+
 	public abstract MouseButtonEvent derive(Coord c);
     }
 
@@ -1400,7 +1444,7 @@ public class Widget {
 		    if((f.canfocus && f.tvisible()) || (f == focused))
 			break;
 		}
-		setfocus(f);
+		setfocus(f, true);
 		return(true);
 	    }
 	}

@@ -1920,6 +1920,7 @@ public class OptWnd extends Window {
 	public static TextEntry villageNameTextEntry;
 	public static CheckBox villageChatAlertSoundsCheckBox;
 	public static CheckBox autoSelectNewChatCheckBox;
+	public static CheckBox protectChatFocusCheckBox;
 	public static CheckBox removeRealmChatCheckBox;
 	public static CheckBox showKinStatusChangeMessages;
 
@@ -1983,6 +1984,13 @@ public class OptWnd extends Window {
 					Utils.setprefb("autoSelectNewChat", val);
 				}
 			}, prev.pos("bl").adds(0, 4).x(0));
+
+			prev = add(protectChatFocusCheckBox = new CheckBox("Prevent pop-ups from stealing chat focus"){
+				{a = Utils.getprefb("protectChatFocus", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("protectChatFocus", val);
+				}
+			}, prev.pos("bl").adds(0, 4));
 
 			prev = add(removeRealmChatCheckBox = new CheckBox("Remove public realm chat (requires relog)"){
 				{a = (Utils.getprefb("removeRealmChat", false));}

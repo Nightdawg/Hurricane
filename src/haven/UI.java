@@ -608,7 +608,15 @@ public class UI {
     }
 
     public Grab grabkeys(Widget wdg) {
-	Predicate<Event> sel = ev -> ((ev instanceof KeyDownEvent) || (ev instanceof KeyUpEvent));
+	Predicate<Event> sel = ev -> {
+	    // Still deliver releases to grabs that may have handled the initial press.
+	    if(ev instanceof KeyUpEvent)
+		return(true);
+	    if(!(ev instanceof KeyDownEvent))
+		return(false);
+	    ChatWnd chat = root.protectedChatWindow();
+	    return((chat == null) || wdg.hasparent(chat) || chat.hasparent(wdg));
+	};
 	return(grab(wdg, KbdEvent.class, new EventHandler.Filter<>(new WidgetGrab(wdg), sel)));
     }
 
