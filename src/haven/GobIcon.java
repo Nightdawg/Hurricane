@@ -1098,7 +1098,7 @@ public class GobIcon extends GAttrib {
 					setfocus(SettingsWindow.this.list);
 					return(true);
 				} else
-					return(buf.key(e.awt));
+					return(super.keydown(e));
 			}
 		};
 		left.last(new Button(UI.scale(170), "Save New Preset", false).action(() -> {

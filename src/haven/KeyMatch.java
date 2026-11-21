@@ -44,6 +44,18 @@ public abstract class KeyMatch {
 	this.modmatch = modmatch & MODS;
     }
 
+	private String setProperKeyNames(String keyname){
+		if (keyname.contains("NumPad "))
+			return keyname.replace("NumPad ", "n");
+		if (keyname.contains("NumPad-"))
+			return keyname.replace("NumPad-", "n");
+		if (Config.properKeyNames.keySet().stream().anyMatch(keyname::matches)){
+			return Config.properKeyNames.get(keyname);
+		} else {
+			return keyname;
+		}
+	}
+
     /* Arguably, needing this should be considered deprecated, so
      * CharMatch as a whole.. */
     public static char keychar(KeyDownEvent ev) {
@@ -219,19 +231,6 @@ public abstract class KeyMatch {
 	public PriSymMatch(Sym sym, int modmask, int modmatch) {
 	    this(sym.id(), sym.nm(), modmask, modmatch);
 	}
-	private String setProperKeyNames(String keyname){
-		if (keyname.contains("NumPad "))
-			return keyname.replace("NumPad ", "n");
-		if (keyname.contains("NumPad-"))
-			return keyname.replace("NumPad-", "n");
-		if (Config.properKeyNames.keySet().stream().anyMatch(keyname::matches)){
-			return Config.properKeyNames.get(keyname);
-		} else {
-			return keyname;
-		}
-	}
-
-    public static int mods(KeyEvent ev) {return(UI.modflags(ev));}
 
 	public boolean match(KeyEvent ev, int modign) {
 	    int mod = mods(ev);

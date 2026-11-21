@@ -47,7 +47,7 @@ public abstract class FilteredListBox<T> extends OldListBox<T> implements ReadLi
 	}
 	
 	String before = filter.line();
-	if(filter.key(ev.awt) && !before.equals(filter.line())) {
+	if(filter.key(ev) && !before.equals(filter.line())) {
 	    needfilter();
 	    return true;
 	}
