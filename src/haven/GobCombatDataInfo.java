@@ -263,7 +263,7 @@ public class GobCombatDataInfo extends GobInfo {
         boolean showOpenings = true;
         if (!showAllOpenings) {
             if (!openingList.isEmpty() && !OptWnd.minimumOpeningTextEntry.text().isEmpty()) {
-                if (openingList.getFirst().value < Integer.parseInt(OptWnd.minimumOpeningTextEntry.text())) {
+                if (openingList.get(0).value < Integer.parseInt(OptWnd.minimumOpeningTextEntry.text())) {
                     showOpenings = false;
                 }
             }
