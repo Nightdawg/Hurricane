@@ -54,8 +54,12 @@ public class GobHealthInfo extends GobInfo {
     public BufferedImage text() {
         if(health.hp < 1) {
             int c = 15 + (int) Math.floor(health.hp * 240);
-            return Utils.outline2(Text.renderstroked(String.format("%d%%", Math.round(100 * health.hp)), new Color(255, c, c), Color.BLACK, gobhpf).img, Color.BLACK, true);
+            return renderLabel(String.format("%d%%", Math.round(100 * health.hp)), new Color(255, c, c));
         }
         return null;
+    }
+
+    static BufferedImage renderLabel(String label, Color color) {
+        return Utils.outline2(Text.renderstroked(label, color, Color.BLACK, gobhpf).img, Color.BLACK, true);
     }
 }

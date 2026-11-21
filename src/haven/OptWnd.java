@@ -2065,6 +2065,7 @@ public class OptWnd extends Window {
 	public static CheckBox showBeeSkepsRadiiCheckBox;
 	public static CheckBox showFoodTroughsRadiiCheckBox;
 	public static CheckBox showMoundBedsRadiiCheckBox;
+	public static CheckBox showFoodTroughFillLevelTextCheckBox;
 	public static CheckBox showBarrelContentsTextCheckBox;
 	public static CheckBox showIconSignTextCheckBox;
     public static CheckBox showProduceSackTextCheckBox;
@@ -2818,6 +2819,17 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("bl").adds(0, 2).x(UI.scale(480)));
 			showBeeSkepsHarvestIconsCheckBox.tooltip = showBeeSkepsHarvestIconsTooltip;
 
+			rightColumn = add(showFoodTroughFillLevelTextCheckBox = new CheckBox("Show Food Trough Fill Level Text"){
+				{a = Utils.getprefb("showFoodTroughFillLevelText", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("showFoodTroughFillLevelText", val);
+					if (ui != null && ui.gui != null) {
+						ui.gui.optionInfoMsg("Food Trough Fill Level Text is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+					}
+				}
+			}, rightColumn.pos("bl").adds(0, 13));
+			showFoodTroughFillLevelTextCheckBox.tooltip = showFoodTroughFillLevelTextTooltip;
+
 			rightColumn = add(showBarrelContentsTextCheckBox = new CheckBox("Show Barrel Contents Text"){
 				{a = (Utils.getprefb("showBarrelContentsText", true));}
 				public void changed(boolean val) {
@@ -2826,7 +2838,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Barrel Contents Text is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 13));
+			}, rightColumn.pos("bl").adds(0, 2));
 			showBarrelContentsTextCheckBox.tooltip = showBarrelContentsTextTooltip;
 
 			rightColumn = add(showIconSignTextCheckBox = new CheckBox("Show Icon Sign Text"){
@@ -2915,7 +2927,8 @@ public class OptWnd extends Window {
 			}){}, rightColumn.pos("bl").adds(0, 4));
 
 		Widget backButton;
-			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 18).x(0));
+			int backY = Math.max(leftColumn.pos("bl").y, rightColumn.pos("bl").y) + UI.scale(18);
+			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), new Coord(0, backY));
 			pack();
 			centerBackButton(backButton, this);
 		}
@@ -5440,6 +5453,7 @@ public class OptWnd extends Window {
 			"\n$col[185,185,185]{For example, you can use this to keep track of which cows you milked already, or whatever.}" +
 			"\n" +
 			"\n$col[218,163,0]{Note:} $col[185,185,185]{Disabling this setting will also reset the current list of highlighted objects.}", UI.scale(300));
+	private static final Object showFoodTroughFillLevelTextTooltip = RichText.render("Shows the swill level above Food Troughs, e.g. Swill <50%. The server does not report exact percentages for partially filled troughs.", UI.scale(300));
 	private static final Object showBarrelContentsTextTooltip = RichText.render("This adds text on top of barrels, to make it easier to determine what’s inside of them. Empty barrels won't show any text." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));

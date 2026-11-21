@@ -114,6 +114,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	List<String> onWaterAnimations = List.of("coracleidle", "coraclerowan", "dugout", "rowboat", "rowing", "snekkja", "knarr");
 	private Overlay archeryVector;
 	private Overlay archeryRadius;
+	private GobFoodTroughInfo foodTroughInfo;
 	BarrelContentsGobInfo barrelContentsGobInfo;
 	IconSignGobInfo iconSignGobInfo;
     ProduceSackGobInfo produceSackGobInfo;
@@ -1268,6 +1269,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						alarmPlayed.add(id);
 				}
 			}
+			if (res.name.equals(GobFoodTroughInfo.RES_NAME) && foodTroughInfo == null) {
+				foodTroughInfo = new GobFoodTroughInfo(this);
+				setattr(GobFoodTroughInfo.class, foodTroughInfo);
+			}
 			if (res.name.startsWith("gfx/terobjs/barrel") && barrelContentsGobInfo == null) {
 				barrelContentsGobInfo = new BarrelContentsGobInfo(this);
 				setattr(BarrelContentsGobInfo.class, barrelContentsGobInfo);
@@ -2101,7 +2106,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public void updateTroughsRadius() {
 		if (getres() != null) {
 			String resourceName = getres().name;
-			if (resourceName.equals("gfx/terobjs/trough")){
+			if (resourceName.equals(GobFoodTroughInfo.RES_NAME)){
 				setRadiusOverlay(OptWnd.showFoodTroughsRadiiCheckBox.a, new Color(255, 136, 0, 128), 200f);
 			}
 		}
@@ -2549,6 +2554,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if (readyForHarvestInfo != null) readyForHarvestInfo.clear();
 		if (foodWaterInfo != null) foodWaterInfo.clear();
 		if (beeskepHarvestInfo != null) beeskepHarvestInfo.clear();
+		if (foodTroughInfo != null) foodTroughInfo.clear();
 		if (barrelContentsGobInfo != null) barrelContentsGobInfo.clear();
 		if (cheeseRackInfo != null) cheeseRackInfo.clear();
 		if (iconSignGobInfo != null) iconSignGobInfo.clear();
