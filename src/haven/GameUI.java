@@ -1860,7 +1860,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_wagonNearestLiftable  = KeyBinding.get("wagonNearestLiftable",  KeyMatch.nil);
 	public static KeyBinding kb_toggleHidingBoxes  = KeyBinding.get("toggleHidingBoxesKB",  KeyMatch.forchar('H', KeyMatch.C));
 	public static KeyBinding kb_toggleCollisionBoxes  = KeyBinding.get("toggleCollisionBoxesKB",  KeyMatch.forchar('B', KeyMatch.S));
-	public static KeyBinding kb_toggleGrowthInfo  = KeyBinding.get("toggleGrowthInfoKB",  KeyMatch.forchar('I',  KeyMatch.C | KeyMatch.S));
+	public static KeyBinding kb_toggleCropGrowthInfo = KeyBinding.get("toggleGrowthInfoKB", KeyMatch.forchar('I', KeyMatch.C | KeyMatch.S));
+	public static KeyBinding kb_toggleTreeBushGrowthInfo = KeyBinding.get("toggleTreeBushGrowthInfoKB", KeyMatch.forchar('T', KeyMatch.C | KeyMatch.S));
 	public static KeyBinding kb_toggleHarvestIcons  = KeyBinding.get("toggleHarvestIconsKB",  KeyMatch.forchar('P',  KeyMatch.C | KeyMatch.S));
 	public static KeyBinding kb_toggleBarrelContentsText = KeyBinding.get("toggleBarrelContentsTextKB",  KeyMatch.forchar('K',  KeyMatch.C | KeyMatch.S));
 	public static KeyBinding kb_toggleIconSignText = KeyBinding.get("toggleIconSignTextKB",  KeyMatch.forchar('J',  KeyMatch.C | KeyMatch.S));
@@ -2043,8 +2044,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(kb_toggleCollisionBoxes.key().match(ev)) {
 		OptWnd.showObjectCollisionBoxesCheckBox.set(!OptWnd.showObjectCollisionBoxesCheckBox.a);
 		return(true);
-	} else if(kb_toggleGrowthInfo.key().match(ev)) {
-		OptWnd.displayGrowthInfoCheckBox.set(!OptWnd.displayGrowthInfoCheckBox.a);
+	} else if(kb_toggleCropGrowthInfo.key().match(ev)) {
+		OptWnd.displayCropGrowthInfoCheckBox.set(!OptWnd.displayCropGrowthInfoCheckBox.a);
+		return(true);
+	} else if(kb_toggleTreeBushGrowthInfo.key().match(ev)) {
+		OptWnd.displayTreeBushGrowthInfoCheckBox.set(!OptWnd.displayTreeBushGrowthInfoCheckBox.a);
 		return(true);
 	} else if(kb_toggleHarvestIcons.key().match(ev)) {
 		OptWnd.showTreesBushesHarvestIconsCheckBox.set(!OptWnd.showTreesBushesHarvestIconsCheckBox.a);

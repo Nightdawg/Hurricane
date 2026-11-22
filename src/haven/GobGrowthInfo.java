@@ -35,13 +35,16 @@ public class GobGrowthInfo extends GobInfo {
 	}
 
 
-    protected GobGrowthInfo(Gob owner) {
+    private final boolean crop;
+
+    protected GobGrowthInfo(Gob owner, boolean crop) {
 	super(owner);
+	this.crop = crop;
     }
 
     @Override
 	protected boolean enabled() {
-		return OptWnd.displayGrowthInfoCheckBox.a && !gob.isHidden;
+		return !gob.isHidden && (crop ? OptWnd.displayCropGrowthInfoCheckBox.a : OptWnd.displayTreeBushGrowthInfoCheckBox.a);
 	}
 
     @Override
@@ -65,7 +68,7 @@ public class GobGrowthInfo extends GobInfo {
     private Tex growth() {
 	Text.Line line = null;
 	Resource res = gob.getres();
-	if(Utils.isSpriteKind(gob, "GrowingPlant", "TrellisPlant") && !(OptWnd.toggleGobHidingCheckBox.a && OptWnd.hideCropsCheckbox.a)) {
+	if(crop && Utils.isSpriteKind(gob, "GrowingPlant", "TrellisPlant") && !(OptWnd.toggleGobHidingCheckBox.a && OptWnd.hideCropsCheckbox.a)) {
 	    int maxStage = 0;
 	    for (FastMesh.MeshRes layer : gob.getres().layers(FastMesh.MeshRes.class)) {
 		if(layer.id / 10 > maxStage) {
@@ -101,7 +104,7 @@ public class GobGrowthInfo extends GobInfo {
 
 		}
 		}
-	} else if(Utils.isSpriteKind(gob, "Tree")) {
+	} else if(!crop && Utils.isSpriteKind(gob, "Tree")) {
 		boolean isHidden = true;
 	    Message data = getDrawableData(gob);
 	    if(data != null && !data.eom()) {

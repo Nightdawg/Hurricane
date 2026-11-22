@@ -1289,14 +1289,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				cheeseRackInfo = new GobCheeseRackInfo(this);
 				setattr(GobCheeseRackInfo.class, cheeseRackInfo);
 			}
-			if(((res.name.contains("gfx/terobjs/trees") && !res.name.endsWith("log") && !res.name.endsWith("oldtrunk"))
-			|| (res.name.contains("gfx/terobjs/bushes"))
-			|| (res.name.contains("gfx/terobjs/plants") && !res.name.endsWith("trellis"))) && growthInfo == null){
-				growthInfo = new GobGrowthInfo(this);
+			boolean crop = res.name.contains("gfx/terobjs/plants") && !res.name.endsWith("trellis");
+			boolean treeOrBush = (res.name.contains("gfx/terobjs/trees") && !res.name.endsWith("log") && !res.name.endsWith("oldtrunk"))
+				|| res.name.contains("gfx/terobjs/bushes");
+			if ((crop || treeOrBush) && growthInfo == null) {
+				growthInfo = new GobGrowthInfo(this, crop);
 				setattr(GobGrowthInfo.class, growthInfo);
 			}
-			if(((res.name.contains("gfx/terobjs/trees") && !res.name.endsWith("log") && !res.name.endsWith("oldtrunk"))
-			|| (res.name.contains("gfx/terobjs/bushes"))) && readyForHarvestInfo == null){
+			if (treeOrBush && readyForHarvestInfo == null) {
 				readyForHarvestInfo = new GobReadyForHarvestInfo(this);
 				setattr(GobReadyForHarvestInfo.class, readyForHarvestInfo);
 			}

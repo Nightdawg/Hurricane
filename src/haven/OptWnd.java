@@ -2047,7 +2047,8 @@ public class OptWnd extends Window {
 	public static CheckBox displayObjectDurabilityPercentageCheckBox;
     public static CheckBox showDurabilityCrackTextureCheckBox;
 	public static CheckBox displayObjectQualityOnInspectionCheckBox;
-	public static CheckBox displayGrowthInfoCheckBox;
+	public static CheckBox displayCropGrowthInfoCheckBox;
+	public static CheckBox displayTreeBushGrowthInfoCheckBox;
 	public static CheckBox alsoShowOversizedTreesAbovePercentageCheckBox;
 	public static TextEntry oversizedTreesPercentageTextEntry;
 	public static CheckBox showCritterAurasCheckBox;
@@ -2758,16 +2759,27 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("bl").adds(0, 12).x(UI.scale(480)));
 			showObjectsSpeedCheckBox.tooltip = showObjectsSpeedTooltip;
-			rightColumn = add(displayGrowthInfoCheckBox = new CheckBox("Display Growth Info on Plants and Trees"){
-				{a = (Utils.getprefb("displayGrowthInfo", false));}
+			boolean legacyGrowthInfo = Utils.getprefb("displayGrowthInfo", false);
+			rightColumn = add(displayCropGrowthInfoCheckBox = new CheckBox("Display Growth info on Crops"){
+				{a = Utils.getprefb("displayCropGrowthInfo", legacyGrowthInfo);}
 				public void changed(boolean val) {
-					Utils.setprefb("displayGrowthInfo", val);
+					Utils.setprefb("displayCropGrowthInfo", val);
 					if (ui != null && ui.gui != null) {
-						ui.gui.optionInfoMsg("Growth Info on Plants and Trees is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+						ui.gui.optionInfoMsg("Growth Info on Crops is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
 			}, rightColumn.pos("bl").adds(0, 17));
-			displayGrowthInfoCheckBox.tooltip = displayGrowthInfoTooltip;
+			displayCropGrowthInfoCheckBox.tooltip = displayCropGrowthInfoTooltip;
+			rightColumn = add(displayTreeBushGrowthInfoCheckBox = new CheckBox("Display Growth info on Trees & Bushes"){
+				{a = Utils.getprefb("displayTreeBushGrowthInfo", legacyGrowthInfo);}
+				public void changed(boolean val) {
+					Utils.setprefb("displayTreeBushGrowthInfo", val);
+					if (ui != null && ui.gui != null) {
+						ui.gui.optionInfoMsg("Growth Info on Trees & Bushes is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+					}
+				}
+			}, rightColumn.pos("bl").adds(0, 2));
+			displayTreeBushGrowthInfoCheckBox.tooltip = displayTreeBushGrowthInfoTooltip;
 			rightColumn = add(alsoShowOversizedTreesAbovePercentageCheckBox = new CheckBox("Also Show Trees Above %:"){
 				{a = (Utils.getprefb("alsoShowOversizedTreesAbovePercentage", true));}
 				public void changed(boolean val) {
@@ -3285,7 +3297,8 @@ public class OptWnd extends Window {
         y+=UI.scale(20);
 		y = addbtn(cont, "Toggle Collision Boxes", GameUI.kb_toggleCollisionBoxes, y);
 		y = addbtn(cont, "Toggle Object Hiding", GameUI.kb_toggleHidingBoxes, y);
-		y = addbtn(cont, "Display Growth Info on Plants", GameUI.kb_toggleGrowthInfo, y);
+		y = addbtn(cont, "Display Growth info on Crops", GameUI.kb_toggleCropGrowthInfo, y);
+		y = addbtn(cont, "Display Growth info on Trees & Bushes", GameUI.kb_toggleTreeBushGrowthInfo, y);
 		y = addbtn(cont, "Show Tree/Bush Harvest Icons", GameUI.kb_toggleHarvestIcons, y);
 		y = addbtn(cont, "Show Low Food/Water Icons", GameUI.kb_toggleLowFoodWaterIcons, y);
 		y = addbtn(cont, "Show Bee Skep Harvest Icons", GameUI.kb_toggleBeeSkepIcons, y);
@@ -5419,13 +5432,11 @@ public class OptWnd extends Window {
 			"\nIt allows you to have more freedom when placing constructions/objects.", UI.scale(300));
 	private static final Object granularityAngleTooltip = RichText.render("This works like the :placeangle console command. " +
 			"\nIt allows you to have more freedom when rotating constructions/objects before placement.", UI.scale(300));
-	private static final Object displayGrowthInfoTooltip = RichText.render("This will show the following growth information:" +
+	private static final Object displayCropGrowthInfoTooltip = RichText.render("Shows the current growth stage of crops and a red dot at the final stage." +
+			"\n$col[185,185,185]{Crops with a seeds stage (carrots, turnips, leeks, etc.) show a blue dot during that stage.}" +
 			"\n" +
-			"\n> Trees and Bushes will display their growth percentage (below 100%) and extra size percentage, if you enable the \"Also Show Trees Above %\" setting." +
-			"\n$col[185,185,185]{If a Tree or Bush is not showing a percentage below 100%, that means it reached full growth.}" +
-			"\n" +
-			"\n> Crops will generally display their growth stage as \"Current\", and a red dot when they reached the final stage." +
-			"\n$col[185,185,185]{Crops with a seeds stage (carrots, turnips, leeks, etc.) will also display a blue dot during the seeds stage.}" +
+			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(330));
+	private static final Object displayTreeBushGrowthInfoTooltip = RichText.render("Shows the growth percentage of trees and bushes. Enable \"Also Show Trees Above %\" to show the size percentage of oversized trees at or above the chosen threshold." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(330));
 	private static final Object highlightCliffsTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
