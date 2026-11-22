@@ -2501,7 +2501,7 @@ public class OptWnd extends Window {
 			leftColumn.tooltip = RichText.render("Use this to set how long you want the numbers to be displayed on the ground, in minutes. The numbers will be visible as long as the dust particle effect stays on the tile." +
 					"\n" +
 					"\n$col[218,163,0]{Note:} $col[185,185,185]{Changing this option will only affect the duration of newly spawned cave dust tiles. The duration is set once the wall tile is mined and the cave dust spawns in.}", UI.scale(300));
-			add(sweeperDurationDropbox = new OldDropBox<Integer>(UI.scale(40), sweeperDurations.size(), UI.scale(17)) {
+			leftColumn = add(sweeperDurationDropbox = new OldDropBox<Integer>(UI.scale(40), sweeperDurations.size(), UI.scale(17)) {
 				{
 					super.change(sweeperDurations.get(sweeperSetDuration));
 				}
@@ -2527,6 +2527,21 @@ public class OptWnd extends Window {
 						ui.gui.miningSafetyAssistantWindow.sweeperDurationDropbox.change2(item);
 				}
 			}, leftColumn.pos("ul").adds(160, 2));
+
+			leftColumn = add(new Label("Object Pinging Colors:"), leftColumn.pos("bl").adds(0, 12).x(0));
+			leftColumn = add(areaChatPingColorOptionWidget = new ColorOptionWidget("Area Chat (Alt+LClick):", "areaChatPing", 115, Integer.parseInt(areaChatPingColorSetting[0]), Integer.parseInt(areaChatPingColorSetting[1]), Integer.parseInt(areaChatPingColorSetting[2]), Integer.parseInt(areaChatPingColorSetting[3]), (Color col) -> {
+			}){}, leftColumn.pos("bl").adds(1, 1));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("areaChatPing" + "_colorSetting", new String[]{"255", "183", "0", "255"});
+				areaChatPingColorOptionWidget.cb.colorChooser.setColor(areaChatPingColorOptionWidget.currentColor = new Color(255, 183, 0, 255));
+			}), areaChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+			leftColumn = add(partyChatPingColorOptionWidget = new ColorOptionWidget("Party Chat (Alt+RClick):", "partyChatPing", 115, Integer.parseInt(partyChatPingColorSetting[0]), Integer.parseInt(partyChatPingColorSetting[1]), Integer.parseInt(partyChatPingColorSetting[2]), Integer.parseInt(partyChatPingColorSetting[3]), (Color col) -> {
+			}){}, leftColumn.pos("bl").adds(0, 4));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
+				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
+			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+			partyChatPingColorOptionWidget.tooltip = partyChatPingColorOptionTooltip;
 
 			middleColumn = add(showObjectCollisionBoxesCheckBox = new CheckBox("Show Object Collision Boxes"){
 				{a = (Utils.getprefb("showObjectCollisionBoxes", false));}
@@ -2742,7 +2757,7 @@ public class OptWnd extends Window {
 					return(super.mousedown(ev));
 				}
 			}, middleColumn.pos("ur").adds(6, -10)).tooltip = objectPermanentHighlightingTooltip;;
-			add(new Label("Alt + Middle Click (Mouse Scroll Click)"){
+			middleColumn = add(new Label("Alt + Middle Click (Mouse Scroll Click)"){
 				@Override
 				public boolean mousedown(MouseDownEvent ev) {
 					if(ev.b == 1) {
@@ -2751,23 +2766,10 @@ public class OptWnd extends Window {
 					}
 					return(super.mousedown(ev));
 				}
-			}, middleColumn.pos("bl").adds(21, -6)).tooltip = objectPermanentHighlightingTooltip;;
+			}, middleColumn.pos("bl").adds(21, -6));
+			middleColumn.tooltip = objectPermanentHighlightingTooltip;
 
-			rightColumn = add(new Label("Object Pinging Colors:"), UI.scale(480, 0));
-			rightColumn = add(areaChatPingColorOptionWidget = new ColorOptionWidget("Area Chat (Alt+LClick):", "areaChatPing", 115, Integer.parseInt(areaChatPingColorSetting[0]), Integer.parseInt(areaChatPingColorSetting[1]), Integer.parseInt(areaChatPingColorSetting[2]), Integer.parseInt(areaChatPingColorSetting[3]), (Color col) -> {
-			}){}, rightColumn.pos("bl").adds(1, 1));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("areaChatPing" + "_colorSetting", new String[]{"255", "183", "0", "255"});
-				areaChatPingColorOptionWidget.cb.colorChooser.setColor(areaChatPingColorOptionWidget.currentColor = new Color(255, 183, 0, 255));
-			}), areaChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
-			rightColumn = add(partyChatPingColorOptionWidget = new ColorOptionWidget("Party Chat (Alt+RClick):", "partyChatPing", 115, Integer.parseInt(partyChatPingColorSetting[0]), Integer.parseInt(partyChatPingColorSetting[1]), Integer.parseInt(partyChatPingColorSetting[2]), Integer.parseInt(partyChatPingColorSetting[3]), (Color col) -> {
-			}){}, rightColumn.pos("bl").adds(0, 4));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
-				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
-			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
-            partyChatPingColorOptionWidget.tooltip = partyChatPingColorOptionTooltip;
-			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed"){
+			middleColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed"){
 				{a = Utils.getprefb("showObjectsSpeed", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("showObjectsSpeed", val);
@@ -2775,8 +2777,9 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Objects Speed is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 12).x(UI.scale(480)));
+			}, middleColumn.pos("bl").adds(0, 12).x(UI.scale(240)));
 			showObjectsSpeedCheckBox.tooltip = showObjectsSpeedTooltip;
+
 			boolean legacyGrowthInfo = Utils.getprefb("displayGrowthInfo", false);
 			rightColumn = add(displayCropGrowthInfoCheckBox = new CheckBox("Display Growth info on Crops"){
 				{a = Utils.getprefb("displayCropGrowthInfo", legacyGrowthInfo);}
@@ -2786,7 +2789,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Growth Info on Crops is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 17));
+			}, UI.scale(480, 0));
 			displayCropGrowthInfoCheckBox.tooltip = displayCropGrowthInfoTooltip;
 			rightColumn = addCropDotColor("Seeds stage dot:", "cropSeedsStageDot", GobGrowthInfo.CropDot.SEEDS,
 					rightColumn.pos("bl").adds(12, 2));
@@ -2800,7 +2803,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Growth Info on Trees & Bushes is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 2).x(UI.scale(480)));
+			}, rightColumn.pos("bl").adds(0, 12).x(UI.scale(480)));
 			displayTreeBushGrowthInfoCheckBox.tooltip = displayTreeBushGrowthInfoTooltip;
 			rightColumn = add(alsoShowOversizedTreesAbovePercentageCheckBox = new CheckBox("Also Show Trees Above %:"){
 				{a = (Utils.getprefb("alsoShowOversizedTreesAbovePercentage", true));}
@@ -2830,7 +2833,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Trees & Bushes Harvest Icons are now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 12).x(UI.scale(480)));
+			}, rightColumn.pos("bl").adds(0, 16).x(UI.scale(480)));
 			showTreesBushesHarvestIconsCheckBox.tooltip = showTreesBushesHarvestIconsTooltip;
 			rightColumn = add(showLowFoodWaterIconsCheckBox = new CheckBox("Show Low Food & Water Icons"){
 				{a = Utils.getprefb("showLowFoodWaterIcons", false);}
@@ -2861,7 +2864,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Food Trough Fill Level Text is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 13));
+			}, rightColumn.pos("bl").adds(0, 18));
 			showFoodTroughFillLevelTextCheckBox.tooltip = showFoodTroughFillLevelTextTooltip;
 
 			rightColumn = add(showBarrelContentsTextCheckBox = new CheckBox("Show Barrel Contents Text"){
@@ -2912,7 +2915,7 @@ public class OptWnd extends Window {
 					Utils.setprefb("removeMapTileBorders", val);
 					refreshMapCache();
 				}
-			}, rightColumn.pos("bl").adds(0, 15));
+			}, rightColumn.pos("bl").adds(0, 16));
             removeMapTileBordersCheckBox.tooltip = removeMapTileBordersTooltip;
 
 		rightColumn = add(simplifiedMapColorsCheckBox = new CheckBox("Simplified Map Colors"){
@@ -2961,7 +2964,7 @@ public class OptWnd extends Window {
 			}){}, rightColumn.pos("bl").adds(0, 4));
 
 		Widget backButton;
-			int backY = Math.max(leftColumn.pos("bl").y, rightColumn.pos("bl").y) + UI.scale(18);
+			int backY = Math.max(leftColumn.pos("bl").y, Math.max(middleColumn.pos("bl").y, rightColumn.pos("bl").y)) + UI.scale(18);
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), new Coord(0, backY));
 			pack();
 			centerBackButton(backButton, this);
