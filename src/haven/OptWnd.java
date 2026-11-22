@@ -2781,7 +2781,7 @@ public class OptWnd extends Window {
 			showObjectsSpeedCheckBox.tooltip = showObjectsSpeedTooltip;
 
 			boolean legacyGrowthInfo = Utils.getprefb("displayGrowthInfo", false);
-			rightColumn = add(displayCropGrowthInfoCheckBox = new CheckBox("Display Growth info on Crops"){
+			rightColumn = add(displayCropGrowthInfoCheckBox = new CheckBox("Display Growth Info on Crops"){
 				{a = Utils.getprefb("displayCropGrowthInfo", legacyGrowthInfo);}
 				public void changed(boolean val) {
 					Utils.setprefb("displayCropGrowthInfo", val);
@@ -2791,11 +2791,11 @@ public class OptWnd extends Window {
 				}
 			}, UI.scale(480, 0));
 			displayCropGrowthInfoCheckBox.tooltip = displayCropGrowthInfoTooltip;
-			rightColumn = addCropDotColor("Seeds stage dot:", "cropSeedsStageDot", GobGrowthInfo.CropDot.SEEDS,
+			rightColumn = addCropDotColor("Seeds Stage Dot:", "cropSeedsStageDot", GobGrowthInfo.CropDot.SEEDS,
 					rightColumn.pos("bl").adds(12, 2));
-			rightColumn = addCropDotColor("Final stage dot:", "cropFinalStageDot", GobGrowthInfo.CropDot.FINAL,
+			rightColumn = addCropDotColor("Final Stage Dot:", "cropFinalStageDot", GobGrowthInfo.CropDot.FINAL,
 					rightColumn.pos("bl").adds(0, 4));
-			rightColumn = add(displayTreeBushGrowthInfoCheckBox = new CheckBox("Display Growth info on Trees & Bushes"){
+			rightColumn = add(displayTreeBushGrowthInfoCheckBox = new CheckBox("Display Growth Info on Trees & Bushes"){
 				{a = Utils.getprefb("displayTreeBushGrowthInfo", legacyGrowthInfo);}
 				public void changed(boolean val) {
 					Utils.setprefb("displayTreeBushGrowthInfo", val);
@@ -3195,7 +3195,7 @@ public class OptWnd extends Window {
 		topNote.setcolor(Color.RED);
 		y = adda(topNote, UI.scale(155), y, 0.5, 0.0).pos("bl").adds(0, 5).y;
 		y = adda(new Label("If you do that, only one of them will work. God knows which."), UI.scale(155), y, 0.5, 0.0).pos("bl").adds(0, 5).y;
-		Scrollport scroll = add(new Scrollport(UI.scale(310, 360)), UI.scale(0, 60));
+		Scrollport scroll = add(new Scrollport(UI.scale(340, 360)), UI.scale(0, 60));
 	    Widget cont = scroll.cont;
 	    Widget prev;
 	    y = 0;
@@ -3284,7 +3284,7 @@ public class OptWnd extends Window {
 		Widget objectsLeft, objectsRight;
 		y = cont.adda(objectsLeft = new Label("Objects to Click:"), UI.scale(10), y + UI.scale(2), 0, 0.0).pos("bl").adds(0, 5).y;
 		objectsLeft = cont.add(new CheckBox("Fence Gates"){{a = Utils.getprefb("clickNearestObject_FenceGates", true);}
-			public void changed(boolean val) {Utils.setprefb("clickNearestObject_FenceGates", val);}}, objectsLeft.pos("ur").adds(4, 0)).settip("Open/Close the nearest Fence Gate.");
+			public void changed(boolean val) {Utils.setprefb("clickNearestObject_FenceGates", val);}}, objectsLeft.pos("ur").adds(8, 0)).settip("Open/Close the nearest Fence Gate.");
 		objectsRight = cont.add(new CheckBox("Forageables"){{a = Utils.getprefb("clickNearestObject_Forageables", true);}
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Forageables", val);}}, objectsLeft.pos("ur").adds(38, 0)).settip("Pick the nearest Forageable.");
 		objectsLeft = cont.add(new CheckBox("Wall Gates"){{a = Utils.getprefb("clickNearestObject_WallGates", true);}
@@ -3310,9 +3310,9 @@ public class OptWnd extends Window {
 		Widget objectsLiftActionLeft, objectsLiftActionRight;
 		y = cont.adda(objectsLiftActionLeft = new Label("Objects to Lift:"), UI.scale(20), y + UI.scale(2), 0, 0.0).pos("bl").adds(0, 5).y;
 		objectsLiftActionLeft = cont.add(new CheckBox("Dead Animals"){{a = Utils.getprefb("wagonNearestLiftable_animalcarcass", true);}
-			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_animalcarcass", val);}}, objectsLiftActionLeft.pos("ur").adds(39, 0)).settip("Lift the nearest animal carcass into Wagon/Cart.");
+			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_animalcarcass", val);}}, objectsLiftActionLeft.pos("ur").adds(20, 0)).settip("Lift the nearest animal carcass into Wagon/Cart.");
 		objectsLiftActionRight = cont.add(new CheckBox("Containers"){{a = Utils.getprefb("wagonNearestLiftable_container", true);}
-			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_container", val);}}, objectsLiftActionLeft.pos("ur").adds(4, 0)).settip("Lift the nearest storage container into Wagon/Cart.");
+			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_container", val);}}, objectsLiftActionLeft.pos("ur").adds(14, 0)).settip("Lift the nearest storage container into Wagon/Cart.");
 		objectsLiftActionLeft = cont.add(new CheckBox("Tree Logs"){{a = Utils.getprefb("wagonNearestLiftable_log", true);}
 			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_log", val);}}, objectsLiftActionLeft.pos("bl").adds(0, 4)).settip("Lift nearest log into Wagon/Cart.");
 
@@ -3322,8 +3322,8 @@ public class OptWnd extends Window {
         y+=UI.scale(20);
 		y = addbtn(cont, "Toggle Collision Boxes", GameUI.kb_toggleCollisionBoxes, y);
 		y = addbtn(cont, "Toggle Object Hiding", GameUI.kb_toggleHidingBoxes, y);
-		y = addbtn(cont, "Display Growth info on Crops", GameUI.kb_toggleCropGrowthInfo, y);
-		y = addbtn(cont, "Display Growth info on Trees & Bushes", GameUI.kb_toggleTreeBushGrowthInfo, y);
+		y = addbtn(cont, "Display Growth Info on Crops", GameUI.kb_toggleCropGrowthInfo, y);
+		y = addbtn(cont, "Display Growth Info on Trees & Bushes", GameUI.kb_toggleTreeBushGrowthInfo, y);
 		y = addbtn(cont, "Show Tree/Bush Harvest Icons", GameUI.kb_toggleHarvestIcons, y);
 		y = addbtn(cont, "Show Low Food/Water Icons", GameUI.kb_toggleLowFoodWaterIcons, y);
 		y = addbtn(cont, "Show Bee Skep Harvest Icons", GameUI.kb_toggleBeeSkepIcons, y);
