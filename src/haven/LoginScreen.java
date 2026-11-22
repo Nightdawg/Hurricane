@@ -56,6 +56,8 @@ public class LoginScreen extends Widget {
 	private String lastUser = "";
 	private String lastPass = "";
 	public static HSlider loginScreenMusicVolumeSlider;
+	private static final String SECRET_STYLE_UNLOCKED_PREF = "secretLoginStyleUnlocked";
+	private static final int SECRET_STYLE_PREF_VALUE = -1; // Keep the saved value stable as regular styles are added.
 	static public final List<Resource> themes = new ArrayList<>() {{
 		add(Resource.local().loadwait("customclient/sfx/rogueTheme"));
 		add(Resource.local().loadwait("customclient/sfx/knightTheme"));
@@ -70,6 +72,7 @@ public class LoginScreen extends Widget {
         add(Resource.local().loadwait("customclient/sfx/druidTheme"));
         add(Resource.local().loadwait("customclient/sfx/nomadTheme"));
         add(Resource.local().loadwait("customclient/sfx/sageTheme"));
+		add(Resource.local().loadwait("customclient/sfx/ndTheme"));
 	}};
 	private static final List<String> backgrounds = new ArrayList<>() {{
 		add(haven.Client.gameDir + "res/customclient/rogueScreen.png");
@@ -85,7 +88,9 @@ public class LoginScreen extends Widget {
         add(haven.Client.gameDir + "res/customclient/druidScreen.png");
         add(haven.Client.gameDir + "res/customclient/nomadScreen.png");
         add(haven.Client.gameDir + "res/customclient/sageScreen.png");
+		add(haven.Client.gameDir + "res/customclient/nd.png");
 	}};
+	private static final int SECRET_STYLE_INDEX = backgrounds.size();
 	final List<String> keys = new ArrayList<>(){{
 		add("Random!");
 		add("Rogue");
@@ -101,8 +106,10 @@ public class LoginScreen extends Widget {
         add("Druid");
         add("Nomad");
         add("Sage");
+		add("Secret!");
 	}};
-	private OldDropBox backgroundDropBox;
+	private boolean secretStyleUnlocked = Utils.getprefb(SECRET_STYLE_UNLOCKED_PREF, false);
+	private final OldDropBox<String> backgroundDropBox;
 	static public int bgIndex = 1;
 	public Img backgroundImg;
 	static public Audio.CS mainThemeClip = null;
@@ -123,29 +130,26 @@ public class LoginScreen extends Widget {
 
     public LoginScreen(String confname) {
 	super(bg(haven.Client.gameDir + "res/customclient/bgsizer.png").sz());
-    if (Utils.getprefi("loginBgIndex", 0) == 0) {
-        Random rand = new Random();
-        bgIndex = rand.nextInt(keys.size()-1) + 1; // Generates 0–2, then add 1
-    } else {
-        bgIndex = Utils.getprefi("loginBgIndex", 0);
-    }
+	int savedStyle = Utils.getprefi("loginBgIndex", 0);
+	final int selectedStyle = savedStyle == SECRET_STYLE_PREF_VALUE && secretStyleUnlocked
+			? SECRET_STYLE_INDEX
+			: (savedStyle >= 0 && savedStyle < SECRET_STYLE_INDEX ? savedStyle : 0);
+	bgIndex = resolveLoginStyle(selectedStyle);
     Tex bg = bg(backgrounds.get(bgIndex-1));
 	this.confname = confname;
 	setfocustab(true);
 	add(backgroundImg = new Img(bg), Coord.z);
 	backgroundDropBox = new OldDropBox<String>(UI.scale(76), 4, UI.scale(17)) {
 		{
-			super.change(Utils.getprefi("loginBgIndex", 0));
+			super.change(selectedStyle);
 		}
 		@Override
 		protected String listitem(int i) {
-			if (!keys.isEmpty())
-				return keys.get(i);
-			else return "???";
+			return keys.get(i);
 		}
 		@Override
 		protected int listitems() {
-			return keys.size();
+			return availableThemeCount() + 1;
 		}
 		@Override
 		protected void drawitem(GOut g, String item, int i) {
@@ -153,16 +157,11 @@ public class LoginScreen extends Widget {
 		}
 		@Override
 		public void change(String item) {
+			if (item == null)
+				return;
 			super.change(item);
-			Utils.setprefi("loginBgIndex", selindex);
-			if (selindex == 0) {
-				Random rand = new Random();
-				bgIndex = rand.nextInt(keys.size()-1) + 1;
-			} else {
-				bgIndex = selindex;
-			}
-            ee = false;
-			changeLoginScreen(backgrounds.get(bgIndex-1));
+			Utils.setprefi("loginBgIndex", selindex == SECRET_STYLE_INDEX ? SECRET_STYLE_PREF_VALUE : selindex);
+			changeLoginScreen(selindex);
 		}
 	};
 	add(new CircleFadein(0.5));
@@ -272,8 +271,13 @@ public class LoginScreen extends Widget {
         @Override
         public boolean mousedown(MouseDownEvent ev) {
             if (ev.b == 3) {
-                changeLoginScreen(haven.Client.gameDir + "res/customclient/nd.png");
-                ee = true;
+                if (!secretStyleUnlocked) {
+                    secretStyleUnlocked = true;
+                    Utils.setprefb(SECRET_STYLE_UNLOCKED_PREF, true);
+                }
+                backgroundDropBox.change(SECRET_STYLE_INDEX);
+                changeLoginScreen(SECRET_STYLE_INDEX);
+                return true;
             }
             return super.mousedown(ev);
         }
@@ -688,7 +692,7 @@ public class LoginScreen extends Widget {
 
 	private void playMainTheme(Resource theme) {
 		if (!mainThemeStopped &&(mainThemeClip == null || !ui.globalSfxIsPlaying(mainThemeClip))) {
-				Audio.CS klippi = ee ? fromres(eeTheme) : fromres(theme);
+				Audio.CS klippi = fromres(theme);
 				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("loginScreenMusicVolume", 40)/100d);
                 ui.globalSfxPlay(mainThemeClip);
 		}
@@ -700,12 +704,19 @@ public class LoginScreen extends Widget {
 			mainThemeStopped = true;
 		}
 	}
-    boolean ee = false;
-    Resource eeTheme = Resource.local().loadwait("customclient/sfx/ndTheme");
-	private void changeLoginScreen(String imgPath){
+	private int availableThemeCount() {
+		return secretStyleUnlocked ? SECRET_STYLE_INDEX : SECRET_STYLE_INDEX - 1;
+	}
+
+	private int resolveLoginStyle(int selectedStyle) {
+		return selectedStyle == 0 ? new Random().nextInt(availableThemeCount()) + 1 : selectedStyle;
+	}
+
+	private void changeLoginScreen(int selectedStyle) {
 		stopMainTheme();
 		mainThemeStopped = false;
-		backgroundImg.setimg(bg(imgPath));
+		bgIndex = resolveLoginStyle(selectedStyle);
+		backgroundImg.setimg(bg(backgrounds.get(bgIndex - 1)));
 		add(new CircleFadein(0.5));
 	}
 
