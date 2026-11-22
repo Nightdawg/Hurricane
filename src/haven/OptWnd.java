@@ -2116,6 +2116,24 @@ public class OptWnd extends Window {
 	public static CheckBox objectPermanentHighlightingCheckBox;
 
 	public class DisplaySettingsPanel extends Panel {
+		private ColorOptionWidget addCropDotColor(String label, String key, GobGrowthInfo.CropDot dot, Coord pos) {
+			Color defaultColor = dot.defaultColor;
+			Consumer<Color> applyColor = color -> {
+				if (dot.setColor(color) && ui != null && ui.sess != null)
+					ui.sess.glob.oc.gobAction(Gob::refreshGrowthInfo);
+			};
+			ColorOptionWidget picker = add(new ColorOptionWidget(label, key, 115, defaultColor.getRed(),
+					defaultColor.getGreen(), defaultColor.getBlue(), defaultColor.getAlpha(), applyColor), pos);
+			applyColor.accept(picker.currentColor);
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa(key + "_colorSetting", new String[]{String.valueOf(defaultColor.getRed()),
+						String.valueOf(defaultColor.getGreen()), String.valueOf(defaultColor.getBlue()),
+						String.valueOf(defaultColor.getAlpha())});
+				picker.cb.colorChooser.setColor(picker.currentColor = defaultColor);
+				applyColor.accept(defaultColor);
+			}), picker.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+			return picker;
+		}
 		public DisplaySettingsPanel(Panel back) {
 			Widget leftColumn;
 			Widget middleColumn;
@@ -2770,6 +2788,10 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("bl").adds(0, 17));
 			displayCropGrowthInfoCheckBox.tooltip = displayCropGrowthInfoTooltip;
+			rightColumn = addCropDotColor("Seeds stage dot:", "cropSeedsStageDot", GobGrowthInfo.CropDot.SEEDS,
+					rightColumn.pos("bl").adds(12, 2));
+			rightColumn = addCropDotColor("Final stage dot:", "cropFinalStageDot", GobGrowthInfo.CropDot.FINAL,
+					rightColumn.pos("bl").adds(0, 4));
 			rightColumn = add(displayTreeBushGrowthInfoCheckBox = new CheckBox("Display Growth info on Trees & Bushes"){
 				{a = Utils.getprefb("displayTreeBushGrowthInfo", legacyGrowthInfo);}
 				public void changed(boolean val) {
@@ -2778,7 +2800,7 @@ public class OptWnd extends Window {
 						ui.gui.optionInfoMsg("Growth Info on Trees & Bushes is now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
 					}
 				}
-			}, rightColumn.pos("bl").adds(0, 2));
+			}, rightColumn.pos("bl").adds(0, 2).x(UI.scale(480)));
 			displayTreeBushGrowthInfoCheckBox.tooltip = displayTreeBushGrowthInfoTooltip;
 			rightColumn = add(alsoShowOversizedTreesAbovePercentageCheckBox = new CheckBox("Also Show Trees Above %:"){
 				{a = (Utils.getprefb("alsoShowOversizedTreesAbovePercentage", true));}
@@ -5432,8 +5454,8 @@ public class OptWnd extends Window {
 			"\nIt allows you to have more freedom when placing constructions/objects.", UI.scale(300));
 	private static final Object granularityAngleTooltip = RichText.render("This works like the :placeangle console command. " +
 			"\nIt allows you to have more freedom when rotating constructions/objects before placement.", UI.scale(300));
-	private static final Object displayCropGrowthInfoTooltip = RichText.render("Shows the current growth stage of crops and a red dot at the final stage." +
-			"\n$col[185,185,185]{Crops with a seeds stage (carrots, turnips, leeks, etc.) show a blue dot during that stage.}" +
+	private static final Object displayCropGrowthInfoTooltip = RichText.render("Shows the current growth stage of crops and a colored dot at the final stage." +
+			"\n$col[185,185,185]{Crops with a seeds stage (carrots, turnips, leeks, etc.) show a separate dot during that stage. You can change both colors below.}" +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(330));
 	private static final Object displayTreeBushGrowthInfoTooltip = RichText.render("Shows the growth percentage of trees and bushes. Enable \"Also Show Trees Above %\" to show the size percentage of oversized trees at or above the chosen threshold." +

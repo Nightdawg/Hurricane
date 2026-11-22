@@ -13,10 +13,27 @@ public class GobGrowthInfo extends GobInfo {
 	public static final double TREE_MULT = 100.0 / (100.0 - TREE_START);
 	public static final double BUSH_MULT = 100.0 / (100.0 - BUSH_START);
 	private static final Map<String, Tex> stageTextCache = new HashMap<>();
-	public static final BufferedImage SEEDS_STAGE_DOT = drawDot(new Color(0, 102, 255,255));
-	public static final BufferedImage FINAL_STAGE_DOT = drawDot(new Color(189, 0, 0,255));
-	public static final Tex SEEDS_STAGE_DOT_TEX = new TexI(ItemInfo.catimgsh(3, 0, null, SEEDS_STAGE_DOT));
-	public static final Tex FINAL_STAGE_DOT_TEX = new TexI(ItemInfo.catimgsh(3, 0, null, FINAL_STAGE_DOT));
+	enum CropDot {
+		SEEDS(new Color(0, 102, 255)),
+		FINAL(new Color(189, 0, 0));
+
+		final Color defaultColor;
+		private Color color;
+		private volatile Tex tex;
+
+		CropDot(Color defaultColor) {
+			this.defaultColor = defaultColor;
+			setColor(defaultColor);
+		}
+
+		synchronized boolean setColor(Color color) {
+			if (color.equals(this.color))
+				return false;
+			tex = new TexI(ItemInfo.catimgsh(3, 0, null, drawDot(color)));
+			this.color = color;
+			return true;
+		}
+	}
 
 
 	public static Tex getStageTex(int stage, int maxStage) {
@@ -81,23 +98,23 @@ public class GobGrowthInfo extends GobInfo {
 		if(stage > maxStage) {stage = maxStage;}
 		if(res != null && (res.name.contains("carrot"))) {
 			if (stage == maxStage - 1) {
-				return SEEDS_STAGE_DOT_TEX;
+				return CropDot.SEEDS.tex;
 			} else if (stage == maxStage) {
-				return FINAL_STAGE_DOT_TEX;
+				return CropDot.FINAL.tex;
 			} else {
 				return getStageTex(stage, maxStage);
 			}
 		} else if (res != null && (res.name.contains("turnip") || res.name.contains("leek"))){
 			if (stage == maxStage - 2) {
-				return SEEDS_STAGE_DOT_TEX;
+				return CropDot.SEEDS.tex;
 			} else if (stage == maxStage) {
-				return FINAL_STAGE_DOT_TEX;
+				return CropDot.FINAL.tex;
 			} else {
 				return getStageTex(stage, maxStage);
 			}
 		} else {
 			if (stage == maxStage){
-				return FINAL_STAGE_DOT_TEX;
+				return CropDot.FINAL.tex;
 			} else {
 				return getStageTex(stage, maxStage);
 			}
