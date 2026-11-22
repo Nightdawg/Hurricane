@@ -179,6 +179,8 @@ public class Window extends Widget {
 	    Area ca = this.deco.contarea();
 	    psz = ca.sz();
 	    poff = ca.ul;
+	    if(this.deco instanceof DefaultDeco)
+		((DefaultDeco)this.deco).detachInventoryToolbar();
 	    this.deco.reqdestroy();
 	    this.deco = null;
 	} else {
@@ -227,6 +229,12 @@ public class Window extends Widget {
 	public final boolean lg;
 	public final IButton cbtn;
     public IButton extlistbtn, stackbtn, unstackbtn, sortbtn;
+	private Widget inventoryToolbar;
+	private static final int INVENTORY_BUTTON_LEFT = 88;
+	private static final int INVENTORY_BUTTON_RISE = 33;
+	private static final Coord INVENTORY_TOOLBAR_INSET = Coord.of(3, 3);
+	private static final Coord INVENTORY_BUTTON_NUDGE = Coord.of(1, -1);
+	private Area inventoryToolbarBackdrop;
 	public boolean dragsize, cfocus;
 	public Area aa, ca;
 	public Coord cptl = Coord.z, cpsz = Coord.z;
@@ -256,14 +264,6 @@ public class Window extends Widget {
 //		int extra = inventoryExtraWidth();
 		int anchor = sz.x;
 		cbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(9), -UI.scale(10));
-		if (extlistbtn != null)
-			extlistbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(29), -UI.scale(10));
-        if (sortbtn != null)
-            sortbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(49), - UI.scale(10));
-        if (unstackbtn != null)
-            unstackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(69), -UI.scale(10));
-        if (stackbtn != null)
-            stackbtn.c = Coord.of(anchor - cbtn.sz.x - UI.scale(88), -UI.scale(10));
 		cpsz = Coord.of((int)(wsz.x*0.95), cm.sz().y).sub(cptl); // ND: changed this to make the window top bar fully draggable WHEN RESIZED (for instance, buddy window)
 	}
 
@@ -406,7 +406,88 @@ public class Window extends Widget {
 		return (parent instanceof Window) && ((Window) parent).shouldHaveInventoryButtons();
 	}
 
+	private IButton addInventoryButton(BufferedImage[] images, int rightOffset, String tip, Runnable action) {
+		if (inventoryToolbar == null) {
+			inventoryToolbar = new Widget() {
+				@Override
+				public Coord contentsz() {
+					Coord content = super.contentsz();
+					return content.equals(Coord.z) ? content : content.sub(INVENTORY_BUTTON_NUDGE).add(INVENTORY_TOOLBAR_INSET);
+				}
+
+				@Override
+				public void draw(GOut g) {
+					if (inventoryToolbarBackdrop != null) {
+						g.chcolor(0, 0, 0, 200);
+						g.frect(inventoryToolbarBackdrop.ul, inventoryToolbarBackdrop.sz());
+						g.chcolor(Color.GRAY);
+						g.rect(inventoryToolbarBackdrop.ul, inventoryToolbarBackdrop.sz());
+						g.chcolor();
+					}
+					super.draw(g);
+				}
+
+				@Override
+				public void link() {
+					// Stack immediately above the owner, not above unrelated windows.
+					Widget owner = DefaultDeco.this.parent;
+					z = owner.z;
+					prev = owner;
+					next = owner.next;
+					owner.next = this;
+					if (next != null)
+						next.prev = this;
+					else
+						parent.lchild = this;
+				}
+
+				@Override
+				public boolean mousedown(MouseDownEvent ev) {
+					if (!ev.propagate(this))
+						return false;
+					Window owner = (Window) DefaultDeco.this.parent;
+					parent.setfocus(owner);
+					owner.raise();
+					return true;
+				}
+			};
+			inventoryToolbar.visible = false;
+		}
+		IButton button = new IButton(images[0], images[1], images[2]).action(action);
+		button.settip(tip);
+		Coord pos = INVENTORY_TOOLBAR_INSET.add(UI.scale(INVENTORY_BUTTON_LEFT) - UI.scale(rightOffset), 0);
+		return inventoryToolbar.add(button, pos.add(INVENTORY_BUTTON_NUDGE));
+	}
+
+	private void detachInventoryToolbar() {
+		if (inventoryToolbar != null && inventoryToolbar.parent != null)
+			inventoryToolbar.remove();
+	}
+
+	private void syncInventoryToolbar() {
+		if (inventoryToolbar == null || !(parent instanceof Window))
+			return;
+		Window wnd = (Window) parent;
+		if (wnd.parent == null)
+			return;
+		// Both widgets use the same parent coordinates, outside the window's render buffer.
+		Coord pos = wnd.c.add(wnd.sz.x - cbtn.sz.x - UI.scale(INVENTORY_BUTTON_LEFT), -UI.scale(INVENTORY_BUTTON_RISE))
+			.sub(INVENTORY_TOOLBAR_INSET);
+		if (inventoryToolbar.parent == null)
+			wnd.parent.add(inventoryToolbar, pos);
+		else {
+			inventoryToolbar.move(pos);
+			if (inventoryToolbar.prev != wnd || inventoryToolbar.z != wnd.z) {
+				inventoryToolbar.unlink();
+				inventoryToolbar.link();
+			}
+		}
+		inventoryToolbar.visible = wnd.visible() && inventoryToolbar.sz.y > 0;
+	}
+
 	private void refreshInventoryButtons() {
+		if (inventoryToolbar == null)
+			return;
 		boolean visible = shouldShowInventoryButtons();
 		boolean hasInventory = findInventory() != null;
 		boolean hasExtInventory = findExtInventory() != null;
@@ -419,20 +500,40 @@ public class Window extends Widget {
 			sortbtn.visible = visible && hasInventory;
 		if (extlistbtn != null)
 			extlistbtn.visible = visible && hasExtInventory;
+		updateInventoryToolbarBackdrop();
+		inventoryToolbar.pack();
+		syncInventoryToolbar();
+	}
+
+	private void updateInventoryToolbarBackdrop() {
+		// The sprites have transparent padding; use the artwork, not the widget rectangles.
+		Area artwork = null;
+		for (IButton button : new IButton[] {stackbtn, unstackbtn, sortbtn, extlistbtn}) {
+			if (button == null || !button.visible)
+				continue;
+			for (BufferedImage image : new BufferedImage[] {button.up, button.down, button.hover}) {
+				Area bounds = PUtils.alphabounds(PUtils.coercergba(image, false), 0);
+				if (bounds != null)
+					bounds = bounds.overlap(Area.sized(button.sz));
+				if (bounds != null) {
+					bounds = bounds.xl(button.c.sub(INVENTORY_BUTTON_NUDGE));
+					artwork = artwork == null ? bounds : artwork.include(bounds);
+				}
+			}
+		}
+		inventoryToolbarBackdrop = artwork == null ? null : artwork.margin(INVENTORY_TOOLBAR_INSET);
 	}
 
 	public void addExtListBtn() {
 		if (extlistbtn != null)
 			return;
 
-		extlistbtn = add(new IButton(extlistbtni[0], extlistbtni[1], extlistbtni[2])).action(() -> {
+		extlistbtn = addInventoryButton(extlistbtni, 29, "Extended View", () -> {
 			ExtInventory ext = findExtInventory();
 			if (ext != null) {
 				ext.togglePanel();
 			}
 		});
-		extlistbtn.settip("Extended View");
-		extlistbtn.visible = false;
 		refreshInventoryButtons();
 	}
 
@@ -440,14 +541,12 @@ public class Window extends Widget {
 		if (stackbtn != null)
 			return;
 
-		stackbtn = add(new IButton(stackbtni[0], stackbtni[1], stackbtni[2])).action(() -> {
+		stackbtn = addInventoryButton(stackbtni, INVENTORY_BUTTON_LEFT, "Stack All", () -> {
 			Inventory inv = findInventory();
 			if (inv != null) {
 				new Thread(new StackAllItems(this.ui.gui, inv)).start();
 			}
 		});
-		stackbtn.settip("Stack All");
-		stackbtn.visible = false;
 		refreshInventoryButtons();
 	}
 
@@ -455,17 +554,11 @@ public class Window extends Widget {
 		if (sortbtn != null)
 			return;
 
-        sortbtn = add(new IButton(sortbtni[0], sortbtni[1], sortbtni[2])).action(() -> {
-            for (Widget wdg = this; wdg != null; wdg = wdg.next) {
-                Inventory inv = Inventory.fromWidget(wdg);
-                if (inv != null) {
-                    InventorySorter.sort(inv);
-                    break;
-                }
-            }
+        sortbtn = addInventoryButton(sortbtni, 49, "Sort All", () -> {
+            Inventory inv = findInventory();
+            if (inv != null)
+                InventorySorter.sort(inv);
         });
-        sortbtn.settip("Sort All");
-        sortbtn.visible = false;
         refreshInventoryButtons();
     }
 
@@ -473,14 +566,12 @@ public class Window extends Widget {
 		if (unstackbtn != null)
 			return;
 
-		unstackbtn = add(new IButton(unstackbtni[0], unstackbtni[1], unstackbtni[2])).action(() -> {
+		unstackbtn = addInventoryButton(unstackbtni, 69, "Unstack All", () -> {
 			Inventory inv = findInventory();
 			if (inv != null) {
 				new Thread(new UnstackAllItems(this.ui.gui, inv)).start();
 			}
 		});
-		unstackbtn.settip("Unstack All");
-		unstackbtn.visible = false;
 		refreshInventoryButtons();
 	}
 
@@ -558,10 +649,58 @@ public class Window extends Widget {
 	}
 	for(Widget ch = child; ch != null; ch = ch.next)
 	    ch.presize();
+	syncInventoryToolbar();
     }
 
     public void resize(Coord sz) {
 	resize2(sz);
+    }
+
+    private void syncInventoryToolbar() {
+	if(deco instanceof DefaultDeco)
+	    ((DefaultDeco)deco).syncInventoryToolbar();
+    }
+
+    @Override
+    public void move(Coord c) {
+	super.move(c);
+	syncInventoryToolbar();
+    }
+
+    @Override
+    public void raise() {
+	synchronized((ui != null) ? ui : this) {
+	    super.raise();
+	    syncInventoryToolbar();
+	}
+    }
+
+    @Override
+    public void lower() {
+	synchronized((ui != null) ? ui : this) {
+	    super.lower();
+	    syncInventoryToolbar();
+	}
+    }
+
+    @Override
+    public void z(int z) {
+	super.z(z);
+	syncInventoryToolbar();
+    }
+
+    @Override
+    public void remove() {
+	if(deco instanceof DefaultDeco)
+	    ((DefaultDeco)deco).detachInventoryToolbar();
+	super.remove();
+    }
+
+    @Override
+    public void cdestroy(Widget child) {
+	super.cdestroy(child);
+	if((child instanceof Inventory || child instanceof ExtInventory) && deco instanceof DefaultDeco)
+	    ((DefaultDeco)deco).refreshInventoryButtons();
     }
 
     public void uimsg(String msg, Object... args) {
@@ -685,6 +824,7 @@ public class Window extends Widget {
 		animst = null;
 	    }
 	}
+	syncInventoryToolbar();
     }
 
     @SuppressWarnings("unchecked")
@@ -733,6 +873,7 @@ public class Window extends Widget {
 	} else {
 	    throw(new AssertionError(animst));
 	}
+	syncInventoryToolbar();
     }
 
     public void hide() {
@@ -751,6 +892,7 @@ public class Window extends Widget {
 	} else {
 	    throw(new AssertionError(animst));
 	}
+	syncInventoryToolbar();
     }
 
     public void reqdestroy() {
@@ -770,6 +912,7 @@ public class Window extends Widget {
 	} else {
 	    throw(new AssertionError(animst));
 	}
+	syncInventoryToolbar();
     }
 
     public static class NilAnim implements Animation {
