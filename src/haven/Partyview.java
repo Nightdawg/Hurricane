@@ -30,7 +30,6 @@ import haven.Party.Member;
 
 import java.util.*;
 import java.awt.Color;
-import java.util.Map.Entry;
 
 public class Partyview extends Widget {
     public static final int marg = UI.scale(1);
@@ -39,6 +38,9 @@ public class Partyview extends Widget {
     private final Button leave;
     private Map<Member, MemberView> avs = Collections.emptyMap();
     private Map<Long, Member> om = null;
+    private Member oldLeader;
+    private int ownNumber;
+    private Tex ownNumberText;
     public static Color myColor = Color.WHITE;
 
     @RName("pv")
@@ -62,27 +64,75 @@ public class Partyview extends Widget {
 	update();
     }
 
+    private static Tex renderNumber(int number) {
+	return new TexI(GobHealthInfo.renderLabel(Integer.toString(number), Color.WHITE));
+    }
+
+    private static void drawNumber(GOut g, Coord sz, Tex text, int scale) {
+	g.chcolor(Color.BLACK);
+	g.frect(Coord.z, sz);
+	g.chcolor();
+	if(text != null)
+	    g.aimage(text, sz.div(2), 0.5, 0.5, text.sz().mul(scale));
+    }
+
+    private void setOwnNumber(int number) {
+	if(ownNumber != number) {
+	    if(ownNumberText != null)
+		ownNumberText.dispose();
+	    ownNumberText = (number == 0) ? null : renderNumber(number);
+	    ownNumber = number;
+	}
+    }
+
+    void drawOwnNumber(GOut g, Coord sz) {
+	if(ownNumberText != null && OptWnd.displayPartyMemberNumbersCheckBox.a)
+	    drawNumber(g, sz, ownNumberText, 3);
+    }
+
     public static class MemberView extends Frame {
 	public final Member m;
 	public Color color = Color.WHITE;
 	private Tex tooltip = null;
+	private int number;
+	private Tex numberText;
 
 	public MemberView(Coord sz, Member m) {
 	    super(sz, false);
 	    this.m = m;
-	    add(new Avaview(this.sz.sub(box.bisz()), m.gobid, "avacam"), Coord.z).canactivate = true;
 	}
 
-	public void wdgmsg(Widget sender, String msg, Object... args) {
-	    if(sender instanceof Avaview)
-		wdgmsg(msg, args);
-	    else
-		super.wdgmsg(sender, msg, args);
+	private void setNumber(int number) {
+	    if(this.number != number) {
+		if(numberText != null)
+		    numberText.dispose();
+		this.number = number;
+		numberText = renderNumber(number);
+	    }
+	}
+
+	public void dispose() {
+	    if(numberText != null)
+		numberText.dispose();
+	    super.dispose();
+	}
+
+	public void draw(GOut g) {
+	    drawNumber(g, sz, OptWnd.displayPartyMemberNumbersCheckBox.a ? numberText : null, 1);
+	    super.draw(g);
+	}
+
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(!ev.c.isect(box.btloff(), inner()))
+		return(super.mousedown(ev));
+	    wdgmsg("click", ev.b);
+	    return(true);
 	}
 
 	public void drawframe(GOut g) {
 	    g.chcolor(color);
 	    box.draw(g, Coord.z, sz);
+	    g.chcolor();
 	}
 
 	public Object tooltip(Coord c, Widget prev) {
@@ -101,41 +151,43 @@ public class Partyview extends Widget {
 
     private void update() {
 	int asz = (sz.x - 2 * marg) / 3;
-	if(party.memb != this.om) {
+	boolean rosterChanged = party.memb != this.om;
+	if(rosterChanged || party.leader != oldLeader) {
 	    Map<Member, MemberView> old = new HashMap<>(this.avs);
-	    Map<Member, MemberView> avs = null;
-	    for(Member m : party.memb.values()) {
-		if(m.gobid == ign)
+	    Map<Member, MemberView> avs = new HashMap<>();
+	    List<Member> order = new ArrayList<>(party.memb.values());
+	    if(party.leader != null && order.remove(party.leader))
+		order.add(0, party.leader);
+	    int number = 0, i = 0, self = 0;
+	    for(Member m : order) {
+		number++;
+		if(m.gobid == ign) {
+		    self = number;
 		    continue;
+		}
 		MemberView ava = old.remove(m);
 		if(ava == null)
 		    ava = add(new MemberView(Coord.of(asz), m));
-		if(avs == null)
-		    avs = new HashMap<>();
+		ava.setNumber(number);
+		ava.move(leave.pos("bl").add((i % 3) * (asz + marg),(i / 3) * (asz + marg) + marg));
 		avs.put(m, ava);
-	    }
-	    for(MemberView ava : old.values())
-		ava.reqdestroy();
-	    if(avs == null)
-		avs = Collections.emptyMap();
-	    List<Member> order = new ArrayList<>(avs.keySet());
-	    Collections.sort(order, Comparator.comparing(m -> m.seq));
-	    int i = 0;
-	    for(Member m : order) {
-		avs.get(m).move(leave.pos("bl").add((i % 3) * (asz + marg),(i / 3) * (asz + marg) + marg));
 		i++;
 	    }
+	    setOwnNumber(order.size() > 1 ? self : 0);
+	    for(MemberView ava : old.values())
+		ava.reqdestroy();
 	    this.om = party.memb;
+	    this.oldLeader = party.leader;
 	    this.avs = avs;
 	    if(leave.show(!avs.isEmpty()))
 		pack();
-        if (ui != null && ui.gui != null) {
+        if (rosterChanged && ui != null && ui.gui != null) {
             ui.sess.glob.oc.gobAction(Gob::updatePartyCircleOverlay);
             ui.sess.glob.oc.gobAction(Gob::updatePartyHighlightOverlay);
         }
 	}
-	for(Map.Entry<Member, MemberView> e : avs.entrySet())
-	    e.getValue().color = e.getKey().col;
+	for(MemberView view : avs.values())
+	    view.color = view.m.col;
     if (party.memb.size() == 1) {
         myColor = Color.WHITE;
     }
@@ -173,7 +225,7 @@ public class Partyview extends Widget {
 
     public void uimsg(String msg, Object... args) {
 	if(msg == "list") {
-	    Map<Long, Member> nmemb = new HashMap<>(), cmemb = party.memb;
+	    Map<Long, Member> nmemb = new LinkedHashMap<>(), cmemb = party.memb;
 	    for(int a = 0; a < args.length; a++) {
 		long id = Utils.uiv(args[a]);
 		Member m = cmemb.get(id);
@@ -224,6 +276,7 @@ public class Partyview extends Widget {
     }
 
     public void dispose() {
+	setOwnNumber(0);
 	/* XXX: Arguably, glob.party should be removed entirely, but
 	 * until then, at least clear it when logging out. */
 	party.memb = Collections.emptyMap();

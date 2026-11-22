@@ -56,6 +56,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public final long plid;
     private final Hidepanel ulpanel, umpanel, urpanel, /*blpanel, mapmenupanel,*/ brpanel, menupanel;
     public Widget portrait;
+    private Partyview partyview;
     public MenuGrid menu;
     public MapView map;
     public GobIcon.Settings iconconf;
@@ -432,7 +433,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
         @Override
         protected void added() {
             super.added();
-            Widget child = new Avaview(UI.scale(111, 111), plid, "avacam");
+            Widget child = new Avaview(UI.scale(111, 111), plid, "avacam") {
+                @Override
+                public void draw(GOut g) {
+                    super.draw(g);
+                    if (partyview != null)
+                        partyview.drawOwnNumber(g, sz);
+                }
+            };
             this.add(child, 0, 0);
         }
 
@@ -1254,6 +1262,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 	} else if(place == "party") {
 	    add(child, portrait.pos("bl").adds(0, 10));
+	    if(child instanceof Partyview view)
+		partyview = view;
 	} else if(place == "meter") {
 	    int x = (meters.size() % 3) * (IMeter.fsz.x + UI.scale(5));
 	    int y = (meters.size() / 3) * (IMeter.fsz.y + UI.scale(2));
@@ -1363,6 +1373,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     }
 
     public void cdestroy(Widget w) {
+	if(w == partyview)
+	    partyview = null;
 	if(w instanceof Window) {
 	    String wndid = wndids.reverse().get((Window)w);
 	    if(wndid != null) {

@@ -1342,6 +1342,7 @@ public class OptWnd extends Window {
 	public static boolean stamBarLocationIsTop = Utils.getprefb("stamBarLocationIsTop", true);
 	public static CheckBox highlightPartyMembersCheckBox;
 	public static CheckBox showCirclesUnderPartyMembersCheckBox;
+	public static CheckBox displayPartyMemberNumbersCheckBox;
 	public static ColorOptionWidget yourselfPartyColorOptionWidget;
 	public static String[] yourselfPartyColorSetting = Utils.getprefsa("yourselfParty" + "_colorSetting", new String[]{"255", "255", "255", "128"});
 	public static ColorOptionWidget leaderPartyColorOptionWidget;
@@ -1820,7 +1821,13 @@ public class OptWnd extends Window {
                 ChaseVectorSprite.ENEMYCOLOR = enemyVectorColorOptionWidget.currentColor;
             }), enemyVectorColorOptionWidget.pos("ur").adds(16, 0)).tooltip = resetButtonTooltip;
 
-
+			add(displayPartyMemberNumbersCheckBox = new CheckBox("Display Party Member Numbers") {
+				{a = Utils.getprefb("displayPartyMemberNumbers", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("displayPartyMemberNumbers", val);
+				}
+			}, rightColumn.pos("bl").adds(0, 12).xs(320));
+			displayPartyMemberNumbersCheckBox.tooltip = displayPartyMemberNumbersTooltip;
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 33).x(0));
@@ -5434,6 +5441,8 @@ public class OptWnd extends Window {
 	private static final Object showCirclesUnderPartyMembersTooltip = RichText.render("This will put a colored circle under all party members." +
 			"\n" +
 			"\n$col[185,185,185]{If you are the party leader, your circle's color will always be the $col[218,163,0]{Leader's Color}, regardless of what you set $col[218,163,0]{Your Color} to.}", UI.scale(300));
+	private static final Object displayPartyMemberNumbersTooltip = RichText.render("Shows party numbers on teammate tiles and over your own portrait. The party leader is always #1." +
+			"\n\nWhen off, teammate tiles stay black and your portrait is visible.", UI.scale(300));
 	private static final Object highlightCombatFoesTooltip = RichText.render("This will put a color highlight over all enemies that you are currently in combat with.", UI.scale(310));
 	private static final Object showCirclesUnderCombatFoesTooltip = RichText.render("This will put a colored circle under all enemies that you are currently in combat with.", UI.scale(300));
 	private static final Object targetSpriteTooltip = RichText.render("The target sprite uses the same color you set for Combat Foes.", UI.scale(300));
